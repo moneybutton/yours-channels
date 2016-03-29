@@ -1,0 +1,26 @@
+{
+  "name": "fullnode-pc",
+  "version": "1.0.0",
+  "description": "Payment channels for fullnode.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dattnetwork/fullnode-pc.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dattnetwork/fullnode-pc/issues"
+  },
+  "homepage": "https://github.com/dattnetwork/fullnode-pc#readme",
+  "dependencies": {
+    "fullnode": "0.13.0"
+  },
+  "devDependencies": {
+    "mocha": "2.4.5",
+    "should": "8.3.0"
+  }
+}
