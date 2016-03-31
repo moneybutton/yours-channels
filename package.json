@@ -4,6 +4,7 @@
   "description": "Payment channels for fullnode.",
   "main": "index.js",
   "scripts": {
+    "test-format": "./node_modules/.bin/standard lib/*.js test/*.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "mocha": "2.4.5",
-    "should": "8.3.0"
+    "should": "8.3.0",
+    "standard": "6.0.8"
   }
 }

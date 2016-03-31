@@ -1,5 +1,5 @@
+/* global describe,it */
 'use strict'
-
 let should = require('should')
 let Sender = require('../lib/sender.js')
 let Privkey = require('fullnode/lib/privkey')
@@ -75,7 +75,6 @@ describe('Sender', function () {
   describe('asyncCreateAndSignFundingTx', function () {
     it('asyncCreateAndSignFundingTx should setup a multisig address', function () {
       return asink(function *() {
-
         // initialize sender
         let sender = Sender(senderAddress, senderMsPrivkey, receiverMsPubkey, receiverAddress)
         sender.setupMsScript()
@@ -90,10 +89,6 @@ describe('Sender', function () {
         let privkey1 = Privkey().fromBN(BN(11))
         let keypair1 = Keypair().fromPrivkey(privkey1)
         let addr1 = Address().fromPubkey(keypair1.pubkey)
-
-        // make addresses to send to
-        let saddr1 = addr1
-        let saddr2 = Address().fromRedeemScript(Script().fromString('OP_RETURN')) // fake, unredeemable p2sh address
 
         let txhashbuf = new Buffer(32)
         txhashbuf.fill(0)
@@ -115,7 +110,6 @@ describe('Sender', function () {
   describe('createAndSignPaymentTx', function () {
     it('createAndSignPaymentTx should create and sign a payment tx', function () {
       return asink(function *() {
-
         // initialize sender
         let sender = Sender(senderAddress, senderMsPrivkey, receiverMsPubkey, receiverAddress)
         sender.setupMsScript()
@@ -144,7 +138,6 @@ describe('Sender', function () {
         tx.toString().should.equal(consts.paymentTx)
         txJson.txins.length.should.equal(1)
         txJson.txouts.length.should.equal(3)
-
       }, this)
     })
   })
@@ -155,5 +148,4 @@ describe('Sender', function () {
       should.exist(sender.closeChannel)
     })
   })
-
 })
