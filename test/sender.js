@@ -4,7 +4,6 @@ let should = require('should')
 let Sender = require('../lib/sender.js')
 let Privkey = require('fullnode/lib/privkey')
 let Pubkey = require('fullnode/lib/pubkey')
-let Keypair = require('fullnode/lib/keypair')
 let Address = require('fullnode/lib/address')
 let Script = require('fullnode/lib/script')
 let Txout = require('fullnode/lib/txout')
@@ -12,31 +11,40 @@ let Tx = require('fullnode/lib/tx')
 let BN = require('fullnode/lib/bn')
 let asink = require('asink')
 
-// TODO add #
-
 describe('Sender', function () {
+  // make change address
+  let changePrivkey = Privkey().fromBN(BN(10))
+  let changePubkey = Pubkey().fromPrivkey(changePrivkey)
+  let changeAddress = Address().fromPubkey(changePubkey)
+
+  // make addresses to send from
+  let fundingPrivkey = Privkey().fromBN(BN(20))
+  let fundingPubkey = Pubkey().fromPrivkey(fundingPrivkey)
+  let fundingAddress = Address().fromPubkey(fundingPubkey)
+
   // the private address of sender
-  let senderPrivkey = Privkey().fromBN(BN(1))
+  let senderPrivkey = Privkey().fromBN(BN(30))
   let senderPubkey = Pubkey().fromPrivkey(senderPrivkey)
   let senderAddress = Address().fromPubkey(senderPubkey)
 
   // the private key used to create the multig addr
-  let senderMsPrivkey = Privkey().fromBN(BN(2))
+  let senderMsPrivkey = Privkey().fromBN(BN(40))
 
   // the receiver's pub key used to create the multisig
-  let receiverMsPrivkey = Privkey().fromBN(BN(3))
+  let receiverMsPrivkey = Privkey().fromBN(BN(50))
   let receiverMsPubkey = Pubkey().fromPrivkey(receiverMsPrivkey)
 
   // the receivers private address
-  let receiverPrivKey = Privkey().fromBN(BN(4))
+  let receiverPrivKey = Privkey().fromBN(BN(60))
   let receiverPubkey = Pubkey().fromPrivkey(receiverPrivKey)
   let receiverAddress = Address().fromPubkey(receiverPubkey)
 
   let consts = {
-    multiSigScript: 'OP_2 33 0x02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5 33 0x02f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9 OP_2 OP_CHECKMULTISIG',
-    multiSigAddress: '3FpT85kUpAxhL7jKW3trvb4KLhj6j1121R',
-    fundingTx: '01000000010000000000000000000000000000000000000000000000000000000000000000000000006a47304402200d4b8ab538542f844a3e5f417a7ee9d1811e745cd093b0a8513a0aec043409fd022077e58ecf722e335232c29231ca156b2efae843ba9a3b809cd6aff5f2bd1726a8012103774ae7f858a9411e5ef4246b70c65aac5649980be5c17891bbec17895da008cbffffffff02809698000000000017a9149af9b52da033d663b8eef59d586c7a4e01cf02168770235d05000000001976a914185140bb54704a9e735016faa7a8dbee4449bddc88ac00000000',
-    paymentTx: '0100000001b806dccfc74a52092ffd075daf46449380066aef95202d7f1b9ba00a22dc032e00000000920047304402203d5e0bb5de1f08f72a4c1c787a779ae835106cae95955681a2ff560d9b08ce9b022031f7a93014f5cb252225cfef87e2cc7c8bdb23205368051c1559243d261d060b010047522102c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee52102f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f952aeffffffff03d0dd0600000000001976a914751e76e8199196d454941c45d1b3a323f1433bd688ac50c30000000000001976a914c42e7ef92fdb603af844d064faad95db9bcdfd3d88ac50ce9000000000001976a914751e76e8199196d454941c45d1b3a323f1433bd688ac00000000'
+    multiSigScript: 'OP_2 33 0x0391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b 33 0x0229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a OP_2 OP_CHECKMULTISIG',
+    multiSigAddress: '3NSKWKu7RzEUqR1J2HUWoNDumorEUPPnAZ',
+    fundingTx: '01000000010000000000000000000000000000000000000000000000000000000000000000000000006b483045022100c31d180dd8f64bc977deef813044469cae966dc8b9c31d1c40f82456e8453f3702204f8838640179298b21f10e9210ef15abefa3156ac9c88b4ae54c751f9b3ab1890121024ce119c96e2fa357200b559b2f7dd5a5f02d5290aff74b03f3e471b273211c97ffffffff02809698000000000017a914e3931442220bb453a95150725a4e45c456b2c6198770235d05000000001976a914185140bb54704a9e735016faa7a8dbee4449bddc88ac00000000',
+    refundTx: '0100000001dd5dd76ec7dff96a32cd6f7b51e724f17f3f972e79edd56dbf57c4d98bda8d6700000000920047304402201bc994b5ab51348c3434c87188d1896a27d17e5f8a1432c102b6cf3785624c6b022043263aceb06517af466bff679528f5f633b9ce0c4a491a6c09b512269aa1998a01004752210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a52aeffffffff01706f9800000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000',
+    paymentTx: '0100000001dd5dd76ec7dff96a32cd6f7b51e724f17f3f972e79edd56dbf57c4d98bda8d67000000009300483045022100cfdcda30c0a8fd2d3af31e5b48764c09c04bc0c3bf3fe3e326e258a89806a6a40220718aff5ac0c90261969f520703ed63cacb47f52309601ed685caf4b2d923ae2901004752210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a52aeffffffff03d0dd0600000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac50c30000000000001976a914687b4cd0cd3ddcc611aac541bf3ab6dc0b7ecb9588ac50ce9000000000001976a914185140bb54704a9e735016faa7a8dbee4449bddc88ac00000000'
   }
 
   it('should exist', function () {
@@ -45,7 +53,7 @@ describe('Sender', function () {
     should.exist(Sender())
   })
 
-  describe('setupMultisigScript', function () {
+  describe('#setupMultisigScript', function () {
     it('setupMultisigScript should exist', function () {
       let sender = Sender(senderAddress, senderMsPrivkey, receiverMsPubkey, receiverAddress)
       should.exist(sender.setupMsScript)
@@ -58,7 +66,7 @@ describe('Sender', function () {
     })
   })
 
-  describe('setupMultisigAddress', function () {
+  describe('#setupMultisigAddress', function () {
     it('setupMultisigAddress should exist', function () {
       let sender = Sender()
       should.exist(sender.setupMsAddress)
@@ -72,7 +80,7 @@ describe('Sender', function () {
     })
   })
 
-  describe('asyncCreateAndSignFundingTx', function () {
+  describe('#asyncCreateAndSignFundingTx', function () {
     it('asyncCreateAndSignFundingTx should setup a multisig address', function () {
       return asink(function *() {
         // initialize sender
@@ -80,50 +88,31 @@ describe('Sender', function () {
         sender.setupMsScript()
         sender.setupMsAddress()
 
-        // make change address
-        let privkey = Privkey().fromBN(BN(10))
-        let keypair = Keypair().fromPrivkey(privkey)
-        let changeaddr = Address().fromPubkey(keypair.pubkey)
-
-        // make addresses to send from
-        let privkey1 = Privkey().fromBN(BN(11))
-        let keypair1 = Keypair().fromPrivkey(privkey1)
-        let addr1 = Address().fromPubkey(keypair1.pubkey)
-
+        // make an unspent output
         let txhashbuf = new Buffer(32)
         txhashbuf.fill(0)
-
         let txoutnum = 0
-        let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + addr1.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
+        let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + fundingAddress.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
         let txout = Txout(BN(1e8), scriptout)
 
-        let tx = yield sender.asyncCreateAndSignFundingTx(BN(1e7), changeaddr, txhashbuf, txoutnum, txout, keypair1.pubkey)
-        let txJson = tx.toJSON()
+        let tx = yield sender.asyncCreateAndSignFundingTx(BN(1e7), changeAddress, txhashbuf, txoutnum, txout, fundingPubkey)
 
         tx.toString().should.equal(consts.fundingTx)
-        txJson.txins.length.should.equal(1)
-        txJson.txouts.length.should.equal(2)
+        tx.toJSON().txins.length.should.equal(1)
+        tx.toJSON().txouts.length.should.equal(2)
       }, this)
     })
   })
 
-  describe('createAndSignPaymentTx', function () {
-    it('createAndSignPaymentTx should create and sign a payment tx', function () {
+  describe('#asyncCreateAndSignRefundTx', function () {
+    it('asyncCreateAndSignRefundTx should create and sign a payment tx', function () {
       return asink(function *() {
         // initialize sender
         let sender = Sender(senderAddress, senderMsPrivkey, receiverMsPubkey, receiverAddress)
-        sender.setupMsScript()
-        sender.setupMsAddress()
+        sender.initialize()
         sender.balance = BN(500000)
         sender.amountFunded = BN(500000)
         sender.fundingTx = Tx().fromString(consts.fundingTx)
-
-        let amountToSend = BN(50000)
-
-        // make change address
-        let changePrivkey = Privkey().fromBN(BN(1))
-        let changeKeypair = Keypair().fromPrivkey(changePrivkey)
-        let changeaddr = Address().fromPubkey(changeKeypair.pubkey)
 
         // create output to spend
         let txhashbuf = new Buffer(32)
@@ -132,17 +121,44 @@ describe('Sender', function () {
         let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + sender.msAddress.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
         let txout = Txout(BN(1e8), scriptout)
 
-        let tx = yield sender.asyncCreateAndSignPaymentTx(amountToSend, changeaddr, txhashbuf, txoutnum, txout)
-        let txJson = tx.toJSON()
+        let refundTx = yield sender.asyncCreateAndSignRefundTx(txhashbuf, txoutnum, txout)
 
-        tx.toString().should.equal(consts.paymentTx)
-        txJson.txins.length.should.equal(1)
-        txJson.txouts.length.should.equal(3)
+        refundTx.toString().should.equal(consts.refundTx)
+        refundTx.toJSON().txins.length.should.equal(1)
+        refundTx.toJSON().txouts.length.should.equal(1)
       }, this)
     })
   })
 
-  describe('closeChannel', function () {
+  describe('#createAndSignPaymentTx', function () {
+    it('createAndSignPaymentTx should create and sign a payment tx', function () {
+      return asink(function *() {
+        // initialize sender
+        let sender = Sender(senderAddress, senderMsPrivkey, receiverMsPubkey, receiverAddress)
+        sender.initialize()
+        sender.balance = BN(500000)
+        sender.amountFunded = BN(500000)
+        sender.fundingTx = Tx().fromString(consts.fundingTx)
+
+        let amountToSend = BN(50000)
+
+        // create output to spend
+        let txhashbuf = new Buffer(32)
+        txhashbuf.fill(0)
+        let txoutnum = 0
+        let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + sender.msAddress.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
+        let txout = Txout(BN(1e8), scriptout)
+
+        let tx = yield sender.asyncCreateAndSignPaymentTx(amountToSend, changeAddress, txhashbuf, txoutnum, txout)
+
+        tx.toString().should.equal(consts.paymentTx)
+        tx.toJSON().txins.length.should.equal(1)
+        tx.toJSON().txouts.length.should.equal(3)
+      }, this)
+    })
+  })
+
+  describe('#closeChannel', function () {
     it('closeChannel should exist', function () {
       let sender = Sender()
       should.exist(sender.closeChannel)
