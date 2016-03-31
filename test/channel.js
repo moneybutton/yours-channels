@@ -65,18 +65,11 @@ describe('Channel', function () {
       // sender funds the channel with 1e7 satoshi
       // the funding transaction is not broadcast to the bictoin network yet
       // be at this point the receiver coult withhold the senders funds locked in the channel
-      let fundingTx = yield sender.asyncCreateAndSignFundingTx(BN(1e7), changeAddress, txhashbuf, txoutnum, txout, fundingPubkey)
+      let amountToFund = BN(1e7)
+      let fundingTx = yield sender.asyncCreateAndSignFundingTx(amountToFund, changeAddress, txhashbuf, txoutnum, txout, fundingPubkey)
       fundingTx.toString().should.equal(consts.fundingTx)
 
-      // create the refund transaction
-      // create output from the multisig address
-      let msTxhashbuf = new Buffer(32)
-      txhashbuf.fill(0)
-      let msTxoutnum = 0
-      let msScriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + sender.msAddress.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
-      let msTxout = Txout(BN(1e7), msScriptout)
-
-      let refundTx = yield sender.asyncCreateAndSignRefundTx(msTxhashbuf, msTxoutnum, msTxout)
+      let refundTx = yield sender.asyncCreateAndSignRefundTx()
       refundTx.toString().should.equal('0100000001dd5dd76ec7dff96a32cd6f7b51e724f17f3f972e79edd56dbf57c4d98bda8d6700000000920047304402201bc994b5ab51348c3434c87188d1896a27d17e5f8a1432c102b6cf3785624c6b022043263aceb06517af466bff679528f5f633b9ce0c4a491a6c09b512269aa1998a01004752210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a52aeffffffff01706f9800000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000')
 
       // the refund transaction is then set to the receiver who signes it but does not broadcast
@@ -95,12 +88,7 @@ describe('Channel', function () {
 
       // send first micropayemt
       let amountToSend1 = BN(100)
-      let payment1Txhashbuf = new Buffer(32)
-      payment1Txhashbuf.fill(0)
-      let payment1Txoutnum = 0
-      let payment1Txout = Txout(BN(100), scriptout)
-
-      let payment1partialTx = yield sender.asyncCreateAndSignPaymentTx(amountToSend1, changeAddress, payment1Txhashbuf, payment1Txoutnum, payment1Txout)
+      let payment1partialTx = yield sender.asyncCreateAndSignPaymentTx(amountToSend1, changeAddress)
       payment1partialTx.toString().should.equal('0100000001dd5dd76ec7dff96a32cd6f7b51e724f17f3f972e79edd56dbf57c4d98bda8d6700000000920047304402207f2237bcbd20d5cde3d7cf70cb2a608806cfc0accdd0c8134915795fc520c24402201756a2b6a602a57647196c75d0827a6250ac5e6a0f79bc9beca13bb2e83bf7e901004752210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a52aeffffffff03bca00700000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac64000000000000001976a914687b4cd0cd3ddcc611aac541bf3ab6dc0b7ecb9588ac50ce9000000000001976a914185140bb54704a9e735016faa7a8dbee4449bddc88ac00000000')
 
       let completePayment1 = yield receiver.asyncAcceptPayment(payment1partialTx)
@@ -108,12 +96,7 @@ describe('Channel', function () {
 
       // send second micropayemt
       let amountToSend2 = BN(200)
-      let payment2Txhashbuf = new Buffer(32)
-      payment1Txhashbuf.fill(0)
-      let payment2Txoutnum = 0
-      let payment2Txout = Txout(BN(200), scriptout)
-
-      let payment2partialTx = yield sender.asyncCreateAndSignPaymentTx(amountToSend2, changeAddress, payment2Txhashbuf, payment2Txoutnum, payment2Txout)
+      let payment2partialTx = yield sender.asyncCreateAndSignPaymentTx(amountToSend2, changeAddress)
       payment2partialTx.toString().should.equal('0100000001dd5dd76ec7dff96a32cd6f7b51e724f17f3f972e79edd56dbf57c4d98bda8d6700000000920047304402206b17321713611b64574ba4cf8fdb18455e0b8df5c51df41e4c12e5799f44b0a402207dfa1969186dd62ce8c9fb8ab89b15de137bb52f7f3434cfe40a7f302efa21fc01004752210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a52aeffffffff0358a00700000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588acc8000000000000001976a914687b4cd0cd3ddcc611aac541bf3ab6dc0b7ecb9588ac50ce9000000000001976a914185140bb54704a9e735016faa7a8dbee4449bddc88ac00000000')
 
       let completePayment2 = yield receiver.asyncAcceptPayment(payment2partialTx)

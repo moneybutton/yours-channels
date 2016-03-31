@@ -114,14 +114,7 @@ describe('Sender', function () {
         sender.amountFunded = BN(500000)
         sender.fundingTx = Tx().fromString(consts.fundingTx)
 
-        // create output to spend
-        let txhashbuf = new Buffer(32)
-        txhashbuf.fill(0)
-        let txoutnum = 0
-        let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + sender.msAddress.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
-        let txout = Txout(BN(1e8), scriptout)
-
-        let refundTx = yield sender.asyncCreateAndSignRefundTx(txhashbuf, txoutnum, txout)
+        let refundTx = yield sender.asyncCreateAndSignRefundTx()
 
         refundTx.toString().should.equal(consts.refundTx)
         refundTx.toJSON().txins.length.should.equal(1)
@@ -142,14 +135,7 @@ describe('Sender', function () {
 
         let amountToSend = BN(50000)
 
-        // create output to spend
-        let txhashbuf = new Buffer(32)
-        txhashbuf.fill(0)
-        let txoutnum = 0
-        let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + sender.msAddress.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
-        let txout = Txout(BN(1e8), scriptout)
-
-        let tx = yield sender.asyncCreateAndSignPaymentTx(amountToSend, changeAddress, txhashbuf, txoutnum, txout)
+        let tx = yield sender.asyncCreateAndSignPaymentTx(amountToSend, changeAddress)
 
         tx.toString().should.equal(consts.paymentTx)
         tx.toJSON().txins.length.should.equal(1)
