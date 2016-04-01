@@ -52,15 +52,16 @@ describe('Channel', function () {
   sender.initialize()
   let receiver = Receiver(receiverMsPrivkey, receiverPubkey)
 
+  // build data structure that represents and unspent output,
+  // the sender would look that up in her wallet
+  let txhashbuf = new Buffer(32)
+  txhashbuf.fill(0)
+  let txoutnum = 0
+  let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + fundingAddress.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
+  let txout = Txout(BN(1e8), scriptout)
+
   it('setup a payment channel and send two payments', function () {
     return asink(function *() {
-      // build data structure that represents and unspent output,
-      // the sender would look that up in her wallet
-      let txhashbuf = new Buffer(32)
-      txhashbuf.fill(0)
-      let txoutnum = 0
-      let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + fundingAddress.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
-      let txout = Txout(BN(1e8), scriptout)
 
       // sender funds the channel with 1e7 satoshi
       // the funding transaction is not broadcast to the bictoin network yet

@@ -80,6 +80,21 @@ describe('Sender', function () {
     })
   })
 
+  describe('#initialize', function () {
+    it('initialize should exist', function () {
+      let sender = Sender()
+      should.exist(sender.initialize)
+    })
+
+    it('initialize should set a multisig script and address', function () {
+      let sender = Sender(senderAddress, senderMsPrivkey, receiverMsPubkey, receiverAddress)
+      sender.initialize()
+      should.exist(sender.msPubkey)
+      should.exist(sender.msScript)
+      should.exist(sender.msAddress)
+    })
+  })
+
   describe('#asyncCreateAndSignFundingTx', function () {
     it('asyncCreateAndSignFundingTx should setup a multisig address', function () {
       return asink(function *() {
@@ -94,12 +109,14 @@ describe('Sender', function () {
         let txoutnum = 0
         let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + fundingAddress.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
         let txout = Txout(BN(1e8), scriptout)
+        let amountToFund = BN(1e7)
 
-        let tx = yield sender.asyncCreateAndSignFundingTx(BN(1e7), changeAddress, txhashbuf, txoutnum, txout, fundingPubkey)
+        let tx = yield sender.asyncCreateAndSignFundingTx(amountToFund, changeAddress, txhashbuf, txoutnum, txout, fundingPubkey)
 
         tx.toString().should.equal(consts.fundingTx)
         tx.toJSON().txins.length.should.equal(1)
         tx.toJSON().txouts.length.should.equal(2)
+        ;(tx.toJSON().txouts[0].valuebn).should.equal(amountToFund.toString())
       }, this)
     })
   })
@@ -140,6 +157,8 @@ describe('Sender', function () {
         tx.toString().should.equal(consts.paymentTx)
         tx.toJSON().txins.length.should.equal(1)
         tx.toJSON().txouts.length.should.equal(3)
+        ;(tx.toJSON().txouts[1].valuebn).should.equal(amountToSend.toString())
+
       }, this)
     })
   })
