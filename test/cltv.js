@@ -17,7 +17,6 @@ require('should')
 describe('Examples of how to use CLTV', function () {
   it('lock up funds until block 100', function () {
     let scriptnlocktime = 100
-    let txnlocktime = 101
     let privkey = Privkey().fromRandom()
     let pubkey = Pubkey().fromPrivkey(privkey)
     let keypair = Keypair(privkey, pubkey)
@@ -39,13 +38,9 @@ describe('Examples of how to use CLTV', function () {
     txb.setChangeAddress(Address().fromPrivkey(Privkey().fromRandom()))
     txb.toAddress(BN(100000), Address().fromPrivkey(Privkey().fromRandom()))
 
-    txb.setNLocktime(txnlocktime)
-    txb.build()
-    let sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, scriptPubkey)
-    scriptSig.chunks[0] = Script().writeBuffer(sig.toTxFormat()).chunks[0]
-    txb.tx.txins[0].setScript(scriptSig)
-    Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY).should.equal(true)
+    let sig, txnlocktime
 
+    // tx lock time too low - tx invalid
     txnlocktime = 99
     txb.setNLocktime(txnlocktime)
     txb.build()
@@ -53,5 +48,14 @@ describe('Examples of how to use CLTV', function () {
     scriptSig.chunks[0] = Script().writeBuffer(sig.toTxFormat()).chunks[0]
     txb.tx.txins[0].setScript(scriptSig)
     Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY).should.equal(false)
+
+    // tx lock time high enough - tx valid
+    txnlocktime = 100
+    txb.setNLocktime(txnlocktime)
+    txb.build()
+    sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, scriptPubkey)
+    scriptSig.chunks[0] = Script().writeBuffer(sig.toTxFormat()).chunks[0]
+    txb.tx.txins[0].setScript(scriptSig)
+    Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY).should.equal(true)
   })
 })
