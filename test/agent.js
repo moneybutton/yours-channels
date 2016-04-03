@@ -29,12 +29,12 @@ describe('Agent', function () {
   let otherMsPubkey = Pubkey().fromPrivkey(otherMsPrivkey)
 
   let consts = {
-    fundingTx: '01000000010000000000000000000000000000000000000000000000000000000000000000000000006b483045022100a80e35e6eb08a021ea10093b4585487106587cea4cd9cd37a1fa18609574d7fb022013deacd6d03b293f156f944ea4ae68139da854137ebc54021af26b3eb06165a00121036d2b085e9e382ed10b69fc311a03f8641ccfff21574de0927513a49d9a688a00ffffffff02002d31010000000017a914e3931442220bb453a95150725a4e45c456b2c61987f08cc404000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000',
+    fundingTx: '01000000010000000000000000000000000000000000000000000000000000000000000000000000006b483045022100c000cacbb96e644d8ecd80b7e729471ab64d7913a52ceb45b7c498394459fa6f0220338cad242d55e4379d95ebc839771930ea849a31243b8e4400013a2f90ea91400121036d2b085e9e382ed10b69fc311a03f8641ccfff21574de0927513a49d9a688a00ffffffff02002d31010000000017a914825d8d4a359b1caee1ea5191d43deaff2a87691487f08cc404000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000',
     otherFundingTx: '01000000010000000000000000000000000000000000000000000000000000000000000000000000006b4830450221009a8d35af1dcb1ed0fc0f21e07ebd0a2bce88f9bfc973b083326bef9d74e7354c022029d23c39c3cb18bc2567c9c54e215c2c13f68fbaf3c67e3f3f3fb8b234eb0d5701210301257e93a78a5b7d8fe0cf28ff1d8822350c778ac8a30e57d2acfc4d5fb8c192ffffffff02809698000000000017a914825d8d4a359b1caee1ea5191d43deaff2a8769148770235d05000000001976a914687b4cd0cd3ddcc611aac541bf3ab6dc0b7ecb9588ac00000000',
-    partialRefundTx: '0100000001737b59058d5cfe7d83db9aadbbd2913003a18d27c9abfb4163e37cfe47844ff3000000009300483045022100cc3c432764d6bb0013e9246e8704771b3a8c20ba1685d1a5d491852026dd384c02205af0caf05aa2c36d9fd131c8bacfa4542a4651faf1caaddd516941528a7a016801004752210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a52aeffffffff01f0053101000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000',
-    completeRefundTx: '0100000001737b59058d5cfe7d83db9aadbbd2913003a18d27c9abfb4163e37cfe47844ff300000000da00483045022100cc3c432764d6bb0013e9246e8704771b3a8c20ba1685d1a5d491852026dd384c02205af0caf05aa2c36d9fd131c8bacfa4542a4651faf1caaddd516941528a7a01680147304402203fc4e90e0a34bed0aaf67984543c49ac3f734a4e53bbbb508be8cdf057af2ae902205a816fe5a33b8883bbd8720a82edeb8f92196d274612876f02e7d570116a9f3f014752210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a52aeffffffff01f0053101000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000',
-    partialPaymentTx: '0100000001737b59058d5cfe7d83db9aadbbd2913003a18d27c9abfb4163e37cfe47844ff3000000009300483045022100f8a7156ff9e52b4d9411fdf887490802161c6d1253f631bf675cb34ae5a9d798022070be6afa86781d5d56dc5a2bb49536c0b3fee359d8218c0fc36131252d9d232901004752210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a52aeffffffff032c010000000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588acc8000000000000001976a914687b4cd0cd3ddcc611aac541bf3ab6dc0b7ecb9588acfc033101000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000',
-    completePaymentTx: '0100000001737b59058d5cfe7d83db9aadbbd2913003a18d27c9abfb4163e37cfe47844ff300000000db00483045022100f8a7156ff9e52b4d9411fdf887490802161c6d1253f631bf675cb34ae5a9d798022070be6afa86781d5d56dc5a2bb49536c0b3fee359d8218c0fc36131252d9d2329014830450221008401867fa79af82501ada123fbc4cc9012382c0c75fa9abb20cb336d3d0b9bad022057687c6e9b0ff51104106f8d54d502ba2c031da04e5e0db3ff93b2235d89ee8f014752210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a52aeffffffff032c010000000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588acc8000000000000001976a914687b4cd0cd3ddcc611aac541bf3ab6dc0b7ecb9588acfc033101000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000'
+    partialRefundTx: '010000000149917883684f5cbd2105ed83e90f695b2a57aaace9466320b85e4f424bfbb91d00000000930000483045022100a635fe0009ce07ae2eb590efdc377909beb5c7e9503ab3cb1649cfad8b18109002206f75c5632b967c21e49ba03bc9f0592f2e74b565e24ba9de142253a5c2e684ff014752210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b52aeffffffff01f0053101000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000',
+    completeRefundTx: '010000000149917883684f5cbd2105ed83e90f695b2a57aaace9466320b85e4f424bfbb91d00000000da0047304402206af4fead9a814564a569ad5938c0a9d0f6ac89a66db055b42c8cd8d2296fe2a202205bdba2bbb734f3232c2246bcd5f513278b8675ae97b6d7f51796bbefd4484d8701483045022100a635fe0009ce07ae2eb590efdc377909beb5c7e9503ab3cb1649cfad8b18109002206f75c5632b967c21e49ba03bc9f0592f2e74b565e24ba9de142253a5c2e684ff014752210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b52aeffffffff01f0053101000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000',
+    partialPaymentTx: '010000000149917883684f5cbd2105ed83e90f695b2a57aaace9466320b85e4f424bfbb91d0000000092000047304402201d0602fdc4f93eac4e11c1b93de32454a1a33b0f25d05a0605ac7708c1033b9102205790fea5a84717af75b1dce4e285daa9f89e1d90910bc026d24301ca54588662014752210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b52aeffffffff032c010000000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588acc8000000000000001976a914687b4cd0cd3ddcc611aac541bf3ab6dc0b7ecb9588acfc033101000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000',
+    completePaymentTx: '010000000149917883684f5cbd2105ed83e90f695b2a57aaace9466320b85e4f424bfbb91d00000000da004830450221009a4c4e390005b0c2d2979fa7af615c956ea0ceb96a2bb46f56091fcd0d9b143c022071f77ebf3cd5922f822d36cd0d7ede4bc3688f72504661d8f762513b95ce06f90147304402201d0602fdc4f93eac4e11c1b93de32454a1a33b0f25d05a0605ac7708c1033b9102205790fea5a84717af75b1dce4e285daa9f89e1d90910bc026d24301ca54588662014752210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b52aeffffffff032c010000000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588acc8000000000000001976a914687b4cd0cd3ddcc611aac541bf3ab6dc0b7ecb9588acfc033101000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000'
   }
 
   it('should exist', function () {
@@ -87,6 +87,23 @@ describe('Agent', function () {
         tx.toJSON().txins.length.should.equal(1)
         tx.toJSON().txouts.length.should.equal(2)
         ;(tx.toJSON().txouts[0].valuebn).should.equal(amount.toString())
+
+        agent.balance.should.equal(amount)
+      }, this)
+    })
+  })
+
+  describe('#storeOtherFundingTx', function () {
+    it('storeOtherFundingTx should store and check the other agents funding tx', function () {
+      return asink(function *() {
+        let agent = Agent(privkey, msPrivkey, otherMsPubkey, otherAddress)
+        yield agent.initialize()
+        agent.fundingTx = Tx().fromString(consts.fundingTx)
+
+        let otherFundingTx = Tx().fromString(consts.otherFundingTx)
+
+        agent.storeOtherFundingTx(otherFundingTx)
+        agent.otherBalance.toString().should.equal('10000000')
       }, this)
     })
   })
@@ -137,8 +154,8 @@ describe('Agent', function () {
 
   /* payment transaction */
 
-  describe('#asyncBuildPartialPaymentTx', function () {
-    it('asyncBuildPartialPaymentTx should create a partial payment tx', function () {
+  describe('#asyncBuildParitalPaymentTx', function () {
+    it('asyncBuildParitalPaymentTx should create a partial payment tx', function () {
       return asink(function *() {
         // initialize sender
         let agent = Agent(privkey, msPrivkey, otherMsPubkey, otherAddress)
@@ -185,6 +202,7 @@ describe('Agent', function () {
         yield agent.initialize()
         agent.fundingTx = Tx().fromString(consts.fundingTx)
         agent.otherFundingTx = Tx().fromString(consts.otherFundingTx)
+        agent.funded = true
 
         // initialize another agent
         let otherAgent = Agent(otherPrivkey, otherMsPrivkey, msPubkey, address)
@@ -200,6 +218,20 @@ describe('Agent', function () {
         tx.toJSON().txouts.length.should.equal(3)
         ;(tx.toJSON().txouts[0].valuebn).should.equal(amountToMe.toString())
         ;(tx.toJSON().txouts[1].valuebn).should.equal(amountToOther.toString())
+      }, this)
+    })
+  })
+
+  describe('#storePaymentTx', function () {
+    it('storePaymentTx should store a payment tx', function () {
+      return asink(function *() {
+        let agent = Agent(privkey, msPrivkey, otherMsPubkey, otherAddress)
+        yield agent.initialize()
+        let completePaymentTx = Tx().fromString(consts.completePaymentTx)
+
+        agent.storePaymentTx(completePaymentTx)
+        agent.balance.toString().should.equal('19989800')
+        agent.otherBalance.toString().should.equal('200')
       }, this)
     })
   })
@@ -247,12 +279,12 @@ describe('Agent', function () {
       let refundTx = yield otherAgent.asyncBuildRefundTx(refundTxb)
       // the other agent then sends the completely signed refund transaction to agent
       agent.storeRefundTx(refundTx)
-      // TODO check that agent cannot exploit information assymetry at this point
+      // TODO check that agent cannot exploit information asymmetry at this point
       // note thoght that the funding transactions have not been exchanged yet
       // and that the multisig address is not funded yet
       agent.refundTx.toString().should.equal(consts.completeRefundTx)
 
-      // now the symmetric thing happens
+      // now otherAgent does the symmetric thing
       let otherRefundTxb = yield agent.asyncBuildPartialRefundTx()
       let otherRefundTx = yield otherAgent.asyncBuildRefundTx(otherRefundTxb)
       otherAgent.storeRefundTx(otherRefundTx)
