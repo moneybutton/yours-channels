@@ -21,7 +21,7 @@ describe('Agent', function () {
   let msPrivkey = Privkey().fromBN(BN(40))
   let msPubkey = Pubkey().fromPrivkey(msPrivkey)
 
-  // generate data to initialize another agent (first agent will need some of this data too)
+  // generate data to initialize another agent (first cnlbuilder will need some of this data too)
   let otherPrivkey = Privkey().fromBN(BN(60))
   let otherPubkey = Pubkey().fromPrivkey(otherPrivkey)
   let otherAddress = Address().fromPubkey(otherPubkey)
@@ -314,47 +314,6 @@ describe('Agent', function () {
         agent.balance.toString().should.equal('14990000')
         agent.otherBalance.toString().should.equal('5000000')
       }, this)
-    })
-  })
-
-  /* conveniance methods */
-
-  describe('#asyncSendPayment', function () {
-    it('asyncSendPayment should store a payment tx', function () {
-      return asink(function *() {
-        // asyncInitialize sender
-        let agent = Agent(privkey, msPrivkey, otherMsPubkey, otherAddress)
-        yield agent.asyncInitialize()
-        agent.fundingTx = Tx().fromString(consts.fundingTx)
-        agent.otherFundingTx = Tx().fromString(consts.otherFundingTx)
-        agent.balance = BN(2e7)
-        agent.otherBalance = BN(1e7)
-        agent.funded = true
-        agent.initialized = true
-        agent.nlocktime = inDays(29)
-        agent.towardsMe = true
-
-        // asyncInitialize another agent
-        let otherAgent = Agent(otherPrivkey, otherMsPrivkey, msPubkey, address)
-        yield otherAgent.asyncInitialize()
-
-        let balanceBefore = agent.balance
-        let otherBalanceBefore = agent.otherBalance
-        let nlocktimeBefore = agent.nlocktime
-
-        yield agent.asyncSendPayment(BN(200))
-
-        agent.balance.eq(balanceBefore.sub(BN(200))).should.equal(true)
-        agent.otherBalance.eq(otherBalanceBefore.add(BN(200))).should.equal(true)
-        ;(agent.nlocktime < nlocktimeBefore).should.equal(true)
-        agent.towardsMe.should.equal(false)
-      }, this)
-    })
-  })
-
-  describe('#asyncAcceptPayment', function () {
-    it('asyncAcceptPayment should accept a payment tx', function () {
-      // TODO
     })
   })
 })
