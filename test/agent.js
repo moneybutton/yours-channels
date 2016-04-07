@@ -16,6 +16,7 @@ describe('Agent', function () {
 
   // generate data to initialize an agent
   let privkey = Privkey().fromBN(BN(30))
+//  let privkey = Privkey().fromRandom()
   let pubkey = Pubkey().fromPrivkey(privkey)
   let address = Address().fromPubkey(pubkey)
   let msPrivkey = Privkey().fromBN(BN(40))
@@ -50,8 +51,24 @@ describe('Agent', function () {
 
   // this test case shows how a payment channel is set up and how one payment is sent
   // it's a good starting point if you are interested in how this works :)
-  it('complete example', function () {
+  it('complete randomized example', function () {
     return asink(function *() {
+      // randomly generate data to initialize agent
+      let privkey = Privkey().fromRandom()
+      let pubkey = Pubkey().fromPrivkey(privkey)
+      let address = Address().fromPubkey(pubkey)
+      let msPrivkey = Privkey().fromBN(BN(40))
+      let msPubkey = Pubkey().fromPrivkey(msPrivkey)
+
+      // randomly generate data to initialize another agent
+      let otherPrivkey = Privkey().fromRandom()
+      let otherPubkey = Pubkey().fromPrivkey(otherPrivkey)
+      let otherAddress = Address().fromPubkey(otherPubkey)
+      let otherMsPrivkey = Privkey().fromBN(BN(50))
+      let otherMsPubkey = Pubkey().fromPrivkey(otherMsPrivkey)
+
+      let conservativeFee = BN(10)
+
       // CREATE FUNDING TRANSACTIONS
       // the agents can do that independantly form one another. this where we differ
       // from the payment channels described in the litrature a bit. the advantage
@@ -63,13 +80,31 @@ describe('Agent', function () {
 
       // build output to be spent by agent in funding transaction
       let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
-      let amount = BN(2e7)
       let txhashbuf = new Buffer(32).fill(0)
       let txoutnum = 0
-      let txout = Txout(BN(1e8), scriptout)
+      let unspentAmount = BN(1e8)
+      let txout = Txout(unspentAmount, scriptout)
+      let fundingAmount = BN(2e7)
 
-      yield agent.asyncBuildFundingTx(amount, txhashbuf, txoutnum, txout, pubkey)
-      agent.fundingTx.toString().should.equal(consts.fundingTx)
+      let fundingTxb = yield agent.asyncBuildFundingTx(fundingAmount, txhashbuf, txoutnum, txout, pubkey)
+
+      let outFundValbn0 = fundingTxb.tx.txouts[0].valuebn
+      let outFundValbn1 = fundingTxb.tx.txouts[1].valuebn
+      let outFundValTotal = outFundValbn0.add(outFundValbn1)
+
+      // first output should equal amount
+      outFundValbn0.eq(fundingAmount).should.equal(true)
+      // sum of outputs should be smaller than inputs
+      outFundValTotal.lt(unspentAmount).should.equal(true)
+      // but not too small
+      unspentAmount.add(conservativeFee.mul(BN(0))).lt(outFundValTotal)
+      // there should be one output
+      fundingTxb.tx.toJSON().txins.length.should.equal(1)
+      // and two inputs
+      fundingTxb.tx.toJSON().txouts.length.should.equal(2)
+      ;(fundingTxb.tx.toJSON().txouts[0].valuebn).should.equal(fundingAmount.toString())
+      // agents balane should be updated
+      agent.balance.should.equal(fundingAmount)
 
       // asyncInitialize another agent
       let otherAgent = Agent(otherPrivkey, otherMsPrivkey, msPubkey, address)
@@ -80,10 +115,11 @@ describe('Agent', function () {
       let otherAmount = BN(1e7)
       let otherTxhashbuf = new Buffer(32).fill(0)
       let otherTxoutnum = 0
-      let otherTxout = Txout(BN(1e8), otherScriptout)
+      let otherFundingAmount = BN(1e8)
+      let otherTxout = Txout(otherFundingAmount, otherScriptout)
 
       yield otherAgent.asyncBuildFundingTx(otherAmount, otherTxhashbuf, otherTxoutnum, otherTxout, otherPubkey)
-      otherAgent.fundingTx.toString().should.equal(consts.otherFundingTx)
+      should.exist(otherAgent.fundingTx)
 
       // CREATE REFUND TRANSACTIONS
       // each agent can create a partial one, but they need to communicate
@@ -98,7 +134,16 @@ describe('Agent', function () {
       // TODO check that agent cannot exploit information asymmetry at this point
       // note thoght that the funding transactions have not been exchanged yet
       // and that the multisig address is not funded yet
-      agent.refundTx.toString().should.equal(consts.completeRefundTx)
+
+      let refundAmount = agent.refundTx.txouts[0].valuebn
+
+      // refund transaction has only one input
+      agent.refundTx.txouts.length.should.equal(1)
+      // that input is almost the funding amount
+      fundingAmount.add(conservativeFee.mul(BN(2))).gt(refundAmount).should.equal(true)
+      agent.refundTx.txouts[0].valuebn.lt(unspentAmount).should.equal(true)
+
+      // agent.refundTx.toString().should.equal(consts.completeRefundTx)
 
       // now otherAgent does the symmetric thing
       let otherRefundTxb = yield agent.asyncBuildPartialRefundTx(inDays(30))
@@ -110,17 +155,22 @@ describe('Agent', function () {
       // thus they can safely broadcast their funding transactions to the bitcoin network
       // and exchange them
       agent.storeOtherFundingTx(otherAgent.fundingTx)
+      should.exist(agent.otherFundingTx)
+
       otherAgent.storeOtherFundingTx(agent.fundingTx)
+      should.exist(otherAgent.fundingTx)
 
       // CREATE PAYMENT TRANSACTION
       let amountToOther = BN(5e6)
       let script = Script().fromScripthash(agent.otherAddress.hashbuf)
       let txb = yield agent.asyncBuildParitalPaymentTx(amountToOther, script, inDays(29))
-      txb.tx.toString().should.equal(consts.partialPaymentTx)
+
+      txb.tx.txouts.length.should.equal(2)
+      txb.tx.txouts[0].valuebn.eq(amountToOther).should.equal(true)
 
       // let other agent sign payment transaction
       let tx = yield otherAgent.asyncBuildPaymentTx(txb)
-      tx.toString().should.equal(consts.completePaymentTx)
+      tx.txouts[0].valuebn.eq(amountToOther).should.equal(true)
 
       // now other agent sends back the completely signed transaction to agent
       agent.storePaymentTx(tx)
@@ -163,16 +213,27 @@ describe('Agent', function () {
         let amount = BN(2e7)
         let txhashbuf = new Buffer(32).fill(0)
         let txoutnum = 0
-        let txout = Txout(BN(1e8), scriptout)
+        let txoutamount = BN(1e8)
+        let txout = Txout(txoutamount, scriptout)
 
         let txb = yield agent.asyncBuildFundingTx(amount, txhashbuf, txoutnum, txout, pubkey)
         let tx = txb.tx
 
         tx.toString().should.equal(consts.fundingTx)
+
+        let outValbn0 = tx.txouts[0].valuebn
+        let outValbn1 = tx.txouts[1].valuebn
+
+        // first output should equal amount
+        outValbn0.eq(amount).should.equal(true)
+        // sum of outputs should be smaller than inputs
+        outValbn0.add(outValbn1).lt(txoutamount).should.equal(true)
+        // there should be one output
         tx.toJSON().txins.length.should.equal(1)
+        // and two inputs
         tx.toJSON().txouts.length.should.equal(2)
         ;(tx.toJSON().txouts[0].valuebn).should.equal(amount.toString())
-
+        // agents balane should be updated
         agent.balance.should.equal(amount)
       }, this)
     })

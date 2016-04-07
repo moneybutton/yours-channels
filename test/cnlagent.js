@@ -13,7 +13,8 @@ describe('CnlAgent', function () {
   // generate privkey, msPrivkey, otherMsPubkey, otherAddress
 
   // generate data to initialize an cnlAgent
-  let privkey = Privkey().fromBN(BN(30))
+//  let privkey = Privkey().fromBN(BN(30))
+  let privkey = Privkey().fromRandom()
   let pubkey = Pubkey().fromPrivkey(privkey)
   let address = Address().fromPubkey(pubkey)
   let msPrivkey = Privkey().fromBN(BN(40))
@@ -49,7 +50,7 @@ describe('CnlAgent', function () {
   /* conveniance methods */
 
   describe('#asyncSendPayment', function () {
-    it('asyncSendPayment should store a payment tx', function () {
+    it('asyncSendPayment should send a payment to an address', function () {
       return asink(function *() {
         // asyncInitialize sender
         let cnlAgent = CnlAgent(privkey, msPrivkey, otherMsPubkey, otherAddress)
@@ -70,11 +71,50 @@ describe('CnlAgent', function () {
         let balanceBefore = cnlAgent.balance
         let otherBalanceBefore = cnlAgent.otherBalance
         let nlocktimeBefore = cnlAgent.nlocktime
+        let amountToOther = BN(5e6)
+        let script = CnlAgent.addressScript(cnlAgent.otherAddress)
 
-        yield cnlAgent.asyncSendPayment(BN(200))
+        yield cnlAgent.asyncSendPayment(amountToOther, script)
 
-        cnlAgent.balance.eq(balanceBefore.sub(BN(200))).should.equal(true)
-        cnlAgent.otherBalance.eq(otherBalanceBefore.add(BN(200))).should.equal(true)
+        // txb.tx.toString().should.equal(consts.partialPaymentTx)
+        cnlAgent.balance.eq(balanceBefore.sub(amountToOther)).should.equal(true)
+        cnlAgent.otherBalance.eq(otherBalanceBefore.add(amountToOther)).should.equal(true)
+        ;(cnlAgent.nlocktime < nlocktimeBefore).should.equal(true)
+        cnlAgent.towardsMe.should.equal(false)
+      }, this)
+    })
+  })
+
+  describe('#asyncSendPayment', function () {
+    it('asyncSendPayment should send a payment to a htlc', function () {
+      return asink(function *() {
+        // asyncInitialize sender
+        let cnlAgent = CnlAgent(privkey, msPrivkey, otherMsPubkey, otherAddress)
+        yield cnlAgent.asyncInitialize()
+        cnlAgent.fundingTx = Tx().fromString(consts.fundingTx)
+        cnlAgent.otherFundingTx = Tx().fromString(consts.otherFundingTx)
+        cnlAgent.balance = BN(2e7)
+        cnlAgent.otherBalance = BN(1e7)
+        cnlAgent.funded = true
+        cnlAgent.initialized = true
+        cnlAgent.nlocktime = inDays(29)
+        cnlAgent.towardsMe = true
+
+        // asyncInitialize another cnlAgent
+        let otherCnlAgent = CnlAgent(otherPrivkey, otherMsPrivkey, msPubkey, address)
+        yield otherCnlAgent.asyncInitialize()
+
+        let balanceBefore = cnlAgent.balance
+        let otherBalanceBefore = cnlAgent.otherBalance
+        let nlocktimeBefore = cnlAgent.nlocktime
+        let amountToOther = BN(5e6)
+        let script = CnlAgent.htlcScript(cnlAgent.otherPubkey)
+
+        yield cnlAgent.asyncSendPayment(amountToOther, script)
+
+        // txb.tx.toString().should.equal(consts.partialPaymentTx)
+        cnlAgent.balance.eq(balanceBefore.sub(amountToOther)).should.equal(true)
+        cnlAgent.otherBalance.eq(otherBalanceBefore.add(amountToOther)).should.equal(true)
         ;(cnlAgent.nlocktime < nlocktimeBefore).should.equal(true)
         cnlAgent.towardsMe.should.equal(false)
       }, this)
