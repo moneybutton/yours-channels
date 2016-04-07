@@ -1,14 +1,17 @@
-#Hash Locked Contracts (HLCs).
+# Hash Locked Contracts
 
-Below is an simple explanation of hash locked contracts. These are a simplified version of hash time locked contracts (HTLC). As far as I can tell they already guaranty that payments will be made to the right people eventually, but I'm not sure if there is room for timing attacks where a party withholds a pyment for extended amount of time.
 
-An advantage of HLCs as opposed to HTLCs is that they do not require the receiver of a payment to be online when a payment is made.
+This is a simple explanation of hash locked contracts (HLCs). HLCs are a simplified version of the hash time locked contracts (HTLCs) that are used in the lightning network.
 
-We are assuming that all actors are malicious, but not idiots; that is they act in their own best interest and try to scam everybody else whenever possible. However we assume that the payer actually want's to pay the payee.
+Their advantage of HLCs over a HTLCs is that they can be implemented using the features that are available in Bitcoin today. In addition they do not require the receiver of a payment to be online when a payment is made.
 
-### An Example
+As far as I can tell from the argument below HLCs guaranty that all payments will be made to the right people eventually. *However, I'm not sure if there is room for timing attacks where a party withholds a payment for extended amount of time.*
 
-Lets say that Alice owes Dave 0.1. She wants to pay through a lighting network, but does not have a payment channel open to him. However, she can route through Carol and Bob:
+We are assuming that all actors are malicious and acting in their own best interest. However we assume that the payer actually want's to pay the payee.
+
+## An Example
+
+Lets say that Alice owes Dave 0.1. She wants to pay through a lighting network, but does not have a payment channel open to him. However, she can route through Bob and Carol:
 
     Alice -> Bob -> Carol -> Dave
 
@@ -45,7 +48,7 @@ What if Dave never comes back: nobody pays, nobody looses money, Dave never get'
 
 So Dave gives the secret to Carol and gets 0.1. At this point Carol goes through the same thinking as Dave and will end up giving the secret to Bob and get 0.10001 in return. Same thing for Bob, who finally gives the secret to Alice.
 
-**Let's see who has what now:**
+####Let's see who has what now:
 
 * Alice has payed 0.10002, 0.1 to Dave and 0.00002 in network fees. But she knows the secret so she can prove she has re-payed her debt.
 * Bob made a profit of 0.00001
@@ -53,3 +56,12 @@ So Dave gives the secret to Carol and gets 0.1. At this point Carol goes through
 * Dave got a payment of 0.1 and must assume that Alice ended up knowing the secret
 
 Everybody should be happy..
+
+## A Theorem
+
+The above example can be turned into a proof of the following
+
+**Theorem.** Assuming that all all actors are malicious and acting in their own best interest we have that
+
+* only parties that have (indirectly) payed Dave know the secret
+* all parties other than Alice will only promise to pay x to another party if they can get a refund from someone else.
