@@ -174,5 +174,56 @@ describe('Script Examples', function () {
       txb.tx.txins[0].setScript(scriptSig)
       Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY).should.equal(true)
     })
+
+    it('should enable spending funds when sig and value that hashes correctly is in input with a p2sh transaction', function () {
+      // This example is almost the same as the previous one, except that the
+      // funding transaction is p2sh. It spends to an output that requires both
+      // a signature and some secret value secretbuf which correctly hashes to
+      // hashbuf. What was the scriptPubkey of the previous example becomes the
+      // redeemScript in this one. And the subscripts in the tx sign are the
+      // redeemScript.
+      //
+      // scriptPubkey: OP_SHA256 <hash> OP_EQUALVERIFY <pubkey> OP_CHECKSIG
+      // scriptSig: <sig> <secret>
+
+      let secretbuf = new Buffer('this is a secret string')
+      let hashbuf = Hash.sha256(secretbuf)
+
+      let privkey = Privkey().fromRandom()
+      let pubkey = Pubkey().fromPrivkey(privkey)
+      let keypair = Keypair(privkey, pubkey)
+
+      let redeemScript = Script()
+        .writeOpcode(Opcode.OP_SHA256)
+        .writeBuffer(hashbuf)
+        .writeOpcode(Opcode.OP_EQUALVERIFY)
+        .writeBuffer(pubkey.toBuffer())
+        .writeOpcode(Opcode.OP_CHECKSIG)
+      let scriptSig = Script()
+        .writeOpcode(Opcode.OP_0) // signature - will be replaced with actual signature
+        .writeBuffer(secretbuf) // secret value
+        .writeBuffer(redeemScript.toBuffer())
+      let scriptPubkey = Script()
+        .writeOpcode(Opcode.OP_HASH160)
+        .writeBuffer(Hash.sha256ripemd160(redeemScript.toBuffer()))
+        .writeOpcode(Opcode.OP_EQUAL)
+
+      let txb = Txbuilder()
+      let txhashbuf = new Buffer(32)
+      txhashbuf.fill(0)
+      let txoutnum = 0
+      let txout = Txout(BN(500000)).setScript(scriptPubkey)
+      let seqnum = 0xf0f0f0f0
+      txb.fromScript(txhashbuf, txoutnum, txout, scriptSig, seqnum)
+      txb.setChangeAddress(Address().fromPrivkey(Privkey().fromRandom()))
+      txb.toAddress(BN(100000), Address().fromPrivkey(Privkey().fromRandom()))
+
+      txb.build()
+      let sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, redeemScript)
+      scriptSig.chunks[0] = Script().writeBuffer(sig.toTxFormat()).chunks[0]
+      txb.tx.txins[0].setScript(scriptSig)
+      // console.log(Txverifier(txb.tx, txb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY))
+      Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY).should.equal(true)
+    })
   })
 })
