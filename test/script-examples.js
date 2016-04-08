@@ -43,7 +43,7 @@ describe('Script Examples', function () {
       txhashbuf.fill(0)
       let txoutnum = 0
       let txout = Txout(BN(500000)).setScript(scriptPubkey)
-      let seqnum = 0xf0f0f0f0
+      let seqnum = 0xf0f0f0f0 // must be less than 0xffffffff for CLTV to work
       txb.fromScript(txhashbuf, txoutnum, txout, scriptSig, seqnum)
       txb.setChangeAddress(Address().fromPrivkey(Privkey().fromRandom()))
       txb.toAddress(BN(100000), Address().fromPrivkey(Privkey().fromRandom()))
@@ -106,7 +106,7 @@ describe('Script Examples', function () {
       txhashbuf.fill(0)
       let txoutnum = 0
       let txout = Txout(BN(500000)).setScript(scriptPubkey)
-      let seqnum = 0xf0f0f0f0
+      let seqnum = 0xf0f0f0f0 // must be less than 0xffffffff for CLTV to work
       txb.fromScript(txhashbuf, txoutnum, txout, scriptSig, seqnum)
       txb.setChangeAddress(Address().fromPrivkey(Privkey().fromRandom()))
       txb.toAddress(BN(100000), Address().fromPrivkey(Privkey().fromRandom()))
@@ -163,8 +163,7 @@ describe('Script Examples', function () {
       txhashbuf.fill(0)
       let txoutnum = 0
       let txout = Txout(BN(500000)).setScript(scriptPubkey)
-      let seqnum = 0xf0f0f0f0
-      txb.fromScript(txhashbuf, txoutnum, txout, scriptSig, seqnum)
+      txb.fromScript(txhashbuf, txoutnum, txout, scriptSig)
       txb.setChangeAddress(Address().fromPrivkey(Privkey().fromRandom()))
       txb.toAddress(BN(100000), Address().fromPrivkey(Privkey().fromRandom()))
 
@@ -213,8 +212,7 @@ describe('Script Examples', function () {
       txhashbuf.fill(0)
       let txoutnum = 0
       let txout = Txout(BN(500000)).setScript(scriptPubkey)
-      let seqnum = 0xf0f0f0f0
-      txb.fromScript(txhashbuf, txoutnum, txout, scriptSig, seqnum)
+      txb.fromScript(txhashbuf, txoutnum, txout, scriptSig)
       txb.setChangeAddress(Address().fromPrivkey(Privkey().fromRandom()))
       txb.toAddress(BN(100000), Address().fromPrivkey(Privkey().fromRandom()))
 
@@ -222,7 +220,6 @@ describe('Script Examples', function () {
       let sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, redeemScript)
       scriptSig.chunks[0] = Script().writeBuffer(sig.toTxFormat()).chunks[0]
       txb.tx.txins[0].setScript(scriptSig)
-      // console.log(Txverifier(txb.tx, txb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY))
       Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY).should.equal(true)
     })
   })
