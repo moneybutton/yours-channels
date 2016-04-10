@@ -1,13 +1,46 @@
-# Hash Locked Contracts
+# How to build a bitcoin micropayment network today
 
+We describe how a network of maicropayment channels can be built using features that are available in bitcoin today. In addition to the script tags used in standard bitcoin payments, we only use nlocktime and [insert the hash thing].
 
-This is a simple explanation of hash locked contracts (HLCs). HLCs are a simplified version of hash time locked contracts (HTLCs) that are used in the lightning network.
+## Unidirectional payment Channels
 
-The advantage of HLCs over a HTLCs is that they can be implemented using the features that are available in Bitcoin today. In addition they do not require the receiver of a payment to be online when a payment is made.
+Say Alice wants to use Bob's internet connection and pay 0.0001 bitcoin per MB after each MB she used. To save transaction fees the two set up a payment channel between the two. 
 
-As far as I can tell from the argument below HLCs guaranty that all payments will be made to the right people eventually. However, I'm not sure if there is room for timing attacks where a party withholds a payment for extended amount of time (tbd).
+The way this channel works is that after the first MB Alice has used she signs a bitcoin transaction that spends 0.0001 to an address controlled by Bob. Bob could push this transaction to the blockchain immediately. However Bob decides to wait a bit. After Alice has used the the second MB she sends him a second transaction, this time spending 0.0002 from the same output as the previous one. Thus Bob can only ever one of the transactions. 
 
-## An Example
+Note that in the example above, Alice has effectively given two payments to Bob. As they spend the same output only one of them will ever be accepted into the blockchain. As the second transaction gives him more money, he will very likely use that one.
+
+As only one transaction is ever broadcast to the Bitcoin network, the two have to pay only one transaction fee. Note also that the two could continue to exchange more transactions without broadcasting them and further drive down the cost per transaction.
+
+### Spending from a multisig address
+
+*We have to look at a few details though.* The first problem is that while Bob is waiting for the second transaction from Alice, Alice might spend the output that the first one spends. In this way Alice could 'steal' her first payment to Bob. To make sure that this is not possible the payment transactions spends from an 2-of-2 multisig address that Alice funds, but both controll. This way Bob can prevent Alice from spending from the output used in previous payment transactions without his consent.
+
+### Building a refund transaction
+
+But now Alice is at risk: Recall that she funds the multisig address, but both of them must collaborate to spend money from that address. Now Bob could missbehave and basically hold Alice's funds hostage for an undeterminate amount of time. He might even try to blackmail her: 'If you don't give me 0.01, I will prevent you from ever getting those 0.1 from the multisig again'.
+
+To prevent that from happening, the two sign a transaction that spends all funds of the multisig address back to an address that Alice controlls. This transaction has it's locktime set to some point in the future, say 30 days. Only after Alice has this transaction will she fund the multisig address. This way Bob can only hold Alice's funds hostage for 30 days.
+
+### Implications of the model
+
+Note that the timelock forces the receiver to broadcast the last payment transaction before the timelock of the refund transaction expires. 
+
+Also, note that only the refund transaction must have a timelock, the payment transactions can be broadcast to the blockchain immediately. Thus the receiver can close the channel immediately by broadcasting his last transaction immediately. The sender can close the channel immediately if the receiver cooperates, otherwise he has to wait until the refund transaction becomed spendable.
+
+## Multi hop channels
+
+Setting up a payment channel does not come for free. Eventually two transactions have to be broadcast to the blockchain and two transaction fees must be payed. Thus, it is unrealistic that everybody in the world sets up a payment channel with everybody else. To solve this problem payments will be routed through a network of nodes that forwad payments between parties. 
+
+The immediate concern when routing through other participants is that the guy in the middle will run with the money. Immagine Alice wants to send money to Dave, routed through Bob and Carol:
+
+    Alice -> Bob -> Carol
+
+If Alice just sends money to Bob, Bob has no reason to forward that money to Carol.
+
+One way to solve this is to try to enforce that Bob does not run with the money is through hash time locked contracts, discussed next.
+
+### Hash time locked contracts by Example
 
 Lets say that Alice owes Dave 0.1 bitcoin. She wants to pay through a lighting network, but does not have a payment channel open to him. However, she can route through Bob and Carol:
 
@@ -69,20 +102,3 @@ The above example can be turned into a proof of the following
 Note that a corollary is that Alice will know Dave's secret if and only if she has payed Dave. 
 
 The proof of the theorem is by induction on the length of the chain between Alice and Dave where the base case is trivial and the inductive step is essentially the argument made above.
-
-##
-
-## Related Reading
-
-[A Fast and Scalable Payment Network with
-Bitcoin Duplex Micropayment Channels](http://diyhpl.us/~bryan/papers2/bitcoin/Fast%20and%20scalable%20payment%20network%20with%20Bitcoin%20duplex%20micropayment%20channels.pdf) by Christian Decker and Roger Wattenhofer
-
-[The Bitcoin Lightning Network:Scalable Off-Chain Instant Payments](http://lightning.network/lightning-network-paper.pdf) by Joseph Poon and Thaddeus Dryja
-
-[Reaching the Ground with Lighning](http://diyhpl.us/~bryan/papers2/bitcoin/Fast%20and%20scalable%20payment%20network%20with%20Bitcoin%20duplex%20micropayment%20channels.pdf) by Rusty Russel
-
-[Emulation of Hash-Time-Locked Contracts of the Lightning network by a trusted, but publically auditable escrow service](https://cornwarecjp.github.io/amiko-pay/doc/lightning_emulation.pdf) by C. J. Plooy
-
-[Liar, Liar, Coins on Fire!](http://people.mmci.uni-saarland.de/~aniket/publications/Non-equivocationWithBitcoinPenalties.pdf) by Tim Ruffing, Aniket Kate, & Dominique Schröder
-
-
