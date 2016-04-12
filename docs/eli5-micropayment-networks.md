@@ -1,4 +1,4 @@
-# How to build a bitcoin micropayment network today
+# ELI5 - micropayment networks
 
 We describe how a network of maicropayment channels can be built using features that are available in bitcoin today. In addition to the script tags used in standard bitcoin payments, we only use nlocktime and [insert the hash thing].
 
