@@ -64,6 +64,9 @@ During the execution of the protocol a second level of transactions is created t
 
 There are three possible scenarios: If the receiver does not cooperate, the sender can eventually use the refund transaction to get a refund and close the channel. Should the receiver be able to produce the secret, he can use the settlement transaction to settle the payment. Finally in case the receiver fails to get ahold of the secret, the parties can cooperate and use the forfeiture transaction to refund the payment in question back to sender but keep the channel open.
 
+
+![alt text](https://raw.githubusercontent.com/dattnetwork/fullnode-pc/master/docs/decker-et-al.png "decker-et-al.png")
+
 ### Poon & Dryja HTLCs
 
 [Internal note: My feeling is that these are pretty similar to the ones described above, but I still cannot make it through the entire construction. They certainly are subject to malleability as their construction also consists of at least two levels of un-broadcasted transactions on top of the (broadcasted) funding transaction (see for example page 34 of [2].]
@@ -83,6 +86,8 @@ This can be encoded in Bitcoin script (about) as follows (TODO debug this script
 	OP_EQUALVERIFY OP_CHECKSIG
 
 We will call a transaction that spends the multisig output of the funding transaction to an output with the above script a *HTLC transaction*. As the funding transaction is already confirmed in the blockchain when the HTLC transaction is built, *our construction is not subject to transaction malleability*.
+
+![alt text](https://raw.githubusercontent.com/dattnetwork/fullnode-pc/master/docs/non-malleable.png "non-malleable.png")
 
 ### Downgrading HTLC to normal payments
 
