@@ -11,10 +11,10 @@ We use standard uni-directional payment channels. The construction is as usual. 
 
 Note that the nlocktime of the refund transaction forces the receiver to broadcast a payment transaction before the nlocktime of the refund transaction expires. If he fails to do that he looses all payments obtained through the channel.
 
-Consider for example a refund transaction with ntimelock set to 30 days. Now receiver gets a payment transaction of 0.1. The contract on that payment transaction can be read as 
+Consider for example a refund transaction with nlocktime set to 30 days. Now receiver gets a payment transaction of 0.1. The contract on that payment transaction can be read as 
 > Receiver will get 0.1 bitcoin if he closes the channel within 30 days.
 
-Thus we define the *nlocktime of a channel* to be the nlocktime of its refund transaction. We will use this observation to encode HTLC below. We next show that the nlocktime of a channel can both be incresed and decreased.
+Thus we define the *nlocktime of a channel* to be the nlocktime of its refund transaction. We will use this observation to encode HTLC below. We next show that the nlocktime of a channel can both be increased and decreased.
 
 ### Decreasing nlocktime of a channel
 
@@ -33,7 +33,7 @@ This way the input to the new refund address is spent, thus invalidating the old
 
 # Background on HTLCs
 
-HTLCs are cryptographic contracts with both a time contraint and a constraint that requires receiver to know a secret. An example HTLC is the following:
+HTLCs are cryptographic contracts with both a time constraint and a constraint that requires receiver to know a secret. An example HTLC is the following:
 
 > Receiver can unlock this output if he can present the secret within the next two days. 
 
@@ -64,7 +64,6 @@ During the execution of the protocol a second level of transactions is created t
 
 There are three possible scenarios: If the receiver does not cooperate, the sender can eventually use the refund transaction to get a refund and close the channel. Should the receiver be able to produce the secret, he can use the settlement transaction to settle the payment. Finally in case the receiver fails to get ahold of the secret, the parties can cooperate and use the forfeiture transaction to refund the payment in question back to sender but keep the channel open.
 
-
 ![alt text](https://raw.githubusercontent.com/dattnetwork/fullnode-pc/master/docs/decker-et-al.png "decker-et-al.png")
 
 ### Poon & Dryja HTLCs
@@ -75,9 +74,9 @@ There are three possible scenarios: If the receiver does not cooperate, the send
 
 We now describe an new implementation of HTLCs that is not subject to transaction malleability. 
 
-Recall that the challenge in building HTLC is to force receiver to reveil his secret within a limited amount of time. Decker & Wattenhofer solve this problem by giving sender a refund transaction that he can use to force Receiver to reveil his secret on time. However, this refund transaction spends the output if the unbroadcasted Setup Transaction, and was thus subject to a malleability attck.
+Recall that the challenge in building HTLC is to force receiver to reveal his secret within a limited amount of time. Decker & Wattenhofer solve this problem by giving sender a refund transaction that he can use to force Receiver to reveal his secret on time. However, this refund transaction spends the output if the unbroadcasted Setup Transaction, and was thus subject to a malleability attack.
 
-We solve the same problem in a different way using OP_CHECKLOCKTIMEVERIFY. Our construction is similar to the one by Decker & Wattenhofer, but the output script of our Setup transaction has three brances and encodes the following condition
+We solve the same problem in a different way using OP_CHECKLOCKTIMEVERIFY. Our construction is similar to the one by Decker & Wattenhofer, but the output script of our Setup transaction has three branches and encodes the following condition
 
 > Receiver can spend this output if he can present the secret. However, if he fails to do so within two days, Receiver can spend the output. Finally, both parties can cooperate at any time to spend the output jointly.
 
@@ -92,7 +91,7 @@ The output of the setup transaction can be encoded in Bitcoin script as follows:
 		<Receiver's pubkey> CHECKSIGVERIFY
 		OP HASH160 <Hash160 (s)> OP_EQUALVERIFY 
 	OP_ELSE
-		<now + 2d> CHECKLOCKTIMEVERIFY DROP
+		<now + 2d> CHECKSEQUENCEVERIFY DROP
 		<Sender's pubkey> CHECKSIGVERIFY
 	OP_ENDIF
 	
@@ -106,29 +105,29 @@ After two days, sender can spend the output using the else branch:
 
 An important property of our construction is: 
 
-**Theorem** Assume that the Funding transaction has been confirmed into the blockchain and that both parties have signed and exchanged the Setup and Refund transactions. If Sender and Receiver are mallicious but rational, exactly one of the following is true:
+**Theorem** Assume that the Funding transaction has been confirmed into the blockchain and that both parties have signed and exchanged the Setup and Refund transactions. If Sender and Receiver are malicious but rational, exactly one of the following is true:
 
- * Receiver reveils the secret to Sender within two days and Sender sends the money to Receiver
+ * Receiver reveals the secret to Sender within two days and Sender sends the money to Receiver
  * Sender gets a refund after two days
 
 **Proof** There are two ways that this can play out: either the two parties decide to cooperate or not. We will see that under the assumptions they will cooperate. To see why, we have to look at what happens if they don't.
 
-In this case eventually one will broadcast the Setup transaction to the blockchain. There are two cases now: If Reveiver spends the output of the Setup transaction, then he reveils his secret. If he does not then Sender will be able to spend output after two days to refund to himself.
+In this case eventually one party will broadcast the Setup transaction to the blockchain. There are two cases now: If Receiver spends the output of the Setup transaction, then he reveals his secret. If he does not then Sender will be able to spend output after two days to refund to himself (these two cases are exactly what is enforced by the output of the Setup transaction).
 
-Note that this outcome is not bad for both players, no-one has lost any money. It's not awesome either because they are effectively closing the channel when they broadcast the Setup transaction. Everything else being equal, they prefer to keep the channel open.
+This outcome is not bad for either party, no-one has lost any money. It's not awesome either because they are effectively closing the channel when they broadcast the Setup transaction. Everything else being equal, they prefer to keep the channel open.
 
-We have just argued that no party has anything to gain from not cooperating. So lets see how they can cooperate to avoid having to close channel. The protocoll is simple:
+We have just argued that no party has anything to gain from not cooperating. So lets see how they can cooperate to avoid having to close channel. The protocol is simple:
 
-1. Receiver sends the secret to sender
-2. Sender signs a payment transaction with the amount of the micropayment and sends it to receiver
+1. After getting the signed Setup transaction, Receiver sends the secret to sender
+2. Sender signs a payment transaction that spends the amount of the micropayment to Receiver and sends it to him
 
-We have to check that the conditions of the Theorem are maintained at all points in this protocoll.
+We have to check that the conditions of the Theorem are maintained at all points in this protocol.
 
-After step 1 Receiver awaits Senders reply for one day. If he does not hear back he proceeds to broadcast the Setup transaction and a transaction that spends its output to himself, thereby reveiling the secret. In this case everything played out as in the non-cooperative case. 
+After step one Receiver waits for Sender to send the payment transaction for one day. If he does not get it he proceeds to broadcast the Setup transaction and a transaction that spends its output to himself, thereby revealing the secret. In this case everything played out as in the non-cooperative case. 
 
-Note that it might seem that Sender has an advantage at this point bc he has received the secret that proves that he payed. However, Sender has no power to prevent Reciver from getting the money: the branch of the Setup transaction that Sender can spend is blocked with a 2-day CHECKSEQUENCEVERIFY lock. If Sender broadcast the Setup transaction Receiver will notice and have 2 days to spend the output himself.
+Note that it might seem that Sender has an advantage after step one. After all, he has received the secret that proves that he payed. However, Sender cannot get a refund at this point: the branch of the Setup transaction that Sender can spend is blocked with a 2-day CHECKSEQUENCEVERIFY lock. If Sender broadcasts the Setup transaction Receiver will notice and have two days to spend the output himself.
 
-After Step two Sender does not gained any more advantages. Receiver now has two ways of getting the money locked up in the Setup transaction: via the the setup transaction or the payment transaction. However he can only use one of them because they spend the same output. He will prefer to use the payment transacion because that allows him to keep the channel open. **qed.**
+After step two Sender does not gained any more advantages. Receiver however now has two ways of getting the micropayment: via the the setup transaction or via the payment transaction. However he can only use one of them because they spend the same output. He will prefer to use the payment transaction because it allows him to keep the channel open. **qed.**
 
 
 
@@ -139,6 +138,12 @@ Note that the receiver is forced to spend the output of the HTLC transaction bef
 
 Note that neither party is forced to cooperate in this manner, but as the balance is not changed, they surely will not mind. However, doing this helps both parties to keep transaction sizes (and hence fees) small.
 -->
+### The problem of receivers not online
+
+There are two timelocks to worry about. First there is the nlocktime of the refund transaction. This might be a bit of a problem (note that the receiver cannot send the fully signed payments back to the hub; the hub could spend an old payment to scam the receiver and would not be trustless anymore). We have to look at channels that do not expire after a fixed amount of time here and will need CHECKSEQUENCEVERIFY for that for sure.
+
+The other is the CHECKSEQUENCEVERIFY constraint on the output of the setup transaction. This might be less critical that the other one. Note that Receiver will only have to broadcast the Setup transaction if Sender is not cooperative. However, the hub is the sender and will always be cooperative. Thus the only case we'd need to worry about is when a user is not cooperative (that is he messes with the client software). If a user does that and misses a payment, we'll that's his own fault imo.. (more analysis is needed here)
+
 ### Chaining HTLC channels
 
 Consider the case where Alice routes a payment for Carol through Bob
@@ -152,7 +157,7 @@ For HTLCs to be effective, it is important that nlocktimes are decreasing along 
 
 ### Keeping track of multiple secrets
 
-Consider the case where Alice routes a payments through Bob to Carol. Assume that Carol has neither spent the HTLC transaction nor has reveiled her secret via a downgrade.
+Consider the case where Alice routes a payments through Bob to Carol. Assume that Carol has neither spent the HTLC transaction nor has revealed her secret via a downgrade.
 
 
 	                Carol
@@ -165,9 +170,10 @@ Now Alice might want to route a second payment, again through Bob, but this time
 
 The above example shows why it is important for all parties to downgrade their transactions as fast as possible.
 
-### Receivers not online
 
-TODO check if something bad happened if sender does nothing when the refund transaction expires (unlikely to work but still). Also look into bi-directional channels
+### What hacks are possibel white CHECKSEQUENCEVERIFY is a no op
+
+TODO
 
 ## References 
 
