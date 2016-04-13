@@ -91,7 +91,7 @@ The output of the setup transaction can be encoded in Bitcoin script as follows:
 		<Receiver's pubkey> CHECKSIGVERIFY
 		OP HASH160 <Hash160 (s)> OP_EQUALVERIFY 
 	OP_ELSE
-		<now + 2d> CHECKSEQUENCEVERIFY DROP
+		<2 day> CHECKSEQUENCEVERIFY DROP
 		<Sender's pubkey> CHECKSIGVERIFY
 	OP_ENDIF
 	
@@ -125,10 +125,14 @@ We have to check that the conditions of the Theorem are maintained at all points
 
 After step one Receiver waits for Sender to send the payment transaction for one day. If he does not get it he proceeds to broadcast the Setup transaction and a transaction that spends its output to himself, thereby revealing the secret. In this case everything played out as in the non-cooperative case. 
 
-Note that it might seem that Sender has an advantage after step one. After all, he has received the secret that proves that he payed. However, Sender cannot get a refund at this point: the branch of the Setup transaction that Sender can spend is blocked with a 2-day CHECKSEQUENCEVERIFY lock. If Sender broadcasts the Setup transaction Receiver will notice and have two days to spend the output himself.
+Note that it might seem that Sender has an advantage after step one. After all, he has received the secret that proves that he payed. However, Sender cannot get a refund at this point: the branch of the Setup transaction that Sender can spend is blocked with a 2-day CHECKSEQUENCEVERIFY lock. If Sender broadcasts the Setup transaction Receiver will notice and have two days to spend the output himself. 
 
 After step two Sender does not gained any more advantages. Receiver however now has two ways of getting the micropayment: via the the setup transaction or via the payment transaction. However he can only use one of them because they spend the same output. He will prefer to use the payment transaction because it allows him to keep the channel open. **qed.**
 
+
+### Why we need CSV
+
+The proof would break at the very end if we use CLTV instead CSV: Sender could just wait for the end of the cooperative protocoll and a further two days until the lock of her output of the Setup transaction gets lifted. Sender then quickly broadcasts the setup transaction and spends from it. As there is no time delay between the two Receiver cannot prevent that. In this case Sender has received the secret and gotten a refund, violating the Theorem. HTLC are not trustless in this case anymore.
 
 
 <!--
