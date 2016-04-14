@@ -32,6 +32,8 @@ Conversely, it is also possible to increase the nlocktime of a channel if both p
 
 This way the input to the new refund address is spent, thus invalidating the old refund transaction.
 
+
+<!--
 # Time-unlimited uni-directional payment channels
 
 We now show how the time limit can be lifted. However CSV is needed in this construction. These are not subject to transaction malleability.
@@ -53,6 +55,7 @@ In this case receiver can only accept a payment well before the CTLV times out. 
 The timelock of a channel can still be increased by Sender if he sends a payment transaction to receiver with a lower CTLV timeout.
 
 TODO look if the timelock of the channel can be increased.
+-->
 
 # Background on HTLCs
 
