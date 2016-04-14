@@ -1,11 +1,13 @@
 # How to build a bitcoin micropayment network today
 (Draft 0.2)
 
-We describe how a network of micropayment channels can be built using features that are available in bitcoin today.
+We describe how a network of micropayment channels can be built.
 
-## Unidirectional payment Channels
+## Time-limited unidirectional payment Channels
 
-We use standard uni-directional payment channels. The construction is as usual. We use channels where the refund transaction has an nlocktime set to some point in the future (say 30 days). The payment transactions do not have an nlocktime set.
+We use standard uni-directional payment channels. These do not need any features not yet available in Bitcoin and are not subject to transaction malleability. However, they can only be open for a limited amount of time. See next section for a version that is not time limited.
+
+ The construction is as usual. We use channels where the refund transaction has an nlocktime set to some point in the future (say 30 days). The payment transactions do not have an nlocktime set.
 
 ### nlocktime of a channel
 
@@ -30,6 +32,27 @@ Conversely, it is also possible to increase the nlocktime of a channel if both p
 
 This way the input to the new refund address is spent, thus invalidating the old refund transaction.
 
+# Time-unlimited uni-directional payment channels
+
+We now show how the time limit can be lifted. However CSV is needed in this construction. These are not subject to transaction malleability.
+
+Sender wil construct and sign payment transactions of the form below and send to receiver. Sender will use a new private key to generate the multisig output of the Payment transaction every time he generates a new Payment transaction.
+
+![alt text](./ntl-channel.png "ntl-channel.png")
+
+When a new payment is made, it is necessary to invalidate the old one. The reason is that sender will want to broadcast an old payment transaction
+
+To do that sender will share the old key used to generate the last transaction with Receiver every time he sends a new payment.
+
+Now assume that Sender broadcasts an old payment transaction to the blockchain. Receiver can notice when that happens by monitoring the blockchain. When that happens, Receiver can spend his output immediately. He can also spend Senders output because (a) he knows both private keys of the multisig address and (b) senders output is blocked for two days by the CSV constraint.
+
+## What if we replace CSV by CTLV?
+
+In this case receiver can only accept a payment well before the CTLV times out. Otherwise he will request to open a new channel.
+
+The timelock of a channel can still be increased by Sender if he sends a payment transaction to receiver with a lower CTLV timeout.
+
+TODO look if the timelock of the channel can be increased.
 
 # Background on HTLCs
 
@@ -64,7 +87,7 @@ During the execution of the protocol a second level of transactions is created t
 
 There are three possible scenarios: If the receiver does not cooperate, the sender can eventually use the refund transaction to get a refund and close the channel. Should the receiver be able to produce the secret, he can use the settlement transaction to settle the payment. Finally in case the receiver fails to get ahold of the secret, the parties can cooperate and use the forfeiture transaction to refund the payment in question back to sender but keep the channel open.
 
-![alt text](https://raw.githubusercontent.com/dattnetwork/fullnode-pc/master/docs/decker-et-al.png "decker-et-al.png")
+![alt text](./decker-et-al.png "decker-et-al.png")
 
 ### Poon & Dryja HTLCs
 
@@ -78,12 +101,11 @@ Recall that the challenge in building HTLC is to force receiver to reveal his se
 
 We solve the same problem in a different way using OP_CHECKLOCKTIMEVERIFY. Our construction is similar to the one by Decker & Wattenhofer, but the output script of our Setup transaction has three branches and encodes the following condition
 
-> Receiver can spend this output if he can present the secret. However, if he fails to do so within two days, Receiver can spend the output. Finally, both parties can cooperate at any time to spend the output jointly.
+> Receiver can spend this output if he can present the secret. However, if he fails to do so within 29 days, Receiver can spend the output. Finally, both parties can cooperate at any time to spend the output jointly.
 
 The picture below shows the transactions that can be exchanged by the two parties. Note that all broadcasted transaction only depend only on the funding transaction that has been broadcast and confirmed into the blockchain. This is the reason that our approach is not vulnerable to transaction malleability.
 
-![alt text](non-malleable.png "non-malleable.png")
-
+![alt text](non-malleable-now.png "non-malleable-now.png")
 
 The output of the setup transaction can be encoded in Bitcoin script as follows:
 
@@ -91,7 +113,7 @@ The output of the setup transaction can be encoded in Bitcoin script as follows:
 		<Receiver's pubkey> CHECKSIGVERIFY
 		OP HASH160 <Hash160 (s)> OP_EQUALVERIFY 
 	OP_ELSE
-		<2 day> CHECKSEQUENCEVERIFY DROP
+		<29 days> CHECKLOCKTIMEVERIFY DROP
 		<Sender's pubkey> CHECKSIGVERIFY
 	OP_ENDIF
 	
@@ -112,7 +134,7 @@ An important property of our construction is:
 
 **Proof** There are two ways that this can play out: either the two parties decide to cooperate or not. We will see that under the assumptions they will cooperate. To see why, we have to look at what happens if they don't.
 
-In this case eventually one party will broadcast the Setup transaction to the blockchain. There are two cases now: If Receiver spends the output of the Setup transaction, then he reveals his secret. If he does not then Sender will be able to spend output after two days to refund to himself (these two cases are exactly what is enforced by the output of the Setup transaction).
+In this case eventually one party will broadcast the Setup transaction to the blockchain. There are two cases now: If Receiver spends the output of the Setup transaction, then he reveals his secret. If Receiver does not spend, then Sender will be able to spend output after 29 days to refund to himself (these two cases are exactly what is enforced by the output of the Setup transaction).
 
 This outcome is not bad for either party, no-one has lost any money. It's not awesome either because they are effectively closing the channel when they broadcast the Setup transaction. Everything else being equal, they prefer to keep the channel open.
 
@@ -125,15 +147,17 @@ We have to check that the conditions of the Theorem are maintained at all points
 
 After step one Receiver waits for Sender to send the payment transaction for one day. If he does not get it he proceeds to broadcast the Setup transaction and a transaction that spends its output to himself, thereby revealing the secret. In this case everything played out as in the non-cooperative case. 
 
-Note that it might seem that Sender has an advantage after step one. After all, he has received the secret that proves that he payed. However, Sender cannot get a refund at this point: the branch of the Setup transaction that Sender can spend is blocked with a 2-day CHECKSEQUENCEVERIFY lock. If Sender broadcasts the Setup transaction Receiver will notice and have two days to spend the output himself. 
+Note that it might seem that Sender has an advantage after step one. After all, he has received the secret that proves that he payed. However, Sender cannot get a refund at this point: the branch of the Setup transaction that Sender can spend is blocked with a 29-day CHECKLOCKTIMEVERIFY lock. If Sender broadcasts the Setup transaction Receiver will notice and have some time to spend the output himself. 
 
 After step two Sender does not gained any more advantages. Receiver however now has two ways of getting the micropayment: via the the setup transaction or via the payment transaction. However he can only use one of them because they spend the same output. He will prefer to use the payment transaction because it allows him to keep the channel open. **qed.**
 
-
+<!--
 ### Why we need CSV
 
-The proof would break at the very end if we use CLTV instead CSV: Sender could just wait for the end of the cooperative protocoll and a further two days until the lock of her output of the Setup transaction gets lifted. Sender then quickly broadcasts the setup transaction and spends from it. As there is no time delay between the two Receiver cannot prevent that. In this case Sender has received the secret and gotten a refund, violating the Theorem. HTLC are not trustless in this case anymore.
+What if Receiver always publishes either a payment transaction or a Setup transaction before the timeout expires.
 
+The proof would break at the very end if we use CLTV instead CSV: Sender could just wait for the end of the cooperative protocoll and a further two days until the lock of her output of the Setup transaction gets lifted. Sender then quickly broadcasts the setup transaction and spends from it. As there is no time delay between the two Receiver cannot prevent that. In this case Sender has received the secret and gotten a refund, violating the Theorem. HTLC are not trustless in this case anymore.
+-->
 
 <!--
 ### Downgrading HTLC to normal payments
@@ -177,7 +201,7 @@ The above example shows why it is important for all parties to downgrade their t
 
 ### What hacks are possibel white CHECKSEQUENCEVERIFY is a no op
 
-TODO
+Sender could cheat (see Section "Why we need CSV")
 
 ## References 
 
