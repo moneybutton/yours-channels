@@ -16,13 +16,13 @@ Receiver will only accept a payment until 2 days before the CTLV timeout expires
 
 Sender will use a new private key to generate the multisig output of the Payment transaction every time he generates a new one. Whenever a new payment is created, Sender will share the key used in the old one.
 
-This is neccessary to prevent Sender from broadcasting an old payment transaction (note that the older payment transactions are of advantage to Sender since he will have to pay less). However, our construction prevents that from happening: Assume that Sender broadcasts an old transaction. Receiver can clearly claim the first output. The second branch of the second output is locked with a CLTV constrains, so Sender cannot spend this. However, Receiver can spend the second output as Sender has shared the key used in that transaction with him previously.
+This is necessary to prevent Sender from broadcasting an old payment transaction (note that the older payment transactions are of advantage to Sender since he will have to pay less). However, our construction prevents that from happening: Assume that Sender broadcasts an old transaction. Receiver can clearly claim the first output. The second branch of the second output is locked with a CLTV constrains, so Sender cannot spend this. However, Receiver can spend the second output as Sender has shared the key used in that transaction with him previously.
 
 Note that if Sender tries to cheat by broadcasting an old transaction he loses not only the funds he has legitimately sent to Receiver, but all also the funds that he has not spent yet.
 
 ### Closing the channel
 
-There can be a protocoll for closing the channel immediately if both parties agree to do so. To do so Sender signes a payment trasnaction as above just without the CTLV constraint. In this case both parties can spend their money immediately. After the channel is closed, receiver can not accept any more payments.
+There can be a protocol for closing the channel immediately if both parties agree to do so. To do so Sender signes a payment trasnaction as above just without the CTLV constraint. In this case both parties can spend their money immediately. After the channel is closed, receiver can not accept any more payments.
 
 ### Removing the time-limit
 
@@ -30,20 +30,20 @@ We simply replace the CLTV constraint by a CSV constraint in the output script o
 
 ![alt text](./ntl-channel-now.png "ntl-channel.png")
 
-In this case Sender can accept payments indefinately, provided that the channel is still funded and that no 
+In this case Sender can accept payments indefinitely, provided that the channel is still funded and that no 
 
 
 ## HTLCs
 
 The challenge in building HTLC is to encode the following condition using Bitcoin transactions:
 
-> Receiver can spend an output if he can present a secret within a limited amout of time. If he fails to do so, no payment is made.
+> Receiver can spend an output if he can present a secret within a limited amount of time. If he fails to do so, no payment is made.
 
 The picture below shows transactions that are exchanged by the two parties to ensure this condition is met: 
 
 ![alt text](./non-malleable-now.png "non-malleable-now.png")
 
-Note that the lower two payment transactions are exactly the same as in a payment channel descirbed above. The output of the HTLC transaction can be encoded in Bitcoin script as follows:
+Note that the lower two payment transactions are exactly the same as in a payment channel described above. The output of the HTLC transaction can be encoded in Bitcoin script as follows:
 
 	OP_IF
 		<Receiver's pubkey> CHECKSIGVERIFY
@@ -70,7 +70,7 @@ We will assume Sender and Receiver are malicious but rational (they care about t
 
 **Proof** There are two ways that this can play out: either the two parties decide to cooperate or not. We will see that under the assumptions they will cooperate. To see why, we have to look at what happens if they don't.
 
-In this case eventually one party will broadcast the HTLC transaction to the blockchain and someone spends it. If Receiver does, then he reveals his secret while doing so. If Receiver does not spend, then Sender will be able to spend output after 29 days to refund himself (these two cases are exactly what is enforced by the output of the Setup transaction). In both cases the condition of the Theorem is maintainted.
+In this case eventually one party will broadcast the HTLC transaction to the blockchain and someone spends it. If Receiver does, then he reveals his secret while doing so. If Receiver does not spend, then Sender will be able to spend output after 29 days to refund himself (these two cases are exactly what is enforced by the output of the Setup transaction). In both cases the condition of the Theorem is maintained.
 
 The outcome of not cooperating is not bad for either party, no-one has lost any money. However, it's not awesome either. After all, they are effectively closing the channel when they broadcast the HTLC transaction. All else being equal, they prefer to keep the channel open.
 
@@ -81,7 +81,7 @@ We have just argued that no party has anything to gain from not cooperating. So 
 
 We have to check that the conditions of the Theorem are maintained after each step.
 
-After step 1. Receiver waits for Sender to send the payment transaction for one day (this is not enforced by anything, just a conventione between the two). If he does not get the payment he assumes that Sender is not willing to cooperate and proceeds to broadcast the HTLC transaction to the blockchain. He then spends its output to himself, thereby revealing the secret. In this case everything played out as in the non-cooperative case. 
+After step 1. Receiver waits for Sender to send the payment transaction for one day (this is not enforced by anything, just a convention between the two). If he does not get the payment he assumes that Sender is not willing to cooperate and proceeds to broadcast the HTLC transaction to the blockchain. He then spends its output to himself, thereby revealing the secret. In this case everything played out as in the non-cooperative case. 
 
 Note that it might seem that Sender has an advantage after step one. After all, he has received the secret that proves that he payed. However, Sender has no power to get his money back at this point: the branch of the HTLC transaction that Sender can spend is blocked with a 30-day CLTV lock. If Sender broadcasts the HTLC transaction Receiver will notice and have some time to spend the output himself. 
 
@@ -90,7 +90,7 @@ After step 2. Sender has not gained any more capabilities. Receiver however now 
 
 ### Removing the time limit
 
-As in the case of channels, we only need to replace the CLTV locks be CSV locks to get HTLC that never expire (note that Receiver still has to reveil his secret after two days). 
+As in the case of channels, we only need to replace the CLTV locks be CSV locks to get HTLC that never expire (note that Receiver still has to reveal his secret after two days). 
 
 ![alt text](./non-malleable.png "non-malleable.png")
 
@@ -100,7 +100,7 @@ Consider the case where Alice routes a payment for Carol through Bob
     
     Alice -> Bob -> Carol
     
-For HTLCs to be effective, it is important that time constraints on the HTLC are strickly decreasing along the route. Also, the time constraint of the HTLC transaction must be strickly smaller that then one on Senders payment transactions. 
+For HTLCs to be effective, it is important that time constraints on the HTLC are strictly decreasing along the route. Also, the time constraint of the HTLC transaction must be strictly smaller that then one on Senders payment transactions. 
 
 In the version with CLTV, Alice and Bob might have to create a new channel with an increased time constraint on the payment transaction.
 
@@ -122,7 +122,8 @@ The above example shows why it is important for all parties to downgrade their t
 
 ## References 
 
-[The Bitcoin Lightning Network:Scalable Off-Chain Instant Payments](http://lightning.network/lightning-network-paper.pdf) by Joseph Poon and Thaddeus Dryja
+[The Bitcoin Lightning Network:
+Scalable Off-Chain Instant Payments](http://lightning.network/lightning-network-paper.pdf) by Joseph Poon and Thaddeus Dryja
 
 [A Fast and Scalable Payment Network with
 Bitcoin Duplex Micropayment Channels](http://diyhpl.us/~bryan/papers2/bitcoin/Fast%20and%20scalable%20payment%20network%20with%20Bitcoin%20duplex%20micropayment%20channels.pdf) by Christian Decker and Roger Wattenhofer
