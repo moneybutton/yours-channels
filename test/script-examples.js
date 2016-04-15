@@ -223,4 +223,43 @@ describe('Script Examples', function () {
       Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY).should.equal(true)
     })
   })
+
+  describe('CLTV-only', function () {
+    it('should validate', function () {
+      // Based on Clemens' document: upgradable-lightning-now.md
+
+      // Initial keypair to fund the funding tx, owned by sender
+      let privkey = Privkey().fromRandom()
+      let pubkey = Pubkey().fromPrivkey(privkey)
+      let keypair = Keypair(privkey, pubkey)
+      let address = Address().fromPubkey(pubkey)
+      let scriptPubkey = address.toScript()
+
+      // First multisig address, using Sender and Receiver keys
+      let senderPrivkey = Privkey().fromRandom()
+      let senderPubkey = Pubkey().fromPrivkey(senderPrivkey)
+      // let senderKeypair = Keypair(senderPrivkey, senderPubkey)
+      let receiverPrivkey = Privkey().fromRandom()
+      let receiverPubkey = Pubkey().fromPrivkey(receiverPrivkey)
+      // let receiverKeypair = Keypair(receiverPrivkey, receiverPubkey)
+      let multisigScript = Script().fromPubkeys(2, [senderPubkey, receiverPubkey])
+      let multisigAddress = Address().fromRedeemScript(multisigScript)
+      // let multisigScriptPubkey = multisigAddress.toScript()
+
+      // building, signing, and verifying the funding tx
+      let fundingTxb = Txbuilder()
+      let fundingInputTxhashbuf = new Buffer(32)
+      fundingInputTxhashbuf.fill(0)
+      let fundingInputTxoutnum = 0
+      let fundingInputTxout = Txout(BN(500000)).setScript(scriptPubkey)
+      fundingTxb.fromPubkeyhash(fundingInputTxhashbuf, fundingInputTxoutnum, fundingInputTxout, pubkey)
+      fundingTxb.setChangeAddress(Address().fromPrivkey(Privkey().fromRandom()))
+      fundingTxb.toAddress(BN(100000), multisigAddress)
+      fundingTxb.build()
+      fundingTxb.sign(0, keypair, fundingInputTxout)
+      Txverifier.verify(fundingTxb.tx, fundingTxb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY).should.equal(true)
+
+      // TODO: Not finished! Add the other transactions.
+    })
+  })
 })
