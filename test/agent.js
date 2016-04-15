@@ -380,4 +380,84 @@ describe('Agent', function () {
       }, this)
     })
   })
+
+  /* conveniance methods */
+
+  describe('#asyncSendPayment', function () {
+    it('asyncSendPayment should send a payment to an address', function () {
+      return asink(function *() {
+        // asyncInitialize sender
+        let agent = Agent(privkey, msPrivkey, otherMsPubkey, otherAddress)
+        yield agent.asyncInitialize()
+        agent.fundingTx = Tx().fromString(consts.fundingTx)
+        agent.otherFundingTx = Tx().fromString(consts.otherFundingTx)
+        agent.balance = BN(2e7)
+        agent.otherBalance = BN(1e7)
+        agent.funded = true
+        agent.initialized = true
+        agent.nlocktime = inDays(29)
+        agent.towardsMe = true
+
+        // asyncInitialize another agent
+        let otherAgent = Agent(otherPrivkey, otherMsPrivkey, msPubkey, address)
+        yield otherAgent.asyncInitialize()
+
+        let balanceBefore = agent.balance
+        let otherBalanceBefore = agent.otherBalance
+        let nlocktimeBefore = agent.nlocktime
+        let amountToOther = BN(5e6)
+        let script = Agent.addressScript(agent.otherAddress)
+
+        yield agent.asyncSendPayment(amountToOther, script)
+
+        // txb.tx.toString().should.equal(consts.partialPaymentTx)
+        agent.balance.eq(balanceBefore.sub(amountToOther)).should.equal(true)
+        agent.otherBalance.eq(otherBalanceBefore.add(amountToOther)).should.equal(true)
+        ;(agent.nlocktime < nlocktimeBefore).should.equal(true)
+        agent.towardsMe.should.equal(false)
+      }, this)
+    })
+  })
+
+  describe('#asyncSendPayment', function () {
+    it('asyncSendPayment should send a payment to a htlc', function () {
+      return asink(function *() {
+        // asyncInitialize sender
+        let agent = Agent(privkey, msPrivkey, otherMsPubkey, otherAddress)
+        yield agent.asyncInitialize()
+        agent.fundingTx = Tx().fromString(consts.fundingTx)
+        agent.otherFundingTx = Tx().fromString(consts.otherFundingTx)
+        agent.balance = BN(2e7)
+        agent.otherBalance = BN(1e7)
+        agent.funded = true
+        agent.initialized = true
+        agent.nlocktime = inDays(29)
+        agent.towardsMe = true
+
+        // asyncInitialize another agent
+        let otherAgent = Agent(otherPrivkey, otherMsPrivkey, msPubkey, address)
+        yield otherAgent.asyncInitialize()
+
+        let balanceBefore = agent.balance
+        let otherBalanceBefore = agent.otherBalance
+        let nlocktimeBefore = agent.nlocktime
+        let amountToOther = BN(5e6)
+        let script = Agent.htlcScript(agent.otherPubkey)
+
+        yield agent.asyncSendPayment(amountToOther, script)
+
+        // txb.tx.toString().should.equal(consts.partialPaymentTx)
+        agent.balance.eq(balanceBefore.sub(amountToOther)).should.equal(true)
+        agent.otherBalance.eq(otherBalanceBefore.add(amountToOther)).should.equal(true)
+        ;(agent.nlocktime < nlocktimeBefore).should.equal(true)
+        agent.towardsMe.should.equal(false)
+      }, this)
+    })
+  })
+
+  describe('#asyncAcceptPayment', function () {
+    it('asyncAcceptPayment should accept a payment tx', function () {
+      // TODO
+    })
+  })
 })
