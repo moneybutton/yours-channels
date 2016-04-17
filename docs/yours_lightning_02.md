@@ -4,7 +4,7 @@ We describe how a lightning network can be built for the Datt network. Our syste
 
 
 
-## 1. Bi-directional payment channels
+## 1. Payment channels
 
 Even in a bi-directional channel, there is always a sender who initiates a payment and a receiver. We first describe the data structures used, that is the transactions that each user must know about. We then talk about the functionality that the Wallet must have. Finally, we discuss the protocols used and prove their security.
 
@@ -110,11 +110,15 @@ Note that it is not necessary for receiver to resend the signed tx to sender. If
 
 ### Maintaining several secrets
 
-The construction above can maintain several secrets for each direction. 
+The construction above can maintain several secrets for each direction. To do so it just adds an extra output per secret.
 
 
 ### Resolving HTLC off-blockchain
 
 Note that sender will not be able to send a new payment until the HTLC contract is resolved. Thus receiver is motivated to resolve off-chain. 
 
-To do that receiver sends the secret to sender. Sender will then consider the contract resolved and is happy to send the next payment.
+To do that receiver sends the secret to sender. Sender will then construct a new commitment transaction with that output downgraded from a HTLC output to a payment channel output.
+
+### Closing the channel
+
+Either party can to that unilaterally. If the two parties collaborate they can create a smaller transaction where outputs are merged.
