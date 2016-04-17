@@ -90,9 +90,7 @@ TODO: what if a party does not know the secret?
 
 ## 2. Protocols
 
-### Establishing the channel
-
-The two parties go through the following steps to establish a channel.
+### Establishing a channel
 
 **1. Create Multisig.** Sender creates a new public key and sends it to receiver. Receiver then creates a new 2-of-2 multisig address and sends it back to sender
 
@@ -109,6 +107,10 @@ The two parties go through the following steps to establish a channel.
 **2. Sender builds, signes, & sends HTLC tx.** Sender builds a HTLC transaction from the new addresses, signes it, and sends to receiver.
 
 Note that it is not necessary for receiver to resend the signed tx to sender. If sender wants to revoke that transaction, he just publishes the private keys he used to build the multisig addresses.
+
+### Maintaining several secrets
+
+The construction above can maintain several secrets for each direction. 
 
 
 ### Resolving HTLC off-blockchain
