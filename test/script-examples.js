@@ -133,6 +133,63 @@ describe('Script Examples', function () {
     })
   })
 
+  describe('CHECKSEQUENCEVERIFY (CSV)', function () {
+    it('should lock up funds for 100 blocks (relative lock time)', function () {
+      // This example spends to an output that requires a normal signature and
+      // also for the transaction seqnum to be at least 100 (enforcing relative
+      // locktime - the spend tx must be 100 blocks after the funding tx was
+      // confirmed).
+      //
+      // scriptPubkey: <seqnum> OP_CHECKSEQUENCEVERIFY OP_DROP <pubkey> OP_CHECKSIG
+      // scriptSig: <sig>
+
+      let scriptseqnum = 100
+      let privkey = Privkey().fromRandom()
+      let pubkey = Pubkey().fromPrivkey(privkey)
+      let keypair = Keypair(privkey, pubkey)
+      let scriptPubkey = Script()
+        .writeBN(BN(scriptseqnum))
+        .writeOpcode(Opcode.OP_CHECKSEQUENCEVERIFY)
+        .writeOpcode(Opcode.OP_DROP)
+        .writeBuffer(pubkey.toBuffer())
+        .writeOpcode(Opcode.OP_CHECKSIG)
+      let scriptSig = Script()
+        .writeOpcode(Opcode.OP_0) // signature - will be replaced with actual signature
+      let txhashbuf = new Buffer(32)
+      txhashbuf.fill(0)
+      let txoutnum = 0
+      let txout = Txout(BN(500000)).setScript(scriptPubkey)
+
+      let txb, sig, txseqnum
+
+      // tx seqnum too low - tx invalid
+      txseqnum = 99
+      txb = Txbuilder()
+      txb.fromScript(txhashbuf, txoutnum, txout, scriptSig, txseqnum)
+      txb.setChangeAddress(Address().fromPrivkey(Privkey().fromRandom()))
+      txb.toAddress(BN(100000), Address().fromPrivkey(Privkey().fromRandom()))
+      txb.setVersion(2)
+      txb.build()
+      sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, scriptPubkey)
+      scriptSig.chunks[0] = Script().writeBuffer(sig.toTxFormat()).chunks[0]
+      txb.tx.txins[0].setScript(scriptSig)
+      Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false)
+
+      // tx seqnum high enough - tx valid
+      txseqnum = 100
+      txb = Txbuilder()
+      txb.fromScript(txhashbuf, txoutnum, txout, scriptSig, txseqnum)
+      txb.setChangeAddress(Address().fromPrivkey(Privkey().fromRandom()))
+      txb.toAddress(BN(100000), Address().fromPrivkey(Privkey().fromRandom()))
+      txb.setVersion(2)
+      txb.build()
+      sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, scriptPubkey)
+      scriptSig.chunks[0] = Script().writeBuffer(sig.toTxFormat()).chunks[0]
+      txb.tx.txins[0].setScript(scriptSig)
+      Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(true)
+    })
+  })
+
   describe('Hash Time Lock (HTL)', function () {
     it('should enable spending funds when sig and value that hashes correctly is in input', function () {
       // This example spends to an output that requires both a signature and some
