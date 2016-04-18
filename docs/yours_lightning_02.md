@@ -10,27 +10,33 @@ Even in a bi-directional channel, there is always a sender who initiates a payme
 
 ### 1.1 Uni-directional payment channels
 
-In the simplest form of a payment channel, the sender does not need to store any transactions at all. He just sings a transaction and sends it to receiver. 
+In our use-case however it is important that the channels can remain open an unlimited amount of time. Thus the simples form of payment channels that is based on decreasing time locks. 
 
-In our use-case however it is important that both the sender and the receiver must be able to unilaterally close the channel. For example if a users channel expires, we want to be able to close the channel even if that user is not online.
+We use a slightly more involved construction that is inspired by the Revocable Sequence Maturity Contract (RSMC) of [1]. The transaction that both parties store looks like this. The compicated output to sender is the RSMC, and we will need it to invalidate the funding transaction (explained below).
 
-The obvious solution is for the sender to store a full signed commitment transaction as well. The problem hereby is that sender will want to broadcast an old commitment transaction to the blockchain. 
-
-To prevent that from happening, we use a slightly more involved construction that is inspired by the Revocable Sequence Maturity Contract of [1]. The transaction that both parties store looks like this.
-
+ 
 ![alt text](./img/1-way-channel.png "1-way-channel.png")
 
-The idea is that sender get's punished if he broadcasts an old transaction. To detect if a transaction is old, sender uses a new private key to generate the multisig output of the Payment transaction every time he generates a new one. Whenever a new payment is created, Sender will share the key used in the old one. Note that receiver can safely use the same private key every time.
+**Setting up the channel.** Receiver sends a public key to sender who will create a public key of his own and create the multisig address that is used as the output of the Funding transaction. Sender then builds and signs, the funding transaction, but does not broadcast it yet. He then builds an initial commitment transaction that spends the entire funding amount back to himself. This transaction will act as a refund for sender to guaraty that receiver cannot take his funding hostage. Sender then signs this transaction who will also sign it and send back the sender. At this point sender can safely broadcast the funding transaction. Once that transaction has one confirmation, the channel is open.
 
-Now, if sender broadcasts an old transaction, receiver can clearly claim the first output. The second branch of the second output is locked with a CLTV constrains, so Sender cannot spend this. However, Receiver can spend the second output as Sender has shared the key used in that transaction with him previously.
+**Sending a payment.** If sender wants to send a payment to receiver, he creates a new commitment transaction with updated output balances and sends it to receiver. Receiver will not send the fully signed transaction back to receiver.
 
-Note that if Sender tries to cheat by broadcasting an old transaction he loses not only the funds he has legitimately sent to Receiver, but all also the funds that he has not spent yet.
+Note that there is a problem here: sender still has that refund transaction set up before. Sender can broadcast that transaction at any point and basically invalidate all payments made through the channel so far. 
+
+Thus we need a way for sender to revoke the funding transaction. That's where the RSMC mentioned above. To invalidate the funding transaction sender simply publishes the key used to generate the multisig output of the funding transaction when he sends the first payment. If he were ever to broadcast afterwards, receiver can claim both outputs of the funding transaction: this is obvious for the first output, not that for the second output he now knows both private keys needed to spend from the multisig output. As receivers output is locked by a CSV lock for some time, he has some time spend the funding transaction after sender broadcasts it.
+
+Note that if Sender tries to cheat by broadcasting the funding transaction he loses not only the funds he has legitimately sent to Receiver, but all also the funds that he has not spent yet.
+
+Note that out construction uses Rusty Russel's trick to avoid transaction malleability: we maintain only one level of transactions on top of the funding transaction [3]. Note that this prevents malleability attacks because the funding transaction is confirmed into the blockchain when payments are made.
+
 
 ### Bi-directional channels
 
-In the bi-directional case, both parties must be able to revoke a transaction. In this case the spending transaction looks as follows:
+In the bi-directional case, both parties must be able to revoke a transaction. We simply use a RSMC for both outputs:
 
 ![alt text](./img/2-way-channel.png "2-way-channel.png")
+
+Whenever someone sends a new commitment to the other party he will use a new key to generate both multisig outputs send the keys used for the last transaction with it (in order to revoke the old transaction). As before, the receiver is not forced to resend the fully signed transaction to sender, but may choose to do so safely.
 
 Note that this case is essentially not more complex than the previous.
 
@@ -57,6 +63,8 @@ In the one-directional model, we just add the above script to receivers output o
 
 ![alt text](./img/1-way-htlc.png "1-way-htlc.png")
 
+Note that the output to receiver encodes the HTLC whereas we use a RSMC to make senders output revokable. Like in the uni-directional payment channel case this is needed so that sender can revoke the payment transaction.
+
 *__Theorem__ If Sender and Receiver set up a HTLC as above, exactly one of the following is true:*
 
  * *Receiver reveals the secret to Sender within a limited amount of time and Sender sends him the money*
@@ -77,13 +85,15 @@ We have to check that the conditions of the Theorem are maintained afterwards. R
 
 ### Bi-directional HTLCs
 	
-In the bi-directional case the parties need the ability to revoke a HTLC. Luckily we already know how to revoke an output: temporarily lock the output with a CSV lock and make an additional branch with an output that both parties must sign. 
+In the bi-directional case the parties need the ability to revoke a HTLC. Luckily we already know how to revoke an output: use an RSMC (quick reminder: a RSMC temporarily locks an output with a CSV lock and make an additional branch with an output that both parties must sign).
 
 ![alt text](./img/2-way-htlc.png "2-way-htlc.png")
 
-Note that this transaction maintains two HTLCs - one for each direction in the channel. When sender wants to force receiver to reveal his secret, he just broadcasts the HTLC transaction to the blockchain. In this case receiver will have to spend the top output between day 1 and day 2. If he waits after day 2 then sender can use his output to spend that output. 
+Note that this transaction maintains two HTLCs - one for each direction in the channel. When sender wants to force receiver to reveal his secret, he just broadcasts the HTLC transaction to the blockchain. In this case receiver will have to spend his (the top) output between day 1 and day 2. If he waits after day 2 then sender can use his output to spend that output. 
 
-In addition this more complex output allows the the parties to invalidate old transactions. Like in the case of payment channels, they use a new key to build each new transaction. If they want to revoke an old transactions output they just publish the key they used to for that output.
+In addition this more complex output allows the the parties to revoke old transactions. Like in the case of payment channels, they use a new key to build each new transaction. Whenever they send a new payment they publish the key used in the last payment in oder to revoke it.
+
+If the reveiver does not know the secret he can 
 
 TODO: what if a party does not know the secret?
 
@@ -122,3 +132,34 @@ To do that receiver sends the secret to sender. Sender will then construct a new
 ### Closing the channel
 
 Either party can to that unilaterally. If the two parties collaborate they can create a smaller transaction where outputs are merged.
+
+## Implementation
+
+There are two files, one for sender and one for receiver.
+
+### Sender
+
+A sender has the following functions
+
+#### Channel creation
+**CreateFundingTransaction(amount, multisigAddress)** Creates a signed transaction spending to the multisig address
+
+**CreateRefundTransaction(amount, multisigAddress)** Creates a partially signed refund transaction.
+
+### Receiver
+
+A receiver has the following functions
+
+#### Channel creation
+**SignRefundTransaction(txb)** Signes a partially signed refund transaction
+
+
+## References 
+
+[1] [The Bitcoin Lightning Network:
+Scalable Off-Chain Instant Payments](http://lightning.network/lightning-network-paper.pdf) by Joseph Poon and Thaddeus Dryja
+
+[2] [A Fast and Scalable Payment Network with
+Bitcoin Duplex Micropayment Channels](http://diyhpl.us/~bryan/papers2/bitcoin/Fast%20and%20scalable%20payment%20network%20with%20Bitcoin%20duplex%20micropayment%20channels.pdf) by Christian Decker and Roger Wattenhofer
+
+[3] [Reaching the Ground with Lighning](http://diyhpl.us/~bryan/papers2/bitcoin/Fast%20and%20scalable%20payment%20network%20with%20Bitcoin%20duplex%20micropayment%20channels.pdf) by Rusty Russel
