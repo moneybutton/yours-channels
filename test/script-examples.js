@@ -23,21 +23,21 @@ describe('Script Examples', function () {
       // number seqnum is set to an arbitrary value less than 0xffffffff, which
       // is necessary to enable CLTV.
       //
-      // scriptPubkey: OP_CHECKLOCKTIMEVERIFY OP_DROP <pubkey> OP_CHECKSIG
-      // scriptSig: <sig> <nlocktime>
+      // scriptPubkey: <nlocktime> OP_CHECKLOCKTIMEVERIFY OP_DROP <pubkey> OP_CHECKSIG
+      // scriptSig: <sig>
 
       let scriptnlocktime = 100
       let privkey = Privkey().fromRandom()
       let pubkey = Pubkey().fromPrivkey(privkey)
       let keypair = Keypair(privkey, pubkey)
       let scriptPubkey = Script()
+        .writeBN(BN(scriptnlocktime))
         .writeOpcode(Opcode.OP_CHECKLOCKTIMEVERIFY)
         .writeOpcode(Opcode.OP_DROP)
         .writeBuffer(pubkey.toBuffer())
         .writeOpcode(Opcode.OP_CHECKSIG)
       let scriptSig = Script()
         .writeOpcode(Opcode.OP_0) // signature - will be replaced with actual signature
-        .writeBN(BN(scriptnlocktime))
       let txb = Txbuilder()
       let txhashbuf = new Buffer(32)
       txhashbuf.fill(0)
@@ -80,21 +80,21 @@ describe('Script Examples', function () {
       // redeemScript, not the scriptPubkey.
       //
       // scriptPubkey: OP_HASH160 <p2shaddress> OP_EQUAL
-      // scriptSig: <sig> <nlocktime> <redeemScript>
-      // redeemScript: OP_CHECKLOCKTIMEVERIFY OP_DROP <pubkey> OP_CHECKSIG
+      // scriptSig: <sig> <redeemScript>
+      // redeemScript: <nlocktime> OP_CHECKLOCKTIMEVERIFY OP_DROP <pubkey> OP_CHECKSIG
 
       let scriptnlocktime = 100
       let privkey = Privkey().fromRandom()
       let pubkey = Pubkey().fromPrivkey(privkey)
       let keypair = Keypair(privkey, pubkey)
       let redeemScript = Script()
+        .writeBN(BN(scriptnlocktime))
         .writeOpcode(Opcode.OP_CHECKLOCKTIMEVERIFY)
         .writeOpcode(Opcode.OP_DROP)
         .writeBuffer(pubkey.toBuffer())
         .writeOpcode(Opcode.OP_CHECKSIG)
       let scriptSig = Script()
         .writeOpcode(Opcode.OP_0) // signature - will be replaced with actual signature
-        .writeBN(BN(scriptnlocktime))
         .writeBuffer(redeemScript.toBuffer())
       let scriptPubkey = Script()
         .writeOpcode(Opcode.OP_HASH160)
