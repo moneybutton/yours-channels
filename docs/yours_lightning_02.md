@@ -89,6 +89,20 @@ In the bi-directional case the parties need the ability to revoke a HTLC. Luckil
 
 ![alt text](./img/2-way-htlc.png "2-way-htlc.png")
 
+In Bitcoin script, a revocable HTLC can be encoded as follows:
+
+	OP_IF
+		<Sender's pubkey> <Receivers's pubkey> 2 CHECKMULTISIG
+	OP_ELSE
+		OP_IF
+			<Receiver's pubkey> CHECKSIGVERIFY
+			OP HASH160 <Hash160 (s)> OP_EQUALVERIFY 
+		OP_ELSE
+			<2 days> CHECKSEQUENCEVERIFY OP_DROP
+			<Sender's pubkey> CHECKSIGVERIFY
+		OP_ENDIF	
+	OP_ENDIF
+
 Note that this transaction maintains two HTLCs - one for each direction in the channel. When sender wants to force receiver to reveal his secret, he just broadcasts the HTLC transaction to the blockchain. In this case receiver will have to spend his (the top) output between day 1 and day 2. If he waits after day 2 then sender can use his output to spend that output. 
 
 In addition this more complex output allows the the parties to revoke old transactions. Like in the case of payment channels, they use a new key to build each new transaction. Whenever they send a new payment they publish the key used in the last payment in oder to revoke it.

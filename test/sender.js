@@ -7,6 +7,7 @@ let Privkey = require('fullnode/lib/privkey')
 let Pubkey = require('fullnode/lib/pubkey')
 let Script = require('fullnode/lib/script')
 let Txout = require('fullnode/lib/txout')
+let Tx = require('fullnode/lib/tx')
 let Address = require('fullnode/lib/address')
 let BN = require('fullnode/lib/bn')
 
@@ -17,7 +18,7 @@ describe('Sender', function () {
   let pubkey = Pubkey().fromPrivkey(privkey)
   let address = Address().fromPubkey(pubkey)
   let msPrivkey = Privkey().fromBN(BN(40))
-//  let msPubkey = Pubkey().fromPrivkey(msPrivkey)
+  let msPubkey = Pubkey().fromPrivkey(msPrivkey)
 
   // generate data to initialize another sender (first cnlbuilder will need some of this data too)
   let otherPrivkey = Privkey().fromBN(BN(60))
@@ -31,8 +32,13 @@ describe('Sender', function () {
     otherFundingTx: '01000000010000000000000000000000000000000000000000000000000000000000000000000000006b4830450221009a8d35af1dcb1ed0fc0f21e07ebd0a2bce88f9bfc973b083326bef9d74e7354c022029d23c39c3cb18bc2567c9c54e215c2c13f68fbaf3c67e3f3f3fb8b234eb0d5701210301257e93a78a5b7d8fe0cf28ff1d8822350c778ac8a30e57d2acfc4d5fb8c192ffffffff02809698000000000017a914825d8d4a359b1caee1ea5191d43deaff2a8769148770235d05000000001976a914687b4cd0cd3ddcc611aac541bf3ab6dc0b7ecb9588ac00000000',
     partialRefundTx: '010000000149917883684f5cbd2105ed83e90f695b2a57aaace9466320b85e4f424bfbb91d0000000092000047304402200829feb0dc5d027afeaaca6b8133e1c59fd010746fafe1dfca7634c136f58621022070a2ed2be2fceec1376956efd0cfe6edb4b6e2599416bc9639eba2590baa7c57014752210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b52aeffffffff01f0053101000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ace7382957',
     completeRefundTx: '010000000149917883684f5cbd2105ed83e90f695b2a57aaace9466320b85e4f424bfbb91d00000000da00483045022100fa63300d459ec162c7b60881ed000013f5379176c9774e5eedf6cfea24481a6602203c53cec3f43e8796b1311c33440346ec840dee22452c514ef66b02a5c876c7d90147304402200829feb0dc5d027afeaaca6b8133e1c59fd010746fafe1dfca7634c136f58621022070a2ed2be2fceec1376956efd0cfe6edb4b6e2599416bc9639eba2590baa7c57014752210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b52aeffffffff01f0053101000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ace7382957',
-    partialPaymentTx: '010000000149917883684f5cbd2105ed83e90f695b2a57aaace9466320b85e4f424bfbb91d0000000092000047304402202641d88de6adc665c161899e862c0065352a216e3bf45c58a610c27df57fd09702206d7931e2f6c78692bae2d2e11d8c06d89f5c50d3b759f30d07ac8c028c7c8a4c014752210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b52aeffffffff02404b4c000000000017a914687b4cd0cd3ddcc611aac541bf3ab6dc0b7ecb9587b0bae400000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac67e72757',
+    partialPaymentTx: '010000000149917883684f5cbd2105ed83e90f695b2a57aaace9466320b85e4f424bfbb91d00000000930000483045022100c16570a0c0076c6206a019adc5ca40056525e46b40e960511448a3e7fddeee070220393b255b19c29c0a1b8fcb71b16f45891d0d96f7a86c001217fd0f223a8357d1014752210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b52aeffffffff02404b4c000000000017a914687b4cd0cd3ddcc611aac541bf3ab6dc0b7ecb9587b0bae400000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000',
     completePaymentTx: '010000000149917883684f5cbd2105ed83e90f695b2a57aaace9466320b85e4f424bfbb91d00000000da004830450221009b918e851bd12259d066f7962869c119950c8de411885b7f66ea92f3b54daa3102205f04775fcea9bd7f037b00209dabe05981fbdf26be65be12ac0ca09dd42071700147304402202641d88de6adc665c161899e862c0065352a216e3bf45c58a610c27df57fd09702206d7931e2f6c78692bae2d2e11d8c06d89f5c50d3b759f30d07ac8c028c7c8a4c014752210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b52aeffffffff02404b4c000000000017a914687b4cd0cd3ddcc611aac541bf3ab6dc0b7ecb9587b0bae400000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac67e72757'
+  }
+
+  let now = 1459727335
+  let inDays = function (n) {
+    return now + (60 * 60 * 24 * n)
   }
 
   it('should exist', function () {
@@ -98,6 +104,48 @@ describe('Sender', function () {
         ;(tx.toJSON().txouts[0].valuebn).should.equal(amount.toString())
         // senders balane should be updated
         sender.balance.should.equal(amount)
+      }, this)
+    })
+  })
+
+  /* payment transaction */
+
+  describe('#asyncBuildParitalPaymentTx', function () {
+    it('asyncBuildParitalPaymentTx should create a partial payment tx', function () {
+      return asink(function *() {
+        // asyncInitialize sender
+        let sender = Sender(privkey, msPrivkey, otherMsPubkey, otherAddress)
+        yield sender.asyncInitialize()
+        sender.fundingTx = Tx().fromString(consts.fundingTx)
+
+        // asyncInitialize another sender
+        let otherSender = Sender(otherPrivkey, otherMsPrivkey, msPubkey, address)
+        yield otherSender.asyncInitialize()
+
+        // build funding transaction for other sender
+        let otherScriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + otherAddress.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
+        let otherAmount = BN(1e7)
+        let otherTxhashbuf = new Buffer(32).fill(0)
+        let otherTxoutnum = 0
+        let otherTxout = Txout(BN(1e8), otherScriptout)
+
+        let otherFundingTxb = yield otherSender.asyncBuildFundingTx(otherAmount, otherTxhashbuf, otherTxoutnum, otherTxout, otherPubkey)
+        let otherFundingTx = otherFundingTxb.tx
+        otherFundingTx.toString().should.equal(consts.otherFundingTx)
+
+        // store otherFundingTx in sender
+        sender.storeOtherFundingTx(otherFundingTx)
+//        sender.otherBalance.should.equal('') TODO
+
+        let amountToOther = BN(5e6)
+        let script = Script().fromScripthash(sender.otherAddress.hashbuf)
+        let txb = yield sender.asyncBuildPaymentTx(amountToOther, script, inDays(29))
+        let tx = txb.tx
+
+        tx.toString().should.equal(consts.partialPaymentTx)
+        tx.toJSON().txins.length.should.equal(1)
+        tx.toJSON().txouts.length.should.equal(2)
+        ;(tx.toJSON().txouts[0].valuebn).should.equal(amountToOther.toString())
       }, this)
     })
   })
