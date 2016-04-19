@@ -22,6 +22,7 @@
     "fullnode": "0.13.17"
   },
   "devDependencies": {
+    "fullnode": "0.13.17",
     "mocha": "2.4.5",
     "should": "8.3.1",
     "standard": "6.0.8"

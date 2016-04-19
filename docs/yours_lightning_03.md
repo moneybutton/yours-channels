@@ -1,4 +1,4 @@
-# Yours Lightning
+# Yours Payment Channel Hub
 
 We describe how 2-way *hash time locked contracts* (HTLCs) can be built. Our construction is not subject to transaction malleability and uses only OP_CHECKSEQUENCEVERIFY (CSV) and opcodes that are active in Bitcoin script today.
 
@@ -118,6 +118,24 @@ Again, we check that Property 2 holds true after each step of the protocol. Step
 Note that as this point Alice could maleate her funding transaction before she'd broadcast it to the blockchain. However all that would do is to invalidate her refund transaction which would hurt only herself. 
 
 There is still the possibility that Bob controls a node that would maleate the funding transaction after it is broadcast. However Bob would have to controls a sizable part of the bitcoin network to pull this off consistently (if he controls n% of the network that would work n% of the time). Essentially, only mining pool operators would have the resources to pull off that attack consistently. However, there is very little to win (one funding transaction worth double digit USD) and very much to loose (the miners in the pool), so we do not anticipate this attack being a problem in practice.
+
+## Implementation
+
+### Funding phase
+
+**BuildMultisig(pubkey).** Creates a second fresh public key, returns a 2-of-2 multisig address from the two keys.
+
+**BuildFundingTx(amount, inputs, outputs).** Creates a transaction that spends amount from inputs to outputs (outputs will be the multisig address from above).
+
+**BuildRefundTx()** Calls BuildCommitmentTx to create a refund transaction.
+
+### Payment phase
+
+**GenerateRevocationSecret().** Returns a random string.
+
+**BuildCommitmentTx().** Builds and signs a commitment transaction. Still needs to be signed by the other party though.
+
+**StoreRevocationSecret(secret).** Stores the revocation secret of the other party.
 
 ## References 
 
