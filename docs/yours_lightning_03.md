@@ -56,7 +56,7 @@ Each commitment transaction maintains two HTLCs, one for each direction. Note th
 
 ## Protocols
 
-As there are inherent malleability problems if two parties fund a payment channel, we use a version where ony one party funds.
+As there are inherent malleability problems if two parties fund a payment channel, we use a version where only one party funds.
 
 ### Creating the payment
 
@@ -88,33 +88,37 @@ Note that when the first "real" payment is sent, the funding transaction is inva
 
 ### Closing the channel
 
-Either party can broadcast their most recent commitment transaction to the blochain. This closes the channel
+Either party can broadcast their most recent commitment transaction to the blockchain. This closes the channel
 
 ## Security Properties
 
-In the following we assume that both Alice and Bob are malicious but rational. That is, they look after their own self interest only and try to steal funds whenever possibel, but they will not harm themselves.
+In the following we assume that both Alice and Bob are malicious but rational. That is, they look after their own self interest only and try to steal funds whenever possible, but they will not harm themselves.
 
-_**Property 1.** Assume that from the last payment, both parties have transactions as in the picture above. If they execute the protocoll "Sending a payment", then their balance is as specified by the commitment transactions. Either party can force the other to reveil their HTLC secret within two days._
+_**Property 1.** Assume that from the last payment, both parties have transactions as in the picture above. If they execute the protocol "Sending a payment", then their balance is as specified by the commitment transactions. Either party can force the other to reveal their HTLC secret within two days._
 
-We check that Property 2 holds true after each step of the protocol. 
+We check that Property 1 holds true after each step of the protocol. 
 
 Steps 1 and 2 are not critical as the only information that gets exchanged are hashes of revocation secrets that have not been used yet. 
 
-After step 3 Bob can sign and broadcast the commitment transaction to the blockchain. In this case Bob is forced to spend the output labelled "HTLC to Bob" output within two days while Alices branch of that output is blocked by a CSV lock. If he does not, then Alice will spend that output. If Bob spends that output then he reveils his HTLC secret to Alice.
+After step 3 Bob can sign and broadcast the commitment transaction to the blockchain. In this case Bob is forced to spend the output labelled "HTLC to Bob" output within two days while Alice's branch of that output is blocked by a CSV lock. If he does not, then Alice will spend that output. If Bob spends that output then he reveals his HTLC secret to Alice.
 
-Step 4 is completely symmetric to step 3. The same reasonoing applies.
+Step 4 is completely symmetric to step 3. The same reasoning applies.
 
-Note that up to this point, Alice and Bob can still broadcast the commitment transaction from the last round. This is particularly enticing for the party that had a higher balance in the last round (essentially the "sender" of this round). Note that however in that case the receiver will eventually reveil the secret for the last payment, not the current one. Thus the "sender" cannot claim to have made the last payment.
+Note that up to this point, Alice and Bob can still broadcast the commitment transaction from the last round. This is particularly enticing for the party that had a higher balance in the last round (essentially the "sender" of this round). Note that however in that case the receiver will eventually reveal the secret for the last payment, not the current one. Thus the "sender" cannot claim to have made the last payment.
 
-Step 5. This is where Alice sends her revocation secret to Bob. This guarantys to Bob that Alice will not broadcast a previous transaction anymore. To understand why assume that she would. In this case an old version of the transaction "known only to Alice" is broadcast to the blockchain. If that happens, Bob can claim both outputs. He can clearly claim the top output (HTLC to Bob) by reveiling an old HTLC secret. He can also claim the second output using the Alice's revocation secret (either the one she just reveiled or one reveilled in a previous round) and his own private key. Note that if Alice cheats in this way, she looses not only a payment but the entire amount used to fund the channel.
+Step 5. This is where Alice sends her revocation secret to Bob. This guarantees to Bob that Alice will not broadcast a previous transaction anymore. To understand why assume that she would. In this case an old version of the transaction "known only to Alice" is broadcast to the blockchain. If that happens, Bob can claim both outputs. He can clearly claim the top output (HTLC to Bob) by revealing an old HTLC secret. He can also claim the second output using the Alice's revocation secret (either the one she just revealed or one revealed in a previous round) and his own private key. Note that if Alice cheats in this way, she looses not only a payment but the entire amount used to fund the channel.
 
 Step 6 is symmetric to step 5 and the same reasoning applies.
 
-<!--
-_**Property 2.** While executing the "funding the channel" protocoll as described above, neither party can steal the other parties funds. This is true in the presence of transaction malleability._
 
-Again, we check that Property 2 holds true after each step of the protocol. Step 1 is completely uncritical because only public keys are exchanged and a new address is creates. So is step 2 because Alice does not broadcast the funding transaction yet. TODO use Property 1 here.
--->
+_**Property 2.** While executing the "funding the channel" protocol as described above, neither party can steal the other parties funds. This is true in the presence of transaction malleability._
+
+Again, we check that Property 2 holds true after each step of the protocol. Step 1 is completely uncritical because only public keys are exchanged and a new address is creates. So is step 2 because Alice does not broadcast the funding transaction yet. Step 3 is not critical according to Property 1. 
+
+Note that as this point Alice could maleate her funding transaction before she'd broadcast it to the blockchain. However all that would do is to invalidate her refund transaction which would hurt only herself. 
+
+There is still the possibility that Bob controls a node that would maleate the funding transaction after it is broadcast. However Bob would have to controls a sizable part of the bitcoin network to pull this off consistently (if he controls n% of the network that would work n% of the time). Essentially, only mining pool operators would have the resources to pull off that attack consistently. However, there is very little to win (one funding transaction worth double digit USD) and very much to loose (the miners in the pool), so we do not anticipate this attack being a problem in practice. 
+
 
 ## References 
 
