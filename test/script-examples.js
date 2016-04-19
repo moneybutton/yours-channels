@@ -188,6 +188,68 @@ describe('Script Examples', function () {
       txb.tx.txins[0].setScript(scriptSig)
       Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(true)
     })
+
+    it('should lock up funds for 100 blocks (relative lock time) - p2sh version', function () {
+      // This example spends to a redeemScript that requires a normal signature
+      // and also for the transaction seqnum to be at least 100 (enforcing
+      // relative locktime - the spend tx must be 100 blocks after the funding
+      // tx was confirmed).
+      //
+      // scriptPubkey: OP_HASH160 <p2shaddress> OP_EQUAL
+      // scriptSig: <sig> <redeemScript>
+      // redeemScript: <seqnum> OP_CHECKSEQUENCEVERIFY OP_DROP <pubkey> OP_CHECKSIG
+
+      let scriptseqnum = 100
+      let privkey = Privkey().fromRandom()
+      let pubkey = Pubkey().fromPrivkey(privkey)
+      let keypair = Keypair(privkey, pubkey)
+      let redeemScript = Script()
+        .writeBN(BN(scriptseqnum))
+        .writeOpcode(Opcode.OP_CHECKSEQUENCEVERIFY)
+        .writeOpcode(Opcode.OP_DROP)
+        .writeBuffer(pubkey.toBuffer())
+        .writeOpcode(Opcode.OP_CHECKSIG)
+      let scriptSig = Script()
+        .writeOpcode(Opcode.OP_0) // signature - will be replaced with actual signature
+        .writeBuffer(redeemScript.toBuffer())
+      let scriptPubkey = Script()
+        .writeOpcode(Opcode.OP_HASH160)
+        .writeBuffer(Hash.sha256ripemd160(redeemScript.toBuffer()))
+        .writeOpcode(Opcode.OP_EQUAL)
+
+      let txhashbuf = new Buffer(32)
+      txhashbuf.fill(0)
+      let txoutnum = 0
+      let txout = Txout(BN(500000)).setScript(scriptPubkey)
+
+      let txb, sig, txseqnum
+
+      // tx seqnum too low - tx invalid
+      txseqnum = 99
+      txb = Txbuilder()
+      txb.fromScript(txhashbuf, txoutnum, txout, scriptSig, txseqnum)
+      txb.setChangeAddress(Address().fromPrivkey(Privkey().fromRandom()))
+      txb.toAddress(BN(100000), Address().fromPrivkey(Privkey().fromRandom()))
+      txb.setVersion(2)
+      txb.build()
+      sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, redeemScript)
+      scriptSig.setChunkBuffer(0, sig.toTxFormat())
+      txb.tx.txins[0].setScript(scriptSig)
+      Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false)
+
+      // tx seqnum high enough - tx valid
+      txseqnum = 100
+      txb = Txbuilder()
+      txb.fromScript(txhashbuf, txoutnum, txout, scriptSig, txseqnum)
+      txb.setChangeAddress(Address().fromPrivkey(Privkey().fromRandom()))
+      txb.toAddress(BN(100000), Address().fromPrivkey(Privkey().fromRandom()))
+      txb.setVersion(2)
+      txb.build()
+      sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, redeemScript)
+      scriptSig.setChunkBuffer(0, sig.toTxFormat())
+      txb.tx.txins[0].setScript(scriptSig)
+      Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(true)
+    })
   })
 
   describe('Hash Time Lock (HTL)', function () {
