@@ -1,89 +1,120 @@
 # Yours Lightning
 
-We describe how 2-way hash time locked contracts (HTLCs) can be built. 
+We describe how 2-way *hash time locked contracts* (HTLCs) can be built. Our construction is not subject to transaction malleability and uses only OP_CHECKSEQUENCEVERIFY (CSV) and opcodes that are active in Bitcoin script today.
 
-## Scripts
+## Smart contracts
 
 We will need two kinds of smart contracts: HTLCs and revokable HTLCs.
 
 ### HTLCs
 
-A HTLC expresses the following:
+A HTLC between Alice (A) and Bob (B) expresses the following:
 
-> An output can be spent by Alice if she can present a secret immediately, or by Bob after two days
+> An output can be spent by B if he can present a secret immediately, or by A after two days
 
 This can be encoded by the following output script
 
 	OP_IF
-		<Alice's pub key> CHECKSIGVERIFY
+		<B's pub key> CHECKSIGVERIFY
 		OP HASH160 <Hash160 (secret)> OP_EQUALVERIFY 
 	OP_ELSE
 		<2 days> CHECKSEQUENCEVERIFY DROP
-		<Bob's pub key> CHECKSIGVERIFY
+		<A's pub key> CHECKSIGVERIFY
 	OP_ENDIF
 	
 ### Revocable HTLCs
 
 Revocable Sequence Maturity Contract (RSMC) are a technique to make outputs revokable by revealing a private key [1]. We apply this technique to HTLCs. 
 
-A revocable HTLC (RHTLC) is a smart contract that expresses:
+A revocable HTLC (RHTLC) between A and B is a smart contract that expresses:
 
-> An output can be spend by whomever knows both Alice's and Bob's private key immediately, or by Alice after a day if she knows a secret, or by Bob after two days.
+> An output can be spend by B if he knows A's revocation secret, or after one day if B knows the HTLC secret, or by A after 2 days.
 
 In Bitcoin script this looks something like this:
 
 	OP_IF
-		<Alice's pub key> <Bob pub key> 2 CHECKMULTISIG
+		<B's pub key> CHECKSIGVERIFY
+		OP HASH160 <Hash160 (A's revocation secret)> OP_EQUALVERIFY 
 	OP_ELSE
 		OP_IF
 			<2 days> CHECKSEQUENCEVERIFY OP_DROP
-			<Alice's pub key> CHECKSIGVERIFY
-			OP HASH160 <Hash160 (s)> OP_EQUALVERIFY 
+			<A's pub key> CHECKSIGVERIFY
+			OP HASH160 <Hash160 (HTLC secret)> OP_EQUALVERIFY 
 		OP_ELSE
 			<2 days> CHECKSEQUENCEVERIFY OP_DROP
-			<Bob's pub key> CHECKSIGVERIFY
+			<A's pub key> CHECKSIGVERIFY
 		OP_ENDIF	
 	OP_ENDIF
 
 ## Transactions
 
-The sender and the receiver exchange the following transactions.
+Alice (A) and Bob (B) exchange the following transactions.
 
 ![alt text](./img/2-way-rhtlc.png "2-way-rhtlc.png")
 
-Note that each party can revoke their own HTLC but not the other parties.
+Each commitment transaction maintains two HTLCs, one for each direction. Note that each party can revoke their own HTLC but not the other parties.
 
 ## Protocols
 
-For the moment we assume that only one party funds the channel. An elegant one that I'd have to discuss with Ryan, and the other one
+As there are inherent malleability problems if two parties fund a payment channel, we use a version where ony one party funds.
 
 ### Creating the payment
 
-**1. Sender generates fresh key pair.** He then sends the public key to receiver and stores the private key. He will later use this private key to revoke a transaction.
+**1. Alice generates a new revocation secret.** She then sends the hash of the secret to Bob. She will later use the revocation secret to revoke the commitment transaction she is in the process of creating when she wants to make another one after that.
 
-**2. Receiver generates fresh key pair.** He also sends the public key to sender and stores the private key to be able to revoke later.
+**2. Bob generates a new revocation secret.** He sends its hash to Alice. As above this will allow Bob to revoke this transaction later.
 
-**3. Sender builds transaction.** Sender builds the transaction labelled "known only to receiver" above. He uses the public key obtained from receiver in step 2. to generate the multisig output in the script labelled "RHTLC to receiver" above. Sender does not need to use a fresh key pair to create this multisig. He signs the transaction and sends it to receiver.
+**3. Alice builds a commitment transaction.** Alice builds the transaction labelled "known only to Bob" above. She uses the revocation secret obtained from Bob in step 2. She signs the transaction and sends it to Bob.
 
-**4. Receiver builds transactions.** If receiver wants to accept the payment, he will build the transaction labelled "known only to sender" above. He uses the public key obtained from sender in step 1. He then signs it and sends it back to sender.
+**4. Bob builds a commitment transaction.** If Bob wants to accept the payment, he will build the transaction labelled "known only to Alice" above. He uses the revocation secret obtained from Alice in step 1. He then signs it and sends it back to Alice.
 
-**5. Sender revokes.** To revoke the previous payment, sender sends the private key generated in step 1 to sender.
+**5. Alice revokes.** To revoke the previous payment, Alice sends her revocation secret from the last commitment transaction to Bob.
 
-**6. Receiver revokes.** Symmetrically, receiver sends sender the private key generated in step 2.
+**6. Bob revokes.** Symmetrically, Bob sends Alice his revocation secret from the last commitment transaction.
 
 ### Funding the channel
 
-We describe the version where only sender funds the channel.
+We describe the version where only Alice funds the channel.
 
-**1. Creating the multisig.** Sender sends a public key to receiver, receiver created a public key himself, creates a multisig address, and sends it back to sender
+**1. Creating the multisig.** Alice sends a public key to Bob, Bob created a public key himself, creates a multisig address, and sends it back to Alice
 
-**2. Creating a funding transactions.** Sender creates a transaction that spends to that multisig address. Does not broadcast it though.
+**2. Creating a funding transactions.** Alice creates a transaction that spends to the new multisig address. Does not broadcast it yet.
 
-**3. Creating a refund transaction.** Sender and receiver go through the protocol described above for creating a payment. The payment is such that the entire amount that was funded is credited back to sender. 
+**3. Creating a refund transaction.** Alice and Bob go through the protocol described above for creating a payment. The payment is such that the entire amount that was funded is credited to Alice. 
 
-**4. Broadcast the funding transactions.** When the refund transaction is created and distributed between the two players, the sender broadcasts the funding transaction. The channel is open when the funding transaction is confirmed into the blockchain.
+**4. Broadcast the funding transactions.** When the refund transaction is created and distributed between the two parties, Alice broadcasts the funding transaction. The channel is open when the funding transaction is confirmed into the blockchain.
 
 Note that when the first "real" payment is sent, the funding transaction is invalidated as described in the section above.
+
+### Closing the channel
+
+Either party can broadcast their most recent commitment transaction to the blochain. This closes the channel
+
+## Security Properties
+
+In the following we assume that both Alice and Bob are malicious but rational. That is, they look after their own self interest only and try to steal funds whenever possibel, but they will not harm themselves.
+
+_**Property 1.** Assume that from the last payment, both parties have transactions as in the picture above. If they execute the protocoll "Sending a payment", then their balance is as specified by the commitment transactions. Either party can force the other to reveil their HTLC secret within two days._
+
+We check that Property 2 holds true after each step of the protocol. 
+
+Steps 1 and 2 are not critical as the only information that gets exchanged are hashes of revocation secrets that have not been used yet. 
+
+After step 3 Bob can sign and broadcast the commitment transaction to the blockchain. In this case Bob is forced to spend the output labelled "HTLC to Bob" output within two days while Alices branch of that output is blocked by a CSV lock. If he does not, then Alice will spend that output. If Bob spends that output then he reveils his HTLC secret to Alice.
+
+Step 4 is completely symmetric to step 3. The same reasonoing applies.
+
+Note that up to this point, Alice and Bob can still broadcast the commitment transaction from the last round. This is particularly enticing for the party that had a higher balance in the last round (essentially the "sender" of this round). Note that however in that case the receiver will eventually reveil the secret for the last payment, not the current one. Thus the "sender" cannot claim to have made the last payment.
+
+Step 5. This is where Alice sends her revocation secret to Bob. This guarantys to Bob that Alice will not broadcast a previous transaction anymore. To understand why assume that she would. In this case an old version of the transaction "known only to Alice" is broadcast to the blockchain. If that happens, Bob can claim both outputs. He can clearly claim the top output (HTLC to Bob) by reveiling an old HTLC secret. He can also claim the second output using the Alice's revocation secret (either the one she just reveiled or one reveilled in a previous round) and his own private key. Note that if Alice cheats in this way, she looses not only a payment but the entire amount used to fund the channel.
+
+Step 6 is symmetric to step 5 and the same reasoning applies.
+
+<!--
+_**Property 2.** While executing the "funding the channel" protocoll as described above, neither party can steal the other parties funds. This is true in the presence of transaction malleability._
+
+Again, we check that Property 2 holds true after each step of the protocol. Step 1 is completely uncritical because only public keys are exchanged and a new address is creates. So is step 2 because Alice does not broadcast the funding transaction yet. TODO use Property 1 here.
+-->
 
 ## References 
 
