@@ -1,6 +1,6 @@
 # Yours Payment Channel Hub
 
-We describe how 2-way *hash time locked contracts* (HTLCs) can be built. Our construction is not subject to transaction malleability and uses only OP_CHECKSEQUENCEVERIFY (CSV) and opcodes that are active in Bitcoin script today.
+We describe how a Bitcoin payment-channel hub can be built. The basic building blocks are 2-way *hash time locked contracts* (HTLCs). Our construction is not subject to transaction malleability and uses only OP_CHECKSEQUENCEVERIFY (CSV) and opcodes that are active in Bitcoin script today.
 
 ## Smart contracts
 
@@ -10,9 +10,9 @@ We will need two kinds of smart contracts: HTLCs and revokable HTLCs.
 
 A HTLC between Alice (A) and Bob (B) expresses the following:
 
-> An output can be spent by B if he can present a secret within two day, or by A after that
+> An output can be spent by B if he can present a secret within two day, or by A after that.
 
-This can be encoded by the following output script
+HTLC make payments routed through several untrusted third parties secure. They can be encoded by the following output script
 
 	OP_IF
 		<B's pub key> CHECKSIGVERIFY
@@ -24,13 +24,15 @@ This can be encoded by the following output script
 	
 ### Revocable HTLCs
 
-Revocable Sequence Maturity Contract (RSMC) are a technique to make outputs revokable by revealing a private key [1]. We apply this technique to HTLCs. 
+In order for channels to remain open an unlimited amount of time, the parties must be able to revoke previously made payments. Revocable Sequence Maturity Contract (RSMC) are a technique to achieve just that [1]. We apply this technique to HTLCs in order to make them revokable. 
 
 A revocable HTLC (RHTLC) between A and B is a smart contract that expresses:
 
 > An output can be spend by B if he knows A's revocation secret, or after one day if B knows the HTLC secret, or by A after 2 days.
 
-In Bitcoin script this looks something like this:
+The trick is that if Alice gives Bob her revocation secret, then Bob knows that she will never publish the contract. If she did, he could spend from it immediately. In this way Alice can effectively revoke the contract. If Bob does not know the revocation secret, the above condition is equivalent to a normal HTLC.
+
+In Bitcoin script the condition above can be expressed (roughtly) as follows:
 
 	OP_IF
 		<B's pub key> CHECKSIGVERIFY
@@ -135,7 +137,9 @@ There is still the possibility that Bob controls a node that would maleate the f
 
 **storeRevocationSecret(secret).** Stores the revocation secret of the other party.
 
-**buildCommitmentTx().** Builds and signs a commitment transaction. Still needs to be signed by the other party though.
+**buildCommitmentTx(amount).** Builds and signs a commitment transaction. Still needs to be signed by the other party.
+
+**acceptCommitmentTx(txb).** Check if payment should be accepted. If so sign and return. 
 
 
 
