@@ -55,7 +55,7 @@ describe('Script Examples', function () {
       txb.setNLocktime(txnlocktime)
       txb.build()
       sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, scriptPubkey)
-      scriptSig.chunks[0] = Script().writeBuffer(sig.toTxFormat()).chunks[0]
+      scriptSig.setChunkBuffer(0, sig.toTxFormat())
       txb.tx.txins[0].setScript(scriptSig)
       Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY).should.equal(false)
 
@@ -64,7 +64,7 @@ describe('Script Examples', function () {
       txb.setNLocktime(txnlocktime)
       txb.build()
       sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, scriptPubkey)
-      scriptSig.chunks[0] = Script().writeBuffer(sig.toTxFormat()).chunks[0]
+      scriptSig.setChunkBuffer(0, sig.toTxFormat())
       txb.tx.txins[0].setScript(scriptSig)
       Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY).should.equal(true)
     })
@@ -118,7 +118,7 @@ describe('Script Examples', function () {
       txb.setNLocktime(txnlocktime)
       txb.build()
       sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, redeemScript)
-      scriptSig.chunks[0] = Script().writeBuffer(sig.toTxFormat()).chunks[0]
+      scriptSig.setChunkBuffer(0, sig.toTxFormat())
       txb.tx.txins[0].setScript(scriptSig)
       Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY).should.equal(false)
 
@@ -127,7 +127,7 @@ describe('Script Examples', function () {
       txb.setNLocktime(txnlocktime)
       txb.build()
       sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, redeemScript)
-      scriptSig.chunks[0] = Script().writeBuffer(sig.toTxFormat()).chunks[0]
+      scriptSig.setChunkBuffer(0, sig.toTxFormat())
       txb.tx.txins[0].setScript(scriptSig)
       Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY).should.equal(true)
     })
@@ -171,7 +171,7 @@ describe('Script Examples', function () {
       txb.setVersion(2)
       txb.build()
       sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, scriptPubkey)
-      scriptSig.chunks[0] = Script().writeBuffer(sig.toTxFormat()).chunks[0]
+      scriptSig.setChunkBuffer(0, sig.toTxFormat())
       txb.tx.txins[0].setScript(scriptSig)
       Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false)
 
@@ -184,7 +184,7 @@ describe('Script Examples', function () {
       txb.setVersion(2)
       txb.build()
       sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, scriptPubkey)
-      scriptSig.chunks[0] = Script().writeBuffer(sig.toTxFormat()).chunks[0]
+      scriptSig.setChunkBuffer(0, sig.toTxFormat())
       txb.tx.txins[0].setScript(scriptSig)
       Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(true)
     })
@@ -226,7 +226,7 @@ describe('Script Examples', function () {
 
       txb.build()
       let sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, scriptPubkey)
-      scriptSig.chunks[0] = Script().writeBuffer(sig.toTxFormat()).chunks[0]
+      scriptSig.setChunkBuffer(0, sig.toTxFormat())
       txb.tx.txins[0].setScript(scriptSig)
       Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY).should.equal(true)
     })
@@ -275,7 +275,7 @@ describe('Script Examples', function () {
 
       txb.build()
       let sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, redeemScript)
-      scriptSig.chunks[0] = Script().writeBuffer(sig.toTxFormat()).chunks[0]
+      scriptSig.setChunkBuffer(0, sig.toTxFormat())
       txb.tx.txins[0].setScript(scriptSig)
       Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY).should.equal(true)
     })

@@ -19,7 +19,7 @@
   "homepage": "https://github.com/dattnetwork/fullnode-pc#readme",
   "dependencies": {
     "asink": "1.0.4",
-    "fullnode": "0.13.16"
+    "fullnode": "0.13.17"
   },
   "devDependencies": {
     "mocha": "2.4.5",
