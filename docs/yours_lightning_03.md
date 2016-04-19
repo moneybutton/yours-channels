@@ -10,7 +10,7 @@ We will need two kinds of smart contracts: HTLCs and revokable HTLCs.
 
 A HTLC between Alice (A) and Bob (B) expresses the following:
 
-> An output can be spent by B if he can present a secret immediately, or by A after two days
+> An output can be spent by B if he can present a secret within two day, or by A after that
 
 This can be encoded by the following output script
 
@@ -52,7 +52,7 @@ Alice (A) and Bob (B) exchange the following transactions.
 
 ![alt text](./img/2-way-rhtlc.png "2-way-rhtlc.png")
 
-Each commitment transaction maintains two HTLCs, one for each direction. Note that each party can revoke their own HTLC but not the other parties.
+Each commitment transaction maintains two HTLCs, one for each direction. Note that each party can revoke their own HTLC but not the other party's.
 
 ## Protocols
 
@@ -117,8 +117,7 @@ Again, we check that Property 2 holds true after each step of the protocol. Step
 
 Note that as this point Alice could maleate her funding transaction before she'd broadcast it to the blockchain. However all that would do is to invalidate her refund transaction which would hurt only herself. 
 
-There is still the possibility that Bob controls a node that would maleate the funding transaction after it is broadcast. However Bob would have to controls a sizable part of the bitcoin network to pull this off consistently (if he controls n% of the network that would work n% of the time). Essentially, only mining pool operators would have the resources to pull off that attack consistently. However, there is very little to win (one funding transaction worth double digit USD) and very much to loose (the miners in the pool), so we do not anticipate this attack being a problem in practice. 
-
+There is still the possibility that Bob controls a node that would maleate the funding transaction after it is broadcast. However Bob would have to controls a sizable part of the bitcoin network to pull this off consistently (if he controls n% of the network that would work n% of the time). Essentially, only mining pool operators would have the resources to pull off that attack consistently. However, there is very little to win (one funding transaction worth double digit USD) and very much to loose (the miners in the pool), so we do not anticipate this attack being a problem in practice.
 
 ## References 
 
