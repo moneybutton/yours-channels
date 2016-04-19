@@ -55,27 +55,38 @@ describe('Agent', function () {
 
     it('asyncInitialize should set a multisig script and address', function () {
       return asink(function *() {
-        let agent = Agent(privkey, msPrivkey, otherMsPubkey, otherAddress)
+        let agent = Agent(privkey, msPrivkey, otherAddress)
         yield agent.asyncInitialize()
         should.exist(agent.pubkey)
         should.exist(agent.address)
         should.exist(agent.keypair)
-        should.exist(agent.msPubkey)
-        should.exist(agent.msScript)
-        should.exist(agent.msAddress)
         agent.initialized.should.equal(true)
       }, this)
     })
   })
 
-  /* funding transaction */
+  describe('#asyncBuildMultisig', function () {
+    it('asyncBuildMultisig should create a multisig address', function () {
+      return asink(function *() {
+        let agent = Agent(privkey, msPrivkey, otherAddress)
+        yield agent.asyncBuildMultisig(otherMsPubkey)
+
+        should.exist(agent.msPubkey)
+        should.exist(agent.msScript)
+        should.exist(agent.msAddress)
+      }, this)
+    })
+  })
+
+  /* funding the channel */
 
   describe('#asyncBuildFundingTx', function () {
     it('asyncBuildFundingTx should create a funding tx', function () {
       return asink(function *() {
         // asyncInitialize an agent
-        let agent = Agent(privkey, msPrivkey, otherMsPubkey, otherAddress)
+        let agent = Agent(privkey, msPrivkey, otherAddress)
         yield agent.asyncInitialize()
+        yield agent.asyncBuildMultisig(otherMsPubkey)
 
         // build output to be spent in funding transaction
         let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
@@ -108,19 +119,44 @@ describe('Agent', function () {
     })
   })
 
-  /* payment transaction */
+  describe('#asyncBuildRefundTx', function () {
+    it('asyncBuildRefundTx should exist', function () {
+      let agent = Agent()
+      should.exist(agent.asyncBuildRefundTx)
+    })
+  })
+
+  /* building a payment */
+
+  describe('#generateRevocationSecret', function () {
+    it('generateRevocationSecret should exist', function () {
+      let agent = Agent()
+      agent.generateRevocationSecret()
+      should.exist(agent.revocationSecret)
+    })
+  })
+
+  describe('#storeRevocationSecret', function () {
+    it('storeRevocationSecret should exist', function () {
+      let agent = Agent()
+      agent.storeRevocationSecret('abc')
+      should.exist(agent.otherRevocationSecret)
+    })
+  })
 
   describe('#asyncBuildParitalPaymentTx', function () {
     it('asyncBuildParitalPaymentTx should create a partial payment tx', function () {
       return asink(function *() {
         // asyncInitialize agent
-        let agent = Agent(privkey, msPrivkey, otherMsPubkey, otherAddress)
+        let agent = Agent(privkey, msPrivkey, otherAddress)
         yield agent.asyncInitialize()
+        yield agent.asyncBuildMultisig(otherMsPubkey)
         agent.fundingTx = Tx().fromString(consts.fundingTx)
 
         // asyncInitialize another agent
-        let otherAgent = Agent(otherPrivkey, otherMsPrivkey, msPubkey, address)
+        let otherAgent = Agent(otherPrivkey, otherMsPrivkey, address)
         yield otherAgent.asyncInitialize()
+        yield otherAgent.asyncBuildMultisig(msPubkey)
 
         // build funding transaction for other agent
         let otherScriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + otherAddress.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
@@ -132,10 +168,6 @@ describe('Agent', function () {
         let otherFundingTxb = yield otherAgent.asyncBuildFundingTx(otherAmount, otherTxhashbuf, otherTxoutnum, otherTxout, otherPubkey)
         let otherFundingTx = otherFundingTxb.tx
         otherFundingTx.toString().should.equal(consts.otherFundingTx)
-
-        // store otherFundingTx in agent
-        agent.storeOtherFundingTx(otherFundingTx)
-//        agent.otherBalance.should.equal('') TODO
 
         let amountToOther = BN(5e6)
         let script = Script().fromScripthash(agent.otherAddress.hashbuf)

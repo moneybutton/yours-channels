@@ -121,21 +121,23 @@ There is still the possibility that Bob controls a node that would maleate the f
 
 ## Implementation
 
-### Funding phase
+### Funding the channel
 
-**BuildMultisig(pubkey).** Creates a second fresh public key, returns a 2-of-2 multisig address from the two keys.
+**buildMultisig(pubkey).** Creates a second fresh public key, returns a 2-of-2 multisig address from the two keys.
 
-**BuildFundingTx(amount, inputs, outputs).** Creates a transaction that spends amount from inputs to outputs (outputs will be the multisig address from above).
+**buildFundingTx(amount, inputs, outputs).** Creates a transaction that spends amount from inputs to outputs (outputs will be the multisig address from above).
 
-**BuildRefundTx()** Calls BuildCommitmentTx to create a refund transaction.
+**buildRefundTx()** Calls BuildCommitmentTx to create a refund transaction.
 
-### Payment phase
+### Building a payment
 
-**GenerateRevocationSecret().** Returns a random string.
+**generateRevocationSecret().** Returns a random string.
 
-**BuildCommitmentTx().** Builds and signs a commitment transaction. Still needs to be signed by the other party though.
+**storeRevocationSecret(secret).** Stores the revocation secret of the other party.
 
-**StoreRevocationSecret(secret).** Stores the revocation secret of the other party.
+**buildCommitmentTx().** Builds and signs a commitment transaction. Still needs to be signed by the other party though.
+
+
 
 ## References 
 
