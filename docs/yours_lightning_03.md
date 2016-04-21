@@ -16,15 +16,15 @@ HTLC make payments routed through several untrusted third parties secure. They c
 
 	OP_IF
 		<B's pub key> CHECKSIGVERIFY
-		OP HASH160 <Hash160 (secret)> OP_EQUALVERIFY 
+		OP HASH160 <Hash160 (secret)> OP_EQUALVERIFY
 	OP_ELSE
 		<2 days> CHECKSEQUENCEVERIFY DROP
 		<A's pub key> CHECKSIGVERIFY
 	OP_ENDIF
-	
+
 ### Revocable HTLCs
 
-In order for channels to remain open an unlimited amount of time, the parties must be able to revoke previously made payments. Revocable Sequence Maturity Contract (RSMC) are a technique to achieve just that [1]. We apply this technique to HTLCs in order to make them revokable. 
+In order for channels to remain open an unlimited amount of time, the parties must be able to revoke previously made payments. Revocable Sequence Maturity Contract (RSMC) are a technique to achieve just that [1]. We apply this technique to HTLCs in order to make them revokable.
 
 A revocable HTLC (RHTLC) between A and B is a smart contract that expresses:
 
@@ -36,16 +36,16 @@ In Bitcoin script the condition above can be expressed (roughtly) as follows:
 
 	OP_IF
 		<B's pub key> CHECKSIGVERIFY
-		OP HASH160 <Hash160 (A's revocation secret)> OP_EQUALVERIFY 
+		OP HASH160 <Hash160 (A's revocation secret)> OP_EQUALVERIFY
 	OP_ELSE
 		OP_IF
 			<2 days> CHECKSEQUENCEVERIFY OP_DROP
 			<A's pub key> CHECKSIGVERIFY
-			OP HASH160 <Hash160 (HTLC secret)> OP_EQUALVERIFY 
+			OP HASH160 <Hash160 (HTLC secret)> OP_EQUALVERIFY
 		OP_ELSE
 			<2 days> CHECKSEQUENCEVERIFY OP_DROP
 			<A's pub key> CHECKSIGVERIFY
-		OP_ENDIF	
+		OP_ENDIF
 	OP_ENDIF
 
 ## Transactions
@@ -62,13 +62,17 @@ As there are inherent malleability problems if two parties fund a payment channe
 
 ### Creating the payment
 
-**1. Alice generates a new revocation secret.** She then sends the hash of the secret to Bob. She will later use the revocation secret to revoke the commitment transaction she is in the process of creating when she wants to make another one after that.
+We describe a payment from Alice to Bob. Note that Alice the following information from the previous payment: her own revocation secret, her own HTLC secret, the hash of Bob's last revocation secret, the hash of Bob's last HTLC secret.
+
+**1. Alice generates a new revocation secret.** She then sends the hash of the revocation secret to Bob. She will later use the revocation secret to revoke the commitment transaction she is in the process of creating when she wants to make another one after that.
 
 **2. Bob generates a new revocation secret.** He sends its hash to Alice. As above this will allow Bob to revoke this transaction later.
 
-**3. Alice builds a commitment transaction.** Alice builds the transaction labelled "known only to Bob" above. She uses the revocation secret obtained from Bob in step 2. She signs the transaction and sends it to Bob.
+**2.5. Bob generates a new HTLC secret.** Alice will need to know this secret to prove that she made the payment. Bob sends the HTLC secret's hash to Alice.
 
-**4. Bob builds a commitment transaction.** If Bob wants to accept the payment, he will build the transaction labelled "known only to Alice" above. He uses the revocation secret obtained from Alice in step 1. He then signs it and sends it back to Alice.
+**3. Alice builds a commitment transaction.** Alice builds the transaction labelled "known only to Bob" above. She uses the hash of the revocation secret obtained from Bob in step 2 and the hash of the HTLC secret from step 2.5. She signs the transaction and sends it to Bob.
+
+**4. Bob builds a commitment transaction.** If Bob wants to accept the payment, he will build the transaction labelled "known only to Alice" above. He uses the revocation secret obtained from Alice in step 1 and the old HTLC secret from the previous round. He then signs the transaction and sends it back to Alice.
 
 **5. Alice revokes.** To revoke the previous payment, Alice sends her revocation secret from the last commitment transaction to Bob.
 
@@ -82,7 +86,7 @@ We describe the version where only Alice funds the channel.
 
 **2. Creating a funding transactions.** Alice creates a transaction that spends to the new multisig address. Does not broadcast it yet.
 
-**3. Creating a refund transaction.** Alice and Bob go through the protocol described above for creating a payment. The payment is such that the entire amount that was funded is credited to Alice. 
+**3. Creating a refund transaction.** Alice and Bob go through the protocol described above for creating a payment. The payment is such that the entire amount that was funded is credited to Alice.
 
 **4. Broadcast the funding transactions.** When the refund transaction is created and distributed between the two parties, Alice broadcasts the funding transaction. The channel is open when the funding transaction is confirmed into the blockchain.
 
@@ -98,9 +102,9 @@ In the following we assume that both Alice and Bob are malicious but rational. T
 
 _**Property 1.** Assume that from the last payment, both parties have transactions as in the picture above. If they execute the protocol "Sending a payment", then their balance is as specified by the commitment transactions. Either party can force the other to reveal their HTLC secret within two days._
 
-We check that Property 1 holds true after each step of the protocol. 
+We check that Property 1 holds true after each step of the protocol.
 
-Steps 1 and 2 are not critical as the only information that gets exchanged are hashes of revocation secrets that have not been used yet. 
+Steps 1 and 2 are not critical as the only information that gets exchanged are hashes of revocation secrets that have not been used yet.
 
 After step 3 Bob can sign and broadcast the commitment transaction to the blockchain. In this case Bob is forced to spend the output labelled "HTLC to Bob" output within two days while Alice's branch of that output is blocked by a CSV lock. If he does not, then Alice will spend that output. If Bob spends that output then he reveals his HTLC secret to Alice.
 
@@ -115,9 +119,9 @@ Step 6 is symmetric to step 5 and the same reasoning applies.
 
 _**Property 2.** While executing the "funding the channel" protocol as described above, neither party can steal the other parties funds. This is true in the presence of transaction malleability._
 
-Again, we check that Property 2 holds true after each step of the protocol. Step 1 is completely uncritical because only public keys are exchanged and a new address is creates. So is step 2 because Alice does not broadcast the funding transaction yet. Step 3 is not critical according to Property 1. 
+Again, we check that Property 2 holds true after each step of the protocol. Step 1 is completely uncritical because only public keys are exchanged and a new address is creates. So is step 2 because Alice does not broadcast the funding transaction yet. Step 3 is not critical according to Property 1.
 
-Note that as this point Alice could maleate her funding transaction before she'd broadcast it to the blockchain. However all that would do is to invalidate her refund transaction which would hurt only herself. 
+Note that as this point Alice could maleate her funding transaction before she'd broadcast it to the blockchain. However all that would do is to invalidate her refund transaction which would hurt only herself.
 
 There is still the possibility that Bob controls a node that would maleate the funding transaction after it is broadcast. However Bob would have to controls a sizable part of the bitcoin network to pull this off consistently (if he controls n% of the network that would work n% of the time). Essentially, only mining pool operators would have the resources to pull off that attack consistently. However, there is very little to win (one funding transaction worth double digit USD) and very much to loose (the miners in the pool), so we do not anticipate this attack being a problem in practice.
 
@@ -139,11 +143,11 @@ There is still the possibility that Bob controls a node that would maleate the f
 
 **buildCommitmentTx(amount).** Builds and signs a commitment transaction. Still needs to be signed by the other party.
 
-**acceptCommitmentTx(txb).** Check if payment should be accepted. If so sign and return. 
+**acceptCommitmentTx(txb).** Check if payment should be accepted. If so sign and return.
 
 
 
-## References 
+## References
 
 [1] [The Bitcoin Lightning Network:
 Scalable Off-Chain Instant Payments](http://lightning.network/lightning-network-paper.pdf) by Joseph Poon and Thaddeus Dryja
@@ -151,4 +155,4 @@ Scalable Off-Chain Instant Payments](http://lightning.network/lightning-network-
 [2] [A Fast and Scalable Payment Network with
 Bitcoin Duplex Micropayment Channels](http://diyhpl.us/~bryan/papers2/bitcoin/Fast%20and%20scalable%20payment%20network%20with%20Bitcoin%20duplex%20micropayment%20channels.pdf) by Christian Decker and Roger Wattenhofer
 
-[3] [Reaching the Ground with Lightning](http://diyhpl.us/~bryan/papers2/bitcoin/Fast%20and%20scalable%20payment%20network%20with%20Bitcoin%20duplex%20micropayment%20channels.pdf) by Rusty Russel 
+[3] [Reaching the Ground with Lightning](http://diyhpl.us/~bryan/papers2/bitcoin/Fast%20and%20scalable%20payment%20network%20with%20Bitcoin%20duplex%20micropayment%20channels.pdf) by Rusty Russel

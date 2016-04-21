@@ -188,7 +188,7 @@ describe('Agent', function () {
   })
 
   describe('#asyncBuildHtlcTx', function () {
-    it('asyncBuildHtlcTx should create a partial htlc tx', function () {
+    it.skip('asyncBuildHtlcTx should create a partial htlc tx', function () {
       return asink(function *() {
         // asyncInitialize agent
         let agent = Agent(privkey, msPrivkey, otherAddress)
