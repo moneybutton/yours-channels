@@ -42,4 +42,4 @@ As Alice knows that Bob is closer to Carol along the path, she promises Bob: "If
 
 At this point Carol is happy to give her secret to Bob in exchange for $1. If she gives out her secret, she must be aware that that secret might eventually end up in the knowledge of Alice. However she does not care, because she got her money anyway. Once she tells the secret to Bob, Bob goes ahead and gives the secret to Alice in exchange for $1.01. At the end of this exchange, Alice knows the secret and can thus prove to Carol that she made the payment, Bob has made a small profit of one cent, and Carol has gotten her money. Everybody is happy.
 
-If you have any feedback or questions, feel free to join our (Slack channel)[https://yours-slackin.herokuapp.com/]
+If you have any feedback or questions, feel free to join our [Slack channel](https://yours-slackin.herokuapp.com/)
