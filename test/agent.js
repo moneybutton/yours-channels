@@ -9,6 +9,7 @@ let Script = require('fullnode/lib/script')
 let Txout = require('fullnode/lib/txout')
 let Tx = require('fullnode/lib/tx')
 let Address = require('fullnode/lib/address')
+let Hash = require('fullnode/lib/hash')
 let BN = require('fullnode/lib/bn')
 
 describe('Agent', function () {
@@ -18,12 +19,12 @@ describe('Agent', function () {
   let pubkey = Pubkey().fromPrivkey(privkey)
   let address = Address().fromPubkey(pubkey)
   let msPrivkey = Privkey().fromBN(BN(40))
-//  let msPubkey = Pubkey().fromPrivkey(msPrivkey)
+  let msPubkey = Pubkey().fromPrivkey(msPrivkey)
 
   // generate data to initialize another agent (first cnlbuilder will need some of this data too)
   let otherPrivkey = Privkey().fromBN(BN(60))
   let otherPubkey = Pubkey().fromPrivkey(otherPrivkey)
-  let otherAddress = Address().fromPubkey(otherPubkey)
+//  let otherAddress = Address().fromPubkey(otherPubkey)
   let otherMsPrivkey = Privkey().fromBN(BN(50))
   let otherMsPubkey = Pubkey().fromPrivkey(otherMsPrivkey)
 
@@ -51,7 +52,7 @@ describe('Agent', function () {
 
     it('asyncInitialize should set a multisig script and address', function () {
       return asink(function *() {
-        let agent = Agent(privkey, msPrivkey, otherAddress)
+        let agent = Agent(privkey, msPrivkey)
         yield agent.asyncInitialize()
         should.exist(agent.pubkey)
         should.exist(agent.address)
@@ -64,7 +65,7 @@ describe('Agent', function () {
   describe('#asyncBuildMultisig', function () {
     it('asyncBuildMultisig should create a multisig address', function () {
       return asink(function *() {
-        let agent = Agent(privkey, msPrivkey, otherAddress)
+        let agent = Agent(privkey, msPrivkey)
         yield agent.asyncBuildMultisig(otherMsPubkey, otherPubkey)
 
         should.exist(agent.msPubkey)
@@ -80,7 +81,7 @@ describe('Agent', function () {
     it('asyncBuildFundingTx should create a funding tx', function () {
       return asink(function *() {
         // asyncInitialize an agent
-        let agent = Agent(privkey, msPrivkey, otherAddress)
+        let agent = Agent(privkey, msPrivkey)
         yield agent.asyncInitialize()
         yield agent.asyncBuildMultisig(otherMsPubkey, otherPubkey)
 
@@ -160,13 +161,13 @@ describe('Agent', function () {
     it('asyncBuildCommitmentTx should create a partial payment tx', function () {
       return asink(function *() {
         // asyncInitialize agent
-        let agent = Agent(privkey, msPrivkey, otherAddress)
+        let agent = Agent(privkey, msPrivkey)
         yield agent.asyncInitialize()
         yield agent.asyncBuildMultisig(otherMsPubkey, otherPubkey)
         agent.fundingTx = Tx().fromString(consts.fundingTx)
 
         // asyncInitialize another agent
-        let otherAgent = Agent(otherPrivkey, otherMsPrivkey, address)
+        let otherAgent = Agent(otherPrivkey, otherMsPrivkey)
         yield otherAgent.asyncInitialize()
 
         let amount = BN(1e6)
@@ -188,24 +189,33 @@ describe('Agent', function () {
   })
 
   describe('#asyncBuildHtlcTx', function () {
-    it.skip('asyncBuildHtlcTx should create a partial htlc tx', function () {
+    it('asyncBuildHtlcTx should create a partial htlc tx', function () {
       return asink(function *() {
         // asyncInitialize agent
-        let agent = Agent(privkey, msPrivkey, otherAddress)
+        let agent = Agent(privkey, msPrivkey)
         yield agent.asyncInitialize()
         yield agent.asyncBuildMultisig(otherMsPubkey, otherPubkey)
         agent.fundingTx = Tx().fromString(consts.fundingTx)
 
+        // generate agents secrets
+        agent.generateRevocationSecret()
+        agent.generateHtlcSecret()
+
         // asyncInitialize another agent
-        let otherAgent = Agent(otherPrivkey, otherMsPrivkey, address)
+        let otherAgent = Agent(otherPrivkey, otherMsPrivkey)
         yield otherAgent.asyncInitialize()
+
+        // generate other agents secrets
+        let otherHTLCSecretHash = yield Hash.asyncSha256ripemd160(new Buffer('other agents htlc secret'))
+        agent.storeOtherHTLCSecretHash(otherHTLCSecretHash)
+        let otherRevocationSecretHash = yield Hash.asyncSha256ripemd160(new Buffer('other agents revocation secret'))
+        agent.storeOtherRevocationSecretHash(otherRevocationSecretHash)
 
         let amount = BN(5e6)
         let amountToOther = BN(5e6)
         let txb = yield agent.asyncBuildHtlcTx(amount, amountToOther)
         let tx = txb.tx
 
-        tx.toString().should.equal(consts.partialHtlcTx)
         tx.toJSON().txins.length.should.equal(1)
         tx.toJSON().txouts.length.should.equal(3)
 
@@ -217,26 +227,38 @@ describe('Agent', function () {
   })
 
   describe('#asyncAcceptCommitmentTx', function () {
-    it.skip('asyncAcceptCommitmentTx should create a htlc tx', function () {
+    it('asyncAcceptCommitmentTx should create a htlc tx', function () {
       return asink(function *() {
         // asyncInitialize agent
-        let agent = Agent(privkey, msPrivkey, otherAddress)
+        let agent = Agent(privkey, msPrivkey)
         yield agent.asyncInitialize()
         yield agent.asyncBuildMultisig(otherMsPubkey, otherPubkey)
         agent.fundingTx = Tx().fromString(consts.fundingTx)
 
-        // asyncInitialize another agent
-        let otherAgent = Agent(otherPrivkey, otherMsPrivkey, address)
-        yield otherAgent.asyncInitialize()
+        // generate agents secrets
+        agent.generateRevocationSecret()
+        agent.generateHtlcSecret()
 
+        // asyncInitialize another agent
+        let otherAgent = Agent(otherPrivkey, otherMsPrivkey)
+        yield otherAgent.asyncInitialize()
+        yield otherAgent.asyncBuildMultisig(msPubkey, pubkey)
+
+        // generate other agents secrets
+        let otherHTLCSecretHash = yield Hash.asyncSha256ripemd160(new Buffer('other agents htlc secret'))
+        agent.storeOtherHTLCSecretHash(otherHTLCSecretHash)
+        let otherRevocationSecretHash = yield Hash.asyncSha256ripemd160(new Buffer('other agents revocation secret'))
+        agent.storeOtherRevocationSecretHash(otherRevocationSecretHash)
+
+        let amount = BN(5e6)
         let amountToOther = BN(5e6)
-        let txb = yield agent.asyncBuildHtlcTx(amountToOther)
+        let txb = yield agent.asyncBuildHtlcTx(amount, amountToOther)
         let tx = yield otherAgent.asyncAcceptCommitmentTx(txb)
 
-        tx.toString().should.equal('')
+        // tx.toString().should.equal('')
 
-        // tx.toJSON().txins.length.should.equal(1)
-        // tx.toJSON().txouts.length.should.equal(2)
+        tx.toJSON().txins.length.should.equal(1)
+        tx.toJSON().txouts.length.should.equal(3)
         // ;(tx.toJSON().txouts[0].valuebn).should.equal(amountToOther.toString())
       }, this)
     })
