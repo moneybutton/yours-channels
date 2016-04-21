@@ -32,9 +32,9 @@ describe('Agent', function () {
     otherFundingTx: '01000000010000000000000000000000000000000000000000000000000000000000000000000000006b4830450221009a8d35af1dcb1ed0fc0f21e07ebd0a2bce88f9bfc973b083326bef9d74e7354c022029d23c39c3cb18bc2567c9c54e215c2c13f68fbaf3c67e3f3f3fb8b234eb0d5701210301257e93a78a5b7d8fe0cf28ff1d8822350c778ac8a30e57d2acfc4d5fb8c192ffffffff02809698000000000017a914825d8d4a359b1caee1ea5191d43deaff2a8769148770235d05000000001976a914687b4cd0cd3ddcc611aac541bf3ab6dc0b7ecb9588ac00000000',
     partialRefundTx: '010000000149917883684f5cbd2105ed83e90f695b2a57aaace9466320b85e4f424bfbb91d0000000092000047304402200829feb0dc5d027afeaaca6b8133e1c59fd010746fafe1dfca7634c136f58621022070a2ed2be2fceec1376956efd0cfe6edb4b6e2599416bc9639eba2590baa7c57014752210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b52aeffffffff01f0053101000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ace7382957',
     completeRefundTx: '010000000149917883684f5cbd2105ed83e90f695b2a57aaace9466320b85e4f424bfbb91d00000000da00483045022100fa63300d459ec162c7b60881ed000013f5379176c9774e5eedf6cfea24481a6602203c53cec3f43e8796b1311c33440346ec840dee22452c514ef66b02a5c876c7d90147304402200829feb0dc5d027afeaaca6b8133e1c59fd010746fafe1dfca7634c136f58621022070a2ed2be2fceec1376956efd0cfe6edb4b6e2599416bc9639eba2590baa7c57014752210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b52aeffffffff01f0053101000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ace7382957',
-    partialPaymentTx: '010000000149917883684f5cbd2105ed83e90f695b2a57aaace9466320b85e4f424bfbb91d00000000930000483045022100c16570a0c0076c6206a019adc5ca40056525e46b40e960511448a3e7fddeee070220393b255b19c29c0a1b8fcb71b16f45891d0d96f7a86c001217fd0f223a8357d1014752210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b52aeffffffff02404b4c000000000017a914687b4cd0cd3ddcc611aac541bf3ab6dc0b7ecb9587b0bae400000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000',
+    partialPaymentTx: '010000000149917883684f5cbd2105ed83e90f695b2a57aaace9466320b85e4f424bfbb91d00000000930000483045022100b4be610a2ee28691f684dd9937c56ceadd18dfcc7d5e8baa23672e3a7bfa70e102205587ba8c115803e31bef323d7a2f11427947c696b93bee323236f282d2586965014752210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b52aeffffffff0340420f000000000017a914896007cb039c6648498ba434b2d0ed00837c1a3587404b4c000000000017a914687b4cd0cd3ddcc611aac541bf3ab6dc0b7ecb95877078d500000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000',
     completePaymentTx: '010000000149917883684f5cbd2105ed83e90f695b2a57aaace9466320b85e4f424bfbb91d00000000da004830450221009b918e851bd12259d066f7962869c119950c8de411885b7f66ea92f3b54daa3102205f04775fcea9bd7f037b00209dabe05981fbdf26be65be12ac0ca09dd42071700147304402202641d88de6adc665c161899e862c0065352a216e3bf45c58a610c27df57fd09702206d7931e2f6c78692bae2d2e11d8c06d89f5c50d3b759f30d07ac8c028c7c8a4c014752210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b52aeffffffff02404b4c000000000017a914687b4cd0cd3ddcc611aac541bf3ab6dc0b7ecb9587b0bae400000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac67e72757',
-    partialHtlcTx: '010000000149917883684f5cbd2105ed83e90f695b2a57aaace9466320b85e4f424bfbb91d0000000093000048304502210098c3a94595c01f64b21159d3350c8c344cd2c56d556e39082226a5ec9428f68d0220282a93ffa83f2347739ec9e80914451591f0e633e31467361e29279969dadec4014752210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b52aeffffffff02404b4c00000000006463210301257e93a78a5b7d8fe0cf28ff1d8822350c778ac8a30e57d2acfc4d5fb8c192b2a9142598612ebe9e0dcbd7e98683e7570bab139b91b188670164b27521036d2b085e9e382ed10b69fc311a03f8641ccfff21574de0927513a49d9a688a00b268b0bae400000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000'
+    partialHtlcTx: '010000000149917883684f5cbd2105ed83e90f695b2a57aaace9466320b85e4f424bfbb91d000000009200004730440220761c62438bfc9bca63fc5069d22522c97e73fffe84be55050709695819788c2b02202edf17ee25840ef36db62def204b5b7d9ea00ff379e51aa2be4ce6465f6a3b30014752210229757774cc6f3be1d5f1774aefa8f02e50bc64404230e7a67e8fde79bd559a9a210391de2f6bb67b11139f0e21203041bf080eacf59a33d99cd9f1929141bb0b4d0b52aeffffffff03404b4c00000000006463210301257e93a78a5b7d8fe0cf28ff1d8822350c778ac8a30e57d2acfc4d5fb8c192b2a9142598612ebe9e0dcbd7e98683e7570bab139b91b188670164b27521036d2b085e9e382ed10b69fc311a03f8641ccfff21574de0927513a49d9a688a00b268404b4c0000000000a163210301257e93a78a5b7d8fe0cf28ff1d8822350c778ac8a30e57d2acfc4d5fb8c192b2a91472c34155a9a8a6d16ea749e23198e9c0d234786a886763210301257e93a78a5b7d8fe0cf28ff1d8822350c778ac8a30e57d2acfc4d5fb8c192b2a91472c34155a9a8a6d16ea749e23198e9c0d234786a88670164b27521036d2b085e9e382ed10b69fc311a03f8641ccfff21574de0927513a49d9a688a00b26868706f9800000000001976a914896007cb039c6648498ba434b2d0ed00837c1a3588ac00000000'
   }
 
   it('should exist', function () {
@@ -132,11 +132,27 @@ describe('Agent', function () {
     })
   })
 
-  describe('#storeRevocationSecret', function () {
-    it('storeRevocationSecret should exist', function () {
+  describe('#storeOtherRevocationSecretHash', function () {
+    it('storeOtherRevocationSecretHash should exist', function () {
       let agent = Agent()
-      agent.storeRevocationSecret('abc')
-      should.exist(agent.otherRevocationSecret)
+      agent.storeOtherRevocationSecretHash('abc')
+      should.exist(agent.otherRevocationSecretHash)
+    })
+  })
+
+  describe('#generateHtlcSecret', function () {
+    it('generateHtlcSecret should exist', function () {
+      let agent = Agent()
+      agent.generateHtlcSecret()
+      should.exist(agent.htlcSecret)
+    })
+  })
+
+  describe('#storeOtherHTLCSecretHash', function () {
+    it('storeOtherHTLCSecretHash should exist', function () {
+      let agent = Agent()
+      agent.storeOtherHTLCSecretHash('abc')
+      should.exist(agent.otherOtherHTLCSecretHash)
     })
   })
 
@@ -153,15 +169,20 @@ describe('Agent', function () {
         let otherAgent = Agent(otherPrivkey, otherMsPrivkey, address)
         yield otherAgent.asyncInitialize()
 
+        let amount = BN(1e6)
+        let script = Script().fromScripthash(agent.address.hashbuf)
+
         let amountToOther = BN(5e6)
-        let script = Script().fromScripthash(agent.otherAddress.hashbuf)
-        let txb = yield agent.asyncBuildCommitmentTx(amountToOther, script)
+        let scriptToOther = Script().fromScripthash(agent.otherAddress.hashbuf)
+
+        let txb = yield agent.asyncBuildCommitmentTx(amount, script, amountToOther, scriptToOther)
         let tx = txb.tx
 
         tx.toString().should.equal(consts.partialPaymentTx)
         tx.toJSON().txins.length.should.equal(1)
-        tx.toJSON().txouts.length.should.equal(2)
-        ;(tx.toJSON().txouts[0].valuebn).should.equal(amountToOther.toString())
+        tx.toJSON().txouts.length.should.equal(3)
+        ;(tx.toJSON().txouts[0].valuebn).should.equal(amount.toString())
+        ;(tx.toJSON().txouts[1].valuebn).should.equal(amountToOther.toString())
       }, this)
     })
   })
@@ -179,13 +200,14 @@ describe('Agent', function () {
         let otherAgent = Agent(otherPrivkey, otherMsPrivkey, address)
         yield otherAgent.asyncInitialize()
 
+        let amount = BN(5e6)
         let amountToOther = BN(5e6)
-        let txb = yield agent.asyncBuildHtlcTx(amountToOther)
+        let txb = yield agent.asyncBuildHtlcTx(amount, amountToOther)
         let tx = txb.tx
 
         tx.toString().should.equal(consts.partialHtlcTx)
         tx.toJSON().txins.length.should.equal(1)
-        tx.toJSON().txouts.length.should.equal(2)
+        tx.toJSON().txouts.length.should.equal(3)
 
         // tx.toJSON().txins.length.should.equal(1)
         // tx.toJSON().txouts.length.should.equal(2)
