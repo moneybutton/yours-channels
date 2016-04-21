@@ -32,7 +32,9 @@ However this is not necessary as payments can be routed via other parties. For e
 
 	Alice -> Bob -> Carol
 
-The general risk is that Bob runs with the money. The idea to prevent that from happening is to force Bob to pay Carol before Alice pays Bob. This can be enforced as follows.
+The general risk is that Bob runs with the money. The idea to prevent that from happening is to force Bob to pay Carol before Alice pays Bob. The next section explains how this can be enforced.
+
+### Enforcing a payment order
 
 Carol thinks up a secret string that only she knows. Alice and Carol agree that as soon as Alice knows that secret they will assume that the payment has been made. Essentially Alice now wants to buy that secret for \$1.
 
