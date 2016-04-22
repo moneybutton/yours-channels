@@ -84,9 +84,9 @@ We describe the version where only Alice funds the channel.
 
 **1. Alice and Bob exchange public keys and create a multisig address.** Alice sends two public key to Bob - one to build a multisig address and one at which she wishes to receive payments at. Symmetrically, Bob sends two corresponding public keys to Alice. Both create the same multisig address from the keys.
 
-**2. Alice builds a funding transactions.** Alice creates a transaction that spends to the shared multisig address, but does not broadcast it yet.
+**2. Alice builds a funding transactions.** Alice creates a transaction that spends to the shared multisig address, but does not broadcast it yet. She then sends the funding amount to Bob.
 
-**3. Alice and Bob build a refund transaction.** Alice and Bob go through the protocol described above for creating a payment, in the case where Bob sends a payment to Alice. The payment spends all funds from the funding transaction to Alice.
+**3. Bob builds a refund transaction, sends it to Alice.** Alice and Bob go through the protocol described above for creating a payment, in the case where Bob sends a payment to Alice. The payment spends all funds from the funding transaction to Alice.
 
 **4. Alice broadcasts the funding transactions.** When the refund transaction is created and distributed between the two parties, Alice broadcasts the funding transaction. The channel is open when the funding transaction is confirmed into the blockchain.
 

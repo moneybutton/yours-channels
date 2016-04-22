@@ -153,7 +153,7 @@ describe('Agent', function () {
     it('storeOtherHTLCSecretHash should exist', function () {
       let agent = Agent()
       agent.storeOtherHTLCSecretHash('abc')
-      should.exist(agent.otherOtherHTLCSecretHash)
+      should.exist(agent.otherHTLCSecretHash)
     })
   })
 
@@ -255,11 +255,58 @@ describe('Agent', function () {
         let txb = yield agent.asyncBuildHtlcTxb(amount, amountToOther)
         let tx = yield otherAgent.asyncAcceptCommitmentTx(txb)
 
-        // tx.toString().should.equal('')
-
         tx.toJSON().txins.length.should.equal(1)
         tx.toJSON().txouts.length.should.equal(3)
         // ;(tx.toJSON().txouts[0].valuebn).should.equal(amountToOther.toString())
+      }, this)
+    })
+  })
+
+  /*
+   * This should be as similar as possible to the "Funding the channel"
+   * protocoll described in the doc
+   */
+  describe('#Full setup example', function () {
+    it('should build a funding tx, a refund tx', function () {
+      return asink(function *() {
+        // initialize agent
+        let agent = Agent(privkey, msPrivkey)
+        yield agent.asyncInitialize()
+
+        // initialize another agent
+        let otherAgent = Agent(otherPrivkey, otherMsPrivkey)
+        yield otherAgent.asyncInitialize()
+        otherAgent.generateHtlcSecret()
+
+        // step 1: agent and other agent exchange public keys
+        // and create a refund trasnaction
+        yield agent.asyncBuildMultisig(otherMsPubkey, otherPubkey)
+        yield otherAgent.asyncBuildMultisig(msPubkey, pubkey)
+
+        // step 2: agent builds a funding transaction
+        agent.fundingTx = Tx().fromString(consts.fundingTx)
+
+        // step 3: other agent builds refund transaction, sends to agent
+        // this executes the protocoll from the section "Creating a payment"
+        // note that in this step agent takes the role of Bob and other agent of Alice
+
+        // step 3.1 other agent generates a revocation secret and sends it to agent
+        let otherRevocationSecret = otherAgent.generateRevocationSecret()
+        let otherRevocationSecretHash = yield Hash.asyncSha256ripemd160(otherRevocationSecret)
+        agent.storeOtherRevocationSecretHash(otherRevocationSecretHash)
+
+        // step 3.2 other agent generates a revocation secret and sends it to agent
+        let revocationSecret = agent.generateRevocationSecret()
+        let revocationSecretHash = yield Hash.asyncSha256ripemd160(revocationSecret)
+        otherAgent.storeOtherRevocationSecretHash(revocationSecretHash)
+
+        // step 3.2.5 agent generates a HTLC secret
+        let htlcSecret = agent.generateHtlcSecret()
+        let htlcSecretHash = yield Hash.asyncSha256ripemd160(htlcSecret)
+        otherAgent.storeOtherHTLCSecretHash(htlcSecretHash)
+
+        // step 3.3 other agent
+        // TODO
       }, this)
     })
   })
