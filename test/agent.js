@@ -77,8 +77,8 @@ describe('Agent', function () {
 
   /* funding the channel */
 
-  describe('#asyncBuildFundingTx', function () {
-    it('asyncBuildFundingTx should create a funding tx', function () {
+  describe('#asyncBuildFundingTxb', function () {
+    it('asyncBuildFundingTxb should create a funding tx', function () {
       return asink(function *() {
         // asyncInitialize an agent
         let agent = Agent(privkey, msPrivkey)
@@ -93,7 +93,7 @@ describe('Agent', function () {
         let txoutamount = BN(1e8)
         let txout = Txout(txoutamount, scriptout)
 
-        let txb = yield agent.asyncBuildFundingTx(amount, txhashbuf, txoutnum, txout, pubkey)
+        let txb = yield agent.asyncBuildFundingTxb(amount, txhashbuf, txoutnum, txout, pubkey)
         let tx = txb.tx
 
         tx.toString().should.equal(consts.fundingTx)
@@ -116,10 +116,10 @@ describe('Agent', function () {
     })
   })
 
-  describe('#asyncBuildRefundTx', function () {
-    it('asyncBuildRefundTx should exist', function () {
+  describe('#asyncBuildRefundTxb', function () {
+    it('asyncBuildRefundTxb should exist', function () {
       let agent = Agent()
-      should.exist(agent.asyncBuildRefundTx)
+      should.exist(agent.asyncBuildRefundTxb)
     })
   })
 
@@ -157,8 +157,8 @@ describe('Agent', function () {
     })
   })
 
-  describe('#asyncBuildCommitmentTx', function () {
-    it('asyncBuildCommitmentTx should create a partial payment tx', function () {
+  describe('#asyncBuildCommitmentTxb', function () {
+    it('asyncBuildCommitmentTxb should create a partial payment tx', function () {
       return asink(function *() {
         // asyncInitialize agent
         let agent = Agent(privkey, msPrivkey)
@@ -176,7 +176,7 @@ describe('Agent', function () {
         let amountToOther = BN(5e6)
         let scriptToOther = Script().fromScripthash(agent.otherAddress.hashbuf)
 
-        let txb = yield agent.asyncBuildCommitmentTx(amount, script, amountToOther, scriptToOther)
+        let txb = yield agent.asyncBuildCommitmentTxb(amount, script, amountToOther, scriptToOther)
         let tx = txb.tx
 
         tx.toString().should.equal(consts.partialPaymentTx)
@@ -188,8 +188,8 @@ describe('Agent', function () {
     })
   })
 
-  describe('#asyncBuildHtlcTx', function () {
-    it('asyncBuildHtlcTx should create a partial htlc tx', function () {
+  describe('#asyncBuildHtlcTxb', function () {
+    it('asyncBuildHtlcTxb should create a partial htlc tx', function () {
       return asink(function *() {
         // asyncInitialize agent
         let agent = Agent(privkey, msPrivkey)
@@ -213,7 +213,7 @@ describe('Agent', function () {
 
         let amount = BN(5e6)
         let amountToOther = BN(5e6)
-        let txb = yield agent.asyncBuildHtlcTx(amount, amountToOther)
+        let txb = yield agent.asyncBuildHtlcTxb(amount, amountToOther)
         let tx = txb.tx
 
         tx.toJSON().txins.length.should.equal(1)
@@ -226,8 +226,8 @@ describe('Agent', function () {
     })
   })
 
-  describe('#asyncAcceptCommitmentTx', function () {
-    it('asyncAcceptCommitmentTx should create a htlc tx', function () {
+  describe('#asyncAcceptCommitmentTxb', function () {
+    it('asyncAcceptCommitmentTxb should create a htlc tx', function () {
       return asink(function *() {
         // asyncInitialize agent
         let agent = Agent(privkey, msPrivkey)
@@ -252,7 +252,7 @@ describe('Agent', function () {
 
         let amount = BN(5e6)
         let amountToOther = BN(5e6)
-        let txb = yield agent.asyncBuildHtlcTx(amount, amountToOther)
+        let txb = yield agent.asyncBuildHtlcTxb(amount, amountToOther)
         let tx = yield otherAgent.asyncAcceptCommitmentTx(txb)
 
         // tx.toString().should.equal('')
