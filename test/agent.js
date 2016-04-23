@@ -7,7 +7,7 @@ let Privkey = require('fullnode/lib/privkey')
 let Pubkey = require('fullnode/lib/pubkey')
 let Script = require('fullnode/lib/script')
 let Txout = require('fullnode/lib/txout')
-let Tx = require('fullnode/lib/tx')
+// let Tx = require('fullnode/lib/tx')
 let Address = require('fullnode/lib/address')
 let Hash = require('fullnode/lib/hash')
 let BN = require('fullnode/lib/bn')
@@ -93,8 +93,7 @@ describe('Agent', function () {
         let txoutamount = BN(1e8)
         let txout = Txout(txoutamount, scriptout)
 
-        let txb = yield agent.asyncBuildFundingTxb(amount, txhashbuf, txoutnum, txout, pubkey)
-        let tx = txb.tx
+        let tx = yield agent.asyncBuildFundingTx(amount, txhashbuf, txoutnum, txout, pubkey)
 
         tx.toString().should.equal(consts.fundingTx)
 
@@ -164,7 +163,14 @@ describe('Agent', function () {
         let agent = Agent(privkey, msPrivkey)
         yield agent.asyncInitialize()
         yield agent.asyncBuildMultisig(otherMsPubkey, otherPubkey)
-        agent.fundingTx = Tx().fromString(consts.fundingTx)
+        // generate funding transaction
+        let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
+        let fundingAmount = BN(2e7)
+        let txhashbuf = new Buffer(32).fill(0)
+        let txoutnum = 0
+        let txoutamount = BN(1e8)
+        let txout = Txout(txoutamount, scriptout)
+        yield agent.asyncBuildFundingTx(fundingAmount, txhashbuf, txoutnum, txout, pubkey)
 
         // asyncInitialize another agent
         let otherAgent = Agent(otherPrivkey, otherMsPrivkey)
@@ -195,7 +201,14 @@ describe('Agent', function () {
         let agent = Agent(privkey, msPrivkey)
         yield agent.asyncInitialize()
         yield agent.asyncBuildMultisig(otherMsPubkey, otherPubkey)
-        agent.fundingTx = Tx().fromString(consts.fundingTx)
+        // generate funding transaction
+        let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
+        let fundingAmount = BN(2e7)
+        let txhashbuf = new Buffer(32).fill(0)
+        let txoutnum = 0
+        let txoutamount = BN(1e8)
+        let txout = Txout(txoutamount, scriptout)
+        yield agent.asyncBuildFundingTx(fundingAmount, txhashbuf, txoutnum, txout, pubkey)
 
         // generate agents secrets
         agent.generateRevocationSecret()
@@ -233,8 +246,14 @@ describe('Agent', function () {
         let agent = Agent(privkey, msPrivkey)
         yield agent.asyncInitialize()
         yield agent.asyncBuildMultisig(otherMsPubkey, otherPubkey)
-        agent.fundingTx = Tx().fromString(consts.fundingTx)
-
+        // generate funding transaction
+        let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
+        let fundingAmount = BN(2e7)
+        let txhashbuf = new Buffer(32).fill(0)
+        let txoutnum = 0
+        let txoutamount = BN(1e8)
+        let txout = Txout(txoutamount, scriptout)
+        yield agent.asyncBuildFundingTx(fundingAmount, txhashbuf, txoutnum, txout, pubkey)
         // generate agents secrets
         agent.generateRevocationSecret()
         agent.generateHtlcSecret()
@@ -284,7 +303,18 @@ describe('Agent', function () {
         yield otherAgent.asyncBuildMultisig(msPubkey, pubkey)
 
         // step 2: agent builds a funding transaction
-        agent.fundingTx = Tx().fromString(consts.fundingTx)
+        // and sends the hash of the funding transaction to other agent
+        let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
+        let amount = BN(2e7)
+        let txhashbuf = new Buffer(32).fill(0)
+        let txoutnum = 0
+        let txoutamount = BN(1e8)
+        let txout = Txout(txoutamount, scriptout)
+        yield agent.asyncBuildFundingTx(amount, txhashbuf, txoutnum, txout, pubkey)
+        should.exist(agent.fundingTxhashbuf)
+        should.exist(agent.fundingTxout)
+
+        otherAgent.asyncStoreOtherFundingTxHash(agent.fundingTxhashbuf, agent.fundingTxout)
 
         // step 3: other agent builds refund transaction, sends to agent
         // this executes the protocoll from the section "Creating a payment"
@@ -305,8 +335,11 @@ describe('Agent', function () {
         let htlcSecretHash = yield Hash.asyncSha256ripemd160(htlcSecret)
         otherAgent.storeOtherHTLCSecretHash(htlcSecretHash)
 
-        // step 3.3 other agent
-        // TODO
+        // step 3 other agent builds a commitment tx that spends the funded amount back to agent
+        let refundTxb = yield otherAgent.asyncBuildHtlcTxb(amount.sub(BN(100000)), BN(0))
+        let refundTx = yield agent.asyncAcceptCommitmentTx(refundTxb)
+
+        refundTx.toJSON().txouts[0].valuebn.should.equal('19900000')
       }, this)
     })
   })
