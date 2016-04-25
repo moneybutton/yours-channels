@@ -58,7 +58,7 @@ describe('Agent', function () {
         should.exist(agent.pubkey)
         should.exist(agent.address)
         should.exist(agent.keypair)
-        should.exist(agent.otherAddress)
+        should.exist(agent.other.address)
         agent.initialized.should.equal(true)
       }, this)
     })
@@ -118,8 +118,11 @@ describe('Agent', function () {
 
   describe('#asyncBuildRefundTxb', function () {
     it('asyncBuildRefundTxb should exist', function () {
-      let agent = Agent()
-      should.exist(agent.asyncBuildRefundTxb)
+      return asink(function *() {
+        let agent = Agent()
+        yield agent.asyncInitialize(privkey, otherPubkey)
+        should.exist(agent.asyncBuildRefundTxb)
+      }, this)
     })
   })
 
@@ -127,33 +130,45 @@ describe('Agent', function () {
 
   describe('#generateRevocationSecret', function () {
     it('generateRevocationSecret should exist', function () {
-      let agent = Agent()
-      agent.generateRevocationSecret()
-      should.exist(agent.revocationSecret)
+      return asink(function *() {
+        let agent = Agent()
+        yield agent.asyncInitialize(privkey, otherPubkey)
+        agent.generateRevocationSecret()
+        should.exist(agent.revocationSecret)
+      }, this)
     })
   })
 
   describe('#storeOtherRevocationSecretHash', function () {
     it('storeOtherRevocationSecretHash should exist', function () {
-      let agent = Agent()
-      agent.storeOtherRevocationSecretHash('abc')
-      should.exist(agent.otherRevocationSecretHash)
+      return asink(function *() {
+        let agent = Agent()
+        yield agent.asyncInitialize(privkey, otherPubkey)
+        agent.storeOtherRevocationSecretHash('abc')
+        should.exist(agent.other.revocationSecretHash)
+      }, this)
     })
   })
 
   describe('#generateHtlcSecret', function () {
     it('generateHtlcSecret should exist', function () {
-      let agent = Agent()
-      agent.generateHtlcSecret()
-      should.exist(agent.htlcSecret)
+      return asink(function *() {
+        let agent = Agent()
+        yield agent.asyncInitialize(privkey, otherPubkey)
+        agent.generateHtlcSecret()
+        should.exist(agent.htlcSecret)
+      }, this)
     })
   })
 
   describe('#storeOtherHTLCSecretHash', function () {
     it('storeOtherHTLCSecretHash should exist', function () {
-      let agent = Agent()
-      agent.storeOtherHTLCSecretHash('abc')
-      should.exist(agent.otherHTLCSecretHash)
+      return asink(function *() {
+        let agent = Agent()
+        yield agent.asyncInitialize(privkey, otherPubkey)
+        agent.storeOtherHTLCSecretHash('abc')
+        should.exist(agent.other.htlcSecretHash)
+      }, this)
     })
   })
 
@@ -181,7 +196,7 @@ describe('Agent', function () {
         let script = Script().fromScripthash(agent.address.hashbuf)
 
         let amountToOther = BN(5e6)
-        let scriptToOther = Script().fromScripthash(agent.otherAddress.hashbuf)
+        let scriptToOther = Script().fromScripthash(agent.other.address.hashbuf)
 
         let txb = yield agent.asyncBuildCommitmentTxb(amount, script, amountToOther, scriptToOther)
         let tx = txb.tx
