@@ -52,11 +52,13 @@ describe('Agent', function () {
 
     it('asyncInitialize should set a multisig script and address', function () {
       return asink(function *() {
-        let agent = Agent(privkey, msPrivkey)
-        yield agent.asyncInitialize()
+        let agent = Agent()
+        yield agent.asyncInitialize(privkey, otherPubkey)
+        should.exist(agent.privkey)
         should.exist(agent.pubkey)
         should.exist(agent.address)
         should.exist(agent.keypair)
+        should.exist(agent.otherAddress)
         agent.initialized.should.equal(true)
       }, this)
     })
@@ -65,12 +67,11 @@ describe('Agent', function () {
   describe('#asyncBuildMultisig', function () {
     it('asyncBuildMultisig should create a multisig address', function () {
       return asink(function *() {
-        let agent = Agent(privkey, msPrivkey)
-        yield agent.asyncBuildMultisig(otherMsPubkey, otherPubkey)
+        let agent = Agent()
+        yield agent.asyncInitialize(privkey, otherPubkey)
+        yield agent.asyncBuildMultisig(msPrivkey, otherMsPubkey)
 
-        should.exist(agent.msPubkey)
-        should.exist(agent.msScript)
-        should.exist(agent.msAddress)
+        should.exist(agent.multisig)
       }, this)
     })
   })
@@ -81,9 +82,9 @@ describe('Agent', function () {
     it('asyncBuildFundingTxb should create a funding tx', function () {
       return asink(function *() {
         // asyncInitialize an agent
-        let agent = Agent(privkey, msPrivkey)
-        yield agent.asyncInitialize()
-        yield agent.asyncBuildMultisig(otherMsPubkey, otherPubkey)
+        let agent = Agent()
+        yield agent.asyncInitialize(privkey, otherPubkey)
+        yield agent.asyncBuildMultisig(msPrivkey, otherMsPubkey)
 
         // build output to be spent in funding transaction
         let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
@@ -160,9 +161,9 @@ describe('Agent', function () {
     it('asyncBuildCommitmentTxb should create a partial payment tx', function () {
       return asink(function *() {
         // asyncInitialize agent
-        let agent = Agent(privkey, msPrivkey)
-        yield agent.asyncInitialize()
-        yield agent.asyncBuildMultisig(otherMsPubkey, otherPubkey)
+        let agent = Agent()
+        yield agent.asyncInitialize(privkey, otherPubkey)
+        yield agent.asyncBuildMultisig(msPrivkey, otherMsPubkey)
         // generate funding transaction
         let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
         let fundingAmount = BN(2e7)
@@ -173,8 +174,8 @@ describe('Agent', function () {
         yield agent.asyncBuildFundingTx(fundingAmount, txhashbuf, txoutnum, txout, pubkey)
 
         // asyncInitialize another agent
-        let otherAgent = Agent(otherPrivkey, otherMsPrivkey)
-        yield otherAgent.asyncInitialize()
+        let otherAgent = Agent()
+        yield otherAgent.asyncInitialize(otherPrivkey, pubkey)
 
         let amount = BN(1e6)
         let script = Script().fromScripthash(agent.address.hashbuf)
@@ -198,9 +199,9 @@ describe('Agent', function () {
     it('asyncBuildHtlcTxb should create a partial htlc tx', function () {
       return asink(function *() {
         // asyncInitialize agent
-        let agent = Agent(privkey, msPrivkey)
-        yield agent.asyncInitialize()
-        yield agent.asyncBuildMultisig(otherMsPubkey, otherPubkey)
+        let agent = Agent()
+        yield agent.asyncInitialize(privkey, otherPubkey)
+        yield agent.asyncBuildMultisig(msPrivkey, otherMsPubkey)
         // generate funding transaction
         let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
         let fundingAmount = BN(2e7)
@@ -215,8 +216,8 @@ describe('Agent', function () {
         agent.generateHtlcSecret()
 
         // asyncInitialize another agent
-        let otherAgent = Agent(otherPrivkey, otherMsPrivkey)
-        yield otherAgent.asyncInitialize()
+        let otherAgent = Agent()
+        yield otherAgent.asyncInitialize(otherPrivkey, pubkey)
 
         // generate other agents secrets
         let otherHTLCSecretHash = yield Hash.asyncSha256ripemd160(new Buffer('other agents htlc secret'))
@@ -243,9 +244,9 @@ describe('Agent', function () {
     it('asyncAcceptCommitmentTxb should create a htlc tx', function () {
       return asink(function *() {
         // asyncInitialize agent
-        let agent = Agent(privkey, msPrivkey)
-        yield agent.asyncInitialize()
-        yield agent.asyncBuildMultisig(otherMsPubkey, otherPubkey)
+        let agent = Agent()
+        yield agent.asyncInitialize(privkey, otherPubkey)
+        yield agent.asyncBuildMultisig(msPrivkey, otherMsPubkey)
         // generate funding transaction
         let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
         let fundingAmount = BN(2e7)
@@ -259,9 +260,9 @@ describe('Agent', function () {
         agent.generateHtlcSecret()
 
         // asyncInitialize another agent
-        let otherAgent = Agent(otherPrivkey, otherMsPrivkey)
-        yield otherAgent.asyncInitialize()
-        yield otherAgent.asyncBuildMultisig(msPubkey, pubkey)
+        let otherAgent = Agent()
+        yield otherAgent.asyncInitialize(otherPrivkey, pubkey)
+        yield otherAgent.asyncBuildMultisig(otherMsPrivkey, msPubkey)
 
         // generate other agents secrets
         let otherHTLCSecretHash = yield Hash.asyncSha256ripemd160(new Buffer('other agents htlc secret'))
@@ -289,18 +290,18 @@ describe('Agent', function () {
     it('should build a funding tx, a refund tx', function () {
       return asink(function *() {
         // initialize agent
-        let agent = Agent(privkey, msPrivkey)
-        yield agent.asyncInitialize()
+        let agent = Agent()
+        yield agent.asyncInitialize(privkey, otherPubkey)
 
         // initialize another agent
-        let otherAgent = Agent(otherPrivkey, otherMsPrivkey)
-        yield otherAgent.asyncInitialize()
+        let otherAgent = Agent()
+        yield otherAgent.asyncInitialize(otherPrivkey, pubkey)
         otherAgent.generateHtlcSecret()
 
         // step 1: agent and other agent exchange public keys
         // and create a refund trasnaction
-        yield agent.asyncBuildMultisig(otherMsPubkey, otherPubkey)
-        yield otherAgent.asyncBuildMultisig(msPubkey, pubkey)
+        yield agent.asyncBuildMultisig(msPrivkey, otherMsPubkey)
+        yield otherAgent.asyncBuildMultisig(otherMsPrivkey, msPubkey)
 
         // step 2: agent builds a funding transaction
         // and sends the hash of the funding transaction to other agent
