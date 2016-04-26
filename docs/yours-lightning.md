@@ -174,7 +174,32 @@ invalidated as described in the section above.
 ### Closing the channel
 
 Either party can broadcast their most recent commitment transaction to the
-blockchain. This closes the channel.
+blockchain. In this case both parties go through the following protcol
+
+**1. Find the most recent HTLC secret.**
+
+**2. Build a spending transaction.**
+
+**3. Broadcast that transaction.**
+
+The party that broadcasts the commitment transaction must wait for a day to do that, the other party can do so as soon as possible.
+
+### Broadcasting an old commitment transaction
+
+In that case the party that did not broadcast goes trough the following:
+
+**1. Find the corresponding HTLC secret.**
+
+**2. Create an output script that spends the HTLC output.**
+
+**3. Find the corresponding revocation secret.**
+
+**4. Create an output script that spends the revocation output.**
+
+
+**5. Build a transaction that spends both outputs.**
+
+This has to happen within one day, in order to make sure that the revocation output can be spent.
 
 ## Security Properties
 
