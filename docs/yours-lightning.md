@@ -13,10 +13,10 @@ We will need two kinds of smart contracts: HTLCs and revokable HTLCs.
 
 A HTLC between Alice (A) and Bob (B) expresses the following:
 
-> An output can be spent by B if he can present a secret within two day, or by
+> An output can be spent by B if he can present a secret within two days, or by
 > A after that.
 
-HTLC make payments routed through several untrusted third parties secure. They
+HTLCs make payments routed through several untrusted third parties secure. They
 can be encoded by the following output script:
 
 ```
@@ -154,7 +154,7 @@ sends two public key to Bob - one to build a multisig address and one at which
 she wishes to receive payments at. Symmetrically, Bob sends two corresponding
 public keys to Alice. Both create the same multisig address from the keys.
 
-**2. Alice builds a funding transactions.** Alice creates a transaction that
+**2. Alice builds a funding transaction.** Alice creates a transaction that
 spends to the shared multisig address, but does not broadcast it yet. She then
 sends the funding amount and funding transaction hash to Bob.
 
