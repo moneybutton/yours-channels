@@ -250,5 +250,4 @@ Channels](http://diyhpl.us/~bryan/papers2/bitcoin/Fast%20and%20scalable%20paymen
 by Christian Decker and Roger Wattenhofer
 
 [3] [Reaching the Ground with
-Lightning](http://diyhpl.us/~bryan/papers2/bitcoin/Fast%20and%20scalable%20payment%20network%20with%20Bitcoin%20duplex%20micropayment%20channels.pdf)
-by Rusty Russel
+Lightning](http://ozlabs.org/~rusty/ln-deploy-draft-01.pdf) by Rusty Russel
