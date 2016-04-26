@@ -241,10 +241,14 @@ and return.
 
 ## References
 
-[1] [The Bitcoin Lightning Network:
-Scalable Off-Chain Instant Payments](http://lightning.network/lightning-network-paper.pdf) by Joseph Poon and Thaddeus Dryja
+[1] [The Bitcoin Lightning Network: Scalable Off-Chain Instant
+Payments](http://lightning.network/lightning-network-paper.pdf) by Joseph Poon
+and Thaddeus Dryja
 
-[2] [A Fast and Scalable Payment Network with
-Bitcoin Duplex Micropayment Channels](http://diyhpl.us/~bryan/papers2/bitcoin/Fast%20and%20scalable%20payment%20network%20with%20Bitcoin%20duplex%20micropayment%20channels.pdf) by Christian Decker and Roger Wattenhofer
+[2] [A Fast and Scalable Payment Network with Bitcoin Duplex Micropayment
+Channels](http://diyhpl.us/~bryan/papers2/bitcoin/Fast%20and%20scalable%20payment%20network%20with%20Bitcoin%20duplex%20micropayment%20channels.pdf)
+by Christian Decker and Roger Wattenhofer
 
-[3] [Reaching the Ground with Lightning](http://diyhpl.us/~bryan/papers2/bitcoin/Fast%20and%20scalable%20payment%20network%20with%20Bitcoin%20duplex%20micropayment%20channels.pdf) by Rusty Russel
+[3] [Reaching the Ground with
+Lightning](http://diyhpl.us/~bryan/papers2/bitcoin/Fast%20and%20scalable%20payment%20network%20with%20Bitcoin%20duplex%20micropayment%20channels.pdf)
+by Rusty Russel
