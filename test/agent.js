@@ -2,6 +2,7 @@
 'use strict'
 let should = require('should')
 let Agent = require('../lib/agent.js')
+let Secret = require('../lib/secret.js')
 let asink = require('asink')
 let Privkey = require('fullnode/lib/privkey')
 let Pubkey = require('fullnode/lib/pubkey')
@@ -9,7 +10,7 @@ let Script = require('fullnode/lib/script')
 let Txout = require('fullnode/lib/txout')
 // let Tx = require('fullnode/lib/tx')
 let Address = require('fullnode/lib/address')
-let Hash = require('fullnode/lib/hash')
+// let Hash = require('fullnode/lib/hash')
 let BN = require('fullnode/lib/bn')
 
 describe('Agent', function () {
@@ -139,13 +140,24 @@ describe('Agent', function () {
     })
   })
 
-  describe('#storeOtherRevocationSecretHash', function () {
-    it('storeOtherRevocationSecretHash should exist', function () {
+  describe('#storeOtherRevocationSecret', function () {
+    it('storeOtherRevocationSecret should exist', function () {
       return asink(function *() {
         let agent = Agent()
         yield agent.asyncInitialize(privkey, otherPubkey)
-        agent.storeOtherRevocationSecretHash('abc')
-        should.exist(agent.other.revocationSecretHash)
+
+        let otherAgent = Agent()
+        yield otherAgent.asyncInitialize(otherPrivkey, pubkey)
+
+        otherAgent.generateRevocationSecret()
+        should.exist(otherAgent.revocationSecret.buf)
+        yield otherAgent.revocationSecret.asyncGenerateHash()
+        should.exist(otherAgent.revocationSecret.hash)
+
+        agent.storeOtherRevocationSecret(otherAgent.revocationSecret.hidden())
+        should.exist(agent.other.revocationSecret)
+        should.not.exist(agent.other.revocationSecret.buf)
+        should.exist(agent.other.revocationSecret.hash)
       }, this)
     })
   })
@@ -166,8 +178,11 @@ describe('Agent', function () {
       return asink(function *() {
         let agent = Agent()
         yield agent.asyncInitialize(privkey, otherPubkey)
-        agent.storeOtherHTLCSecretHash('abc')
-        should.exist(agent.other.htlcSecretHash)
+        let secret = Secret(new Buffer('abc'))
+        yield secret.asyncGenerateHash()
+
+        agent.storeOtherHTLCSecret(secret)
+        should.exist(agent.other.htlcSecret)
       }, this)
     })
   })
@@ -235,10 +250,13 @@ describe('Agent', function () {
         yield otherAgent.asyncInitialize(otherPrivkey, pubkey)
 
         // generate other agents secrets
-        let otherHTLCSecretHash = yield Hash.asyncSha256ripemd160(new Buffer('other agents htlc secret'))
-        agent.storeOtherHTLCSecretHash(otherHTLCSecretHash)
-        let otherRevocationSecretHash = yield Hash.asyncSha256ripemd160(new Buffer('other agents revocation secret'))
-        agent.storeOtherRevocationSecretHash(otherRevocationSecretHash)
+        otherAgent.generateRevocationSecret()
+        yield otherAgent.revocationSecret.asyncGenerateHash()
+        otherAgent.generateHtlcSecret()
+        yield otherAgent.htlcSecret.asyncGenerateHash()
+
+        agent.storeOtherRevocationSecret(otherAgent.revocationSecret.hidden())
+        agent.storeOtherHTLCSecret(otherAgent.htlcSecret.hidden())
 
         let amount = BN(5e6)
         let amountToOther = BN(5e6)
@@ -270,9 +288,12 @@ describe('Agent', function () {
         let txoutamount = BN(1e8)
         let txout = Txout(txoutamount, scriptout)
         yield agent.asyncBuildFundingTx(fundingAmount, txhashbuf, txoutnum, txout, pubkey)
+
         // generate agents secrets
         agent.generateRevocationSecret()
+        yield agent.revocationSecret.asyncGenerateHash()
         agent.generateHtlcSecret()
+        yield agent.htlcSecret.asyncGenerateHash()
 
         // asyncInitialize another agent
         let otherAgent = Agent()
@@ -280,10 +301,16 @@ describe('Agent', function () {
         yield otherAgent.asyncBuildMultisig(otherMsPrivkey, msPubkey)
 
         // generate other agents secrets
-        let otherHTLCSecretHash = yield Hash.asyncSha256ripemd160(new Buffer('other agents htlc secret'))
-        agent.storeOtherHTLCSecretHash(otherHTLCSecretHash)
-        let otherRevocationSecretHash = yield Hash.asyncSha256ripemd160(new Buffer('other agents revocation secret'))
-        agent.storeOtherRevocationSecretHash(otherRevocationSecretHash)
+        otherAgent.generateRevocationSecret()
+        yield otherAgent.revocationSecret.asyncGenerateHash()
+        otherAgent.generateHtlcSecret()
+        yield otherAgent.htlcSecret.asyncGenerateHash()
+
+        // exchange secrets
+        agent.storeOtherRevocationSecret(otherAgent.revocationSecret.hidden())
+        agent.storeOtherHTLCSecret(otherAgent.htlcSecret.hidden())
+        otherAgent.storeOtherRevocationSecret(agent.revocationSecret.hidden())
+        otherAgent.storeOtherHTLCSecret(agent.htlcSecret.hidden())
 
         let amount = BN(5e6)
         let amountToOther = BN(5e6)
@@ -337,19 +364,26 @@ describe('Agent', function () {
         // note that in this step agent takes the role of Bob and other agent of Alice
 
         // step 3.1 other agent generates a revocation secret and sends it to agent
-        let otherRevocationSecret = otherAgent.generateRevocationSecret()
-        let otherRevocationSecretHash = yield Hash.asyncSha256ripemd160(otherRevocationSecret)
-        agent.storeOtherRevocationSecretHash(otherRevocationSecretHash)
+        otherAgent.generateRevocationSecret()
+        should.exist(otherAgent.revocationSecret.buf)
+        yield otherAgent.revocationSecret.asyncGenerateHash()
+        should.exist(otherAgent.revocationSecret.hash)
+
+        agent.storeOtherRevocationSecret(otherAgent.revocationSecret.hidden())
+        should.exist(agent.other.revocationSecret.hash)
+        should.not.exist(agent.other.revocationSecret.buf)
 
         // step 3.2 other agent generates a revocation secret and sends it to agent
-        let revocationSecret = agent.generateRevocationSecret()
-        let revocationSecretHash = yield Hash.asyncSha256ripemd160(revocationSecret)
-        otherAgent.storeOtherRevocationSecretHash(revocationSecretHash)
+        agent.generateRevocationSecret()
+        yield agent.revocationSecret.asyncGenerateHash()
+        otherAgent.storeOtherRevocationSecret(agent.revocationSecret.hidden())
 
         // step 3.2.5 agent generates a HTLC secret
-        let htlcSecret = agent.generateHtlcSecret()
-        let htlcSecretHash = yield Hash.asyncSha256ripemd160(htlcSecret)
-        otherAgent.storeOtherHTLCSecretHash(htlcSecretHash)
+        agent.generateHtlcSecret()
+        yield agent.htlcSecret.asyncGenerateHash()
+        otherAgent.storeOtherHTLCSecret(agent.htlcSecret.hidden())
+        should.not.exist(otherAgent.other.htlcSecret.buf)
+        should.exist(otherAgent.other.htlcSecret.hash)
 
         // step 3 other agent builds a commitment tx that spends the funded amount back to agent
         let refundTxb = yield otherAgent.asyncBuildHtlcTxb(amount.sub(BN(100000)), BN(0))
