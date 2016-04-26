@@ -17,7 +17,7 @@ A HTLC between Alice (A) and Bob (B) expresses the following:
 > A after that.
 
 HTLC make payments routed through several untrusted third parties secure. They
-can be encoded by the following output script
+can be encoded by the following output script:
 
 ```
 IF
@@ -27,6 +27,19 @@ ELSE
   <2 days> CHECKSEQUENCEVERIFY DROP
   <A's pubkey> CHECKSIGVERIFY
 ENDIF
+```
+
+If the transaction is settled, Bob may spend it with the following input
+script:
+
+```
+<secret> <B's signature> true
+```
+
+Alice can spend it after two days with this input script:
+
+```
+<A's signature> false
 ```
 
 ### Revocable HTLCs
