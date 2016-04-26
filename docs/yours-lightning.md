@@ -16,7 +16,7 @@ HTLC make payments routed through several untrusted third parties secure. They c
 
     IF
         <B's pub key> CHECKSIGVERIFY
-        OP HASH160 <Hash160 (secret)> EQUALVERIFY
+        HASH160 <Hash160 (secret)> EQUALVERIFY
     ELSE
         <2 days> CHECKSEQUENCEVERIFY DROP
         <A's pub key> CHECKSIGVERIFY
@@ -36,12 +36,12 @@ In Bitcoin script the condition above can be expressed (roughtly) as follows:
 
     IF
         <B's pub key> CHECKSIGVERIFY
-        OP HASH160 <Hash160 (A's revocation secret)> EQUALVERIFY
+        HASH160 <Hash160 (A's revocation secret)> EQUALVERIFY
     ELSE
         IF
             <2 days> CHECKSEQUENCEVERIFY DROP
             <A's pub key> CHECKSIGVERIFY
-            OP HASH160 <Hash160 (HTLC secret)> EQUALVERIFY
+            HASH160 <Hash160 (HTLC secret)> EQUALVERIFY
         ELSE
             <2 days> CHECKSEQUENCEVERIFY DROP
             <A's pub key> CHECKSIGVERIFY
