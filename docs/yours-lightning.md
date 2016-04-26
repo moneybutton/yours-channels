@@ -1,6 +1,6 @@
 # Yours Payment Channel Hub
 
-We describe how a Bitcoin payment-channel hub can be built. The basic building
+We describe how a Bitcoin payment channel hub can be built. The basic building
 blocks are 2-way *hash time locked contracts* (HTLCs). Our construction is not
 subject to transaction malleability and uses only CHECKSEQUENCEVERIFY (CSV) and
 opcodes that are active in Bitcoin script today.
@@ -21,24 +21,24 @@ can be encoded by the following output script
 
 ```
 IF
-  <B's pub key> CHECKSIGVERIFY
+  <B's pubkey> CHECKSIGVERIFY
   HASH160 <Hash160 (secret)> EQUALVERIFY
 ELSE
   <2 days> CHECKSEQUENCEVERIFY DROP
-  <A's pub key> CHECKSIGVERIFY
+  <A's pubkey> CHECKSIGVERIFY
 ENDIF
 ```
 
 ### Revocable HTLCs
 
 In order for channels to remain open an unlimited amount of time, the parties
-must be able to revoke previously made payments. Revocable Sequence Maturity
-Contract (RSMC) are a technique to achieve just that [1]. We apply this
+must be able to revoke previously made payments. A Revocable Sequence Maturity
+Contract (RSMC) is a technique to achieve just that [1]. We apply this
 technique to HTLCs in order to make them revokable.
 
 A revocable HTLC (RHTLC) between A and B is a smart contract that expresses:
 
-> An output can be spend by B if he knows A's revocation secret, or after one
+> An output can be spent by B if he knows A's revocation secret, or after one
 > day if B knows the HTLC secret, or by A after 2 days.
 
 The trick is that if Alice gives Bob her revocation secret, then Bob knows that
@@ -47,20 +47,20 @@ immediately. In this way Alice can effectively revoke the contract. If Bob does
 not know the revocation secret, the above condition is equivalent to a normal
 HTLC.
 
-In Bitcoin script the condition above can be expressed (roughtly) as follows:
+In Bitcoin script the condition above can be expressed (roughly) as follows:
 
 ```
 IF
-  <B's pub key> CHECKSIGVERIFY
+  <B's pubkey> CHECKSIGVERIFY
   HASH160 <Hash160 (A's revocation secret)> EQUALVERIFY
 ELSE
   IF
     <2 days> CHECKSEQUENCEVERIFY DROP
-    <A's pub key> CHECKSIGVERIFY
+    <A's pubkey> CHECKSIGVERIFY
     HASH160 <Hash160 (HTLC secret)> EQUALVERIFY
   ELSE
     <2 days> CHECKSEQUENCEVERIFY DROP
-    <A's pub key> CHECKSIGVERIFY
+    <A's pubkey> CHECKSIGVERIFY
   ENDIF
 ENDIF
 ```
@@ -81,7 +81,7 @@ channel, we use a version where only one party funds.
 
 ### Creating the payment
 
-We describe a payment from Alice to Bob. Note that Alice the following
+We describe a payment from Alice to Bob. Note that Alice has the following
 information from the previous payment: her own revocation secret, her own HTLC
 secret, the hash of Bob's last revocation secret, the hash of Bob's last HTLC
 secret.
@@ -98,12 +98,12 @@ above this will allow Bob to revoke this transaction later.
 to prove that she made the payment. Bob sends the HTLC secret's hash to Alice.
 
 **3. Alice builds a commitment transaction.** Alice builds the transaction
-labelled "known only to Bob" above. She uses the hash of the revocation secret
+labeled "known only to Bob" above. She uses the hash of the revocation secret
 obtained from Bob in step 2 and the hash of the HTLC secret from step 2.5. She
 signs the transaction and sends it to Bob.
 
 **4. Bob builds a commitment transaction.** If Bob wants to accept the payment,
-he will build the transaction labelled "known only to Alice" above. He uses the
+he will build the transaction labeled "known only to Alice" above. He uses the
 revocation secret obtained from Alice in step 1 and the old HTLC secret from
 the previous round. He then signs the transaction and sends it back to Alice.
 
@@ -142,7 +142,7 @@ invalidated as described in the section above.
 ### Closing the channel
 
 Either party can broadcast their most recent commitment transaction to the
-blockchain. This closes the channel
+blockchain. This closes the channel.
 
 ## Security Properties
 
@@ -188,14 +188,13 @@ fund the channel.
 
 Step 6 is symmetric to step 5 and the same reasoning applies.
 
-
 _**Property 2.** While executing the "funding the channel" protocol as
 described above, neither party can steal the other parties funds. This is true
 in the presence of transaction malleability._
 
 Again, we check that Property 2 holds true after each step of the protocol.
 Step 1 is completely uncritical because only public keys are exchanged and a
-new address is creates. So is step 2 because Alice does not broadcast the
+new address is created. So is step 2 because Alice does not broadcast the
 funding transaction yet. Step 3 is not critical according to Property 1.
 
 Note that as this point Alice could maleate her funding transaction before
@@ -203,7 +202,7 @@ she'd broadcast it to the blockchain. However all that would do is to
 invalidate her refund transaction which would hurt only herself.
 
 There is still the possibility that Bob controls a node that would maleate the
-funding transaction after it is broadcast. However Bob would have to controls a
+funding transaction after it is broadcast. However Bob would have to control a
 sizable part of the bitcoin network to pull this off consistently (if he
 controls n% of the network that would work n% of the time). Essentially, only
 mining pool operators would have the resources to pull off that attack
