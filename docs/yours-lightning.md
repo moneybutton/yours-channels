@@ -14,13 +14,13 @@ A HTLC between Alice (A) and Bob (B) expresses the following:
 
 HTLC make payments routed through several untrusted third parties secure. They can be encoded by the following output script
 
-    IF
-        <B's pub key> CHECKSIGVERIFY
-        HASH160 <Hash160 (secret)> EQUALVERIFY
-    ELSE
-        <2 days> CHECKSEQUENCEVERIFY DROP
-        <A's pub key> CHECKSIGVERIFY
-    ENDIF
+  IF
+    <B's pub key> CHECKSIGVERIFY
+    HASH160 <Hash160 (secret)> EQUALVERIFY
+  ELSE
+    <2 days> CHECKSEQUENCEVERIFY DROP
+    <A's pub key> CHECKSIGVERIFY
+  ENDIF
 
 ### Revocable HTLCs
 
@@ -34,19 +34,19 @@ The trick is that if Alice gives Bob her revocation secret, then Bob knows that 
 
 In Bitcoin script the condition above can be expressed (roughtly) as follows:
 
+  IF
+    <B's pub key> CHECKSIGVERIFY
+    HASH160 <Hash160 (A's revocation secret)> EQUALVERIFY
+  ELSE
     IF
-        <B's pub key> CHECKSIGVERIFY
-        HASH160 <Hash160 (A's revocation secret)> EQUALVERIFY
+      <2 days> CHECKSEQUENCEVERIFY DROP
+      <A's pub key> CHECKSIGVERIFY
+      HASH160 <Hash160 (HTLC secret)> EQUALVERIFY
     ELSE
-        IF
-            <2 days> CHECKSEQUENCEVERIFY DROP
-            <A's pub key> CHECKSIGVERIFY
-            HASH160 <Hash160 (HTLC secret)> EQUALVERIFY
-        ELSE
-            <2 days> CHECKSEQUENCEVERIFY DROP
-            <A's pub key> CHECKSIGVERIFY
-        ENDIF
+      <2 days> CHECKSEQUENCEVERIFY DROP
+      <A's pub key> CHECKSIGVERIFY
     ENDIF
+  ENDIF
 
 ## Transactions
 
