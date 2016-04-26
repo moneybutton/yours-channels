@@ -1,6 +1,6 @@
 # Yours Payment Channel Hub
 
-We describe how a Bitcoin payment-channel hub can be built. The basic building blocks are 2-way *hash time locked contracts* (HTLCs). Our construction is not subject to transaction malleability and uses only OP_CHECKSEQUENCEVERIFY (CSV) and opcodes that are active in Bitcoin script today.
+We describe how a Bitcoin payment-channel hub can be built. The basic building blocks are 2-way *hash time locked contracts* (HTLCs). Our construction is not subject to transaction malleability and uses only CHECKSEQUENCEVERIFY (CSV) and opcodes that are active in Bitcoin script today.
 
 ## Smart contracts
 
@@ -14,13 +14,13 @@ A HTLC between Alice (A) and Bob (B) expresses the following:
 
 HTLC make payments routed through several untrusted third parties secure. They can be encoded by the following output script
 
-    OP_IF
+    IF
         <B's pub key> CHECKSIGVERIFY
-        OP HASH160 <Hash160 (secret)> OP_EQUALVERIFY
-    OP_ELSE
+        OP HASH160 <Hash160 (secret)> EQUALVERIFY
+    ELSE
         <2 days> CHECKSEQUENCEVERIFY DROP
         <A's pub key> CHECKSIGVERIFY
-    OP_ENDIF
+    ENDIF
 
 ### Revocable HTLCs
 
@@ -34,19 +34,19 @@ The trick is that if Alice gives Bob her revocation secret, then Bob knows that 
 
 In Bitcoin script the condition above can be expressed (roughtly) as follows:
 
-    OP_IF
+    IF
         <B's pub key> CHECKSIGVERIFY
-        OP HASH160 <Hash160 (A's revocation secret)> OP_EQUALVERIFY
-    OP_ELSE
-        OP_IF
-            <2 days> CHECKSEQUENCEVERIFY OP_DROP
+        OP HASH160 <Hash160 (A's revocation secret)> EQUALVERIFY
+    ELSE
+        IF
+            <2 days> CHECKSEQUENCEVERIFY DROP
             <A's pub key> CHECKSIGVERIFY
-            OP HASH160 <Hash160 (HTLC secret)> OP_EQUALVERIFY
-        OP_ELSE
-            <2 days> CHECKSEQUENCEVERIFY OP_DROP
+            OP HASH160 <Hash160 (HTLC secret)> EQUALVERIFY
+        ELSE
+            <2 days> CHECKSEQUENCEVERIFY DROP
             <A's pub key> CHECKSIGVERIFY
-        OP_ENDIF
-    OP_ENDIF
+        ENDIF
+    ENDIF
 
 ## Transactions
 
