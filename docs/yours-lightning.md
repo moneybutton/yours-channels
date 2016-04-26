@@ -29,8 +29,8 @@ ELSE
 ENDIF
 ```
 
-If the transaction is settled, Bob may spend it with the following input
-script:
+If the transaction is settled, Bob may spend the output with the following
+input script:
 
 ```
 <secret> <B's signature> true
@@ -60,7 +60,7 @@ immediately. In this way Alice can effectively revoke the contract. If Bob does
 not know the revocation secret, the above condition is equivalent to a normal
 HTLC.
 
-In Bitcoin script the condition above can be expressed (roughly) as follows:
+In Bitcoin script the condition above can be expressed as follows:
 
 ```
 IF
@@ -68,14 +68,33 @@ IF
   HASH160 <Hash160 (A's revocation secret)> EQUALVERIFY
 ELSE
   IF
-    <2 days> CHECKSEQUENCEVERIFY DROP
-    <A's pubkey> CHECKSIGVERIFY
+    <1 day> CHECKSEQUENCEVERIFY DROP
+    <B's pubkey> CHECKSIGVERIFY
     HASH160 <Hash160 (HTLC secret)> EQUALVERIFY
   ELSE
     <2 days> CHECKSEQUENCEVERIFY DROP
     <A's pubkey> CHECKSIGVERIFY
   ENDIF
 ENDIF
+```
+
+If the transaction is settled, Bob may spend the output immediately with the
+following input script:
+
+```
+<A's revocation secret> <B's signature> true
+```
+
+Bob may spend it after one day with the following input script:
+
+```
+<HTLC secret> <B's signature> true false
+```
+
+Alice may spend it after two days with the following input script:
+
+```
+<A's signature> false false
 ```
 
 ## Transactions
