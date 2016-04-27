@@ -2,17 +2,17 @@
 'use strict'
 let should = require('should')
 let asink = require('asink')
-let Protocol = require('../lib/protocol.js')
 let Privkey = require('fullnode/lib/privkey')
 let Pubkey = require('fullnode/lib/pubkey')
 
 let Agent = require('../lib/agent.js')
+let Protocol = require('../lib/protocol.js')
 
 describe('Protocol', function () {
   let privkey = Privkey().fromRandom()
-  let pubkey = Pubkey().fromPrivkey(privkey)
+//  let pubkey = Pubkey().fromPrivkey(privkey)
   let msPrivkey = Privkey().fromRandom()
-  let msPubkey = Pubkey().fromPrivkey(msPrivkey)
+//  let msPubkey = Pubkey().fromPrivkey(msPrivkey)
 
   let otherPrivkey = Privkey().fromRandom()
   let otherPubkey = Pubkey().fromPrivkey(otherPrivkey)
@@ -26,21 +26,30 @@ describe('Protocol', function () {
   })
 
   describe('#asyncInitialize', function () {
-    it('asyncInitialize should exist', function () {
-      let agent = Agent()
-      should.exist(agent.asyncInitialize)
-    })
-
     it('asyncInitialize should initialize agent and genereate secrets', function () {
       return asink(function *() {
         let agent = Agent()
-        yield agent.asyncInitialize(privkey, msPrivkey)
-        should.exist(agent.privkey)
-        should.exist(agent.pubkey)
-        should.exist(agent.address)
-        should.exist(agent.keypair)
+        let protocol = Protocol(agent)
+        yield protocol.asyncInitialize(privkey, msPrivkey)
 
-        agent.initialized.should.equal(true)
+        protocol.agent.initialized.should.equal(true)
+        should.exist(protocol.agent.revocationSecret)
+        should.exist(protocol.agent.htlcSecret)
+      }, this)
+    })
+  })
+
+  describe('#openChannel', function () {
+    it('openChannel should store the other agents addeses and build a multisig address', function () {
+      return asink(function *() {
+        let agent = Agent()
+        let protocol = Protocol(agent)
+        yield protocol.asyncInitialize(privkey, msPrivkey)
+        yield protocol.openChannel(otherPubkey, otherMsPubkey)
+
+        should.exist(protocol.agent.multisig)
+        should.exist(protocol.agent.revocationSecret)
+        should.exist(protocol.agent.htlcSecret)
       }, this)
     })
   })
