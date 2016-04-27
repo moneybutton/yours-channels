@@ -467,7 +467,33 @@ describe('Script Examples', function () {
       alice.commitmentTxb1.build()
 
       // Alice does not yet sign the commitment tx. She sends it to Bob.
-      bob.commitmentTx = Txbuilder().fromJSON(alice.commitmentTxb1.toJSON())
+      bob.commitmentTxb1 = Txbuilder().fromJSON(alice.commitmentTxb1.toJSON())
+
+      // Here Bob needs to check that the transaction is something he is really
+      // willing to accept. We will skip the checking for now and assume it
+      // correct. TODO: Perform all the necessary checks so Bob knows and
+      // agrees with what he is signing.
+
+      // Alice shares the fundingTxTxout because Bob needs this to be able to
+      // sign the transaction.
+      bob.fundingInputTxout = alice.fundingInputTxout
+
+      // Bob signs the transaction.
+      bob.commitmentTxb1.sign(0, bob.msKeypair, bob.fundingInputTxout)
+
+      // The transaction is not fully signed yet - only Bob has signed. Bob
+      // sends the transaction back to Alice so she can finish signing it.
+      alice.commitmentTxb1 = Txbuilder().fromJSON(bob.commitmentTxb1.toJSON())
+
+      // TODO: Alice performs checks to make sure that the transaction builder
+      // is the same as before, but also signed by Bob.
+
+      // Now that Alice has the refund transaction back, and is signed by Bob,
+      // she signs it herself, making it fully valid.
+      alice.commitmentTxb1.sign(0, alice.msKeypair, alice.fundingInputTxout)
+
+      // Since the transaction is fully signed, it should now be valid.
+      Txverifier(alice.commitmentTxb1.tx, alice.commitmentTxb1.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
       // TODO: Not finished!!!
     })
