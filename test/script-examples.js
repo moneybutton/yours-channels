@@ -5,14 +5,15 @@ let BN = require('fullnode/lib/bn')
 let Hash = require('fullnode/lib/hash')
 let Interp = require('fullnode/lib/interp')
 let Keypair = require('fullnode/lib/keypair')
+let Opcode = require('fullnode/lib/opcode')
 let Privkey = require('fullnode/lib/privkey')
 let Pubkey = require('fullnode/lib/pubkey')
+let Random = require('fullnode/lib/random')
 let Script = require('fullnode/lib/script')
 let Sig = require('fullnode/lib/sig')
 let Txbuilder = require('fullnode/lib/txbuilder')
 let Txout = require('fullnode/lib/txout')
 let Txverifier = require('fullnode/lib/txverifier')
-let Opcode = require('fullnode/lib/opcode')
 require('should')
 
 describe('Script Examples', function () {
@@ -343,42 +344,67 @@ describe('Script Examples', function () {
     })
   })
 
-  describe('CLTV-only', function () {
-    it('should validate', function () {
-      // Based on Clemens' document: upgradable-lightning-now.md
+  describe('Yours Lightning Network', function () {
+    // Based on Clemens' document: yours-lightning.md
+    it('should send payments from alice to bob', function () {
+      this.timeout(10000)
+      let alice = {}
+      let bob = {}
 
-      // Initial keypair to fund the funding tx, owned by sender
-      let privkey = Privkey().fromRandom()
-      let pubkey = Pubkey().fromPrivkey(privkey)
-      let keypair = Keypair(privkey, pubkey)
-      let address = Address().fromPubkey(pubkey)
-      let scriptPubkey = address.toScript()
+      // Creating the multisig address.
+      alice.msKeypair = Keypair().fromRandom()
+      bob.msKeypair = Keypair().fromRandom()
+      alice.otherPubkey = bob.msKeypair.pubkey
+      bob.otherPubkey = alice.msKeypair.pubkey
+      alice.msRedeemScript = Script().fromPubkeys(2, [alice.msKeypair.pubkey, alice.otherPubkey])
+      alice.msAddress = Address().fromRedeemScript(alice.msRedeemScript)
+      bob.msRedeemScript = Script().fromPubkeys(2, [bob.msKeypair.pubkey, bob.otherPubkey])
+      bob.msAddress = Address().fromRedeemScript(bob.msRedeemScript)
 
-      // First multisig address, using Sender and Receiver keys
-      let senderPrivkey = Privkey().fromRandom()
-      let senderPubkey = Pubkey().fromPrivkey(senderPrivkey)
-      // let senderKeypair = Keypair(senderPrivkey, senderPubkey)
-      let receiverPrivkey = Privkey().fromRandom()
-      let receiverPubkey = Pubkey().fromPrivkey(receiverPrivkey)
-      // let receiverKeypair = Keypair(receiverPrivkey, receiverPubkey)
-      let multisigScript = Script().fromPubkeys(2, [senderPubkey, receiverPubkey])
-      let multisigAddress = Address().fromRedeemScript(multisigScript)
-      // let multisigScriptPubkey = multisigAddress.toScript()
+      // Confirm that Alice and Bob have created the same address.
+      bob.msAddress.toString().should.equal(alice.msAddress.toString())
 
-      // building, signing, and verifying the funding tx
-      let fundingTxb = Txbuilder()
-      let fundingInputTxhashbuf = new Buffer(32)
-      fundingInputTxhashbuf.fill(0)
-      let fundingInputTxoutnum = 0
-      let fundingInputTxout = Txout(BN(500000)).setScript(scriptPubkey)
-      fundingTxb.fromPubkeyhash(fundingInputTxhashbuf, fundingInputTxoutnum, fundingInputTxout, pubkey)
-      fundingTxb.setChangeAddress(Address().fromPrivkey(Privkey().fromRandom()))
-      fundingTxb.toAddress(BN(100000), multisigAddress)
-      fundingTxb.build()
-      fundingTxb.sign(0, keypair, fundingInputTxout)
-      Txverifier.verify(fundingTxb.tx, fundingTxb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY).should.equal(true)
+      // Building, signing, and verifying the funding tx. We assume the payment
+      // is made from a normal pubkeyhash address.
+      alice.fundingTxInputKeypair = Keypair().fromRandom()
+      alice.fundingTxInputAddress = Address().fromPubkey(alice.fundingTxInputKeypair.pubkey)
+      alice.fundingTxChangeKeypair = Keypair().fromRandom()
+      alice.fundingTxChangeAddress = Address().fromPubkey(alice.fundingTxChangeKeypair.pubkey)
+      alice.fundingScriptPubkey = alice.fundingTxInputAddress.toScript()
+      alice.fundingTxb = Txbuilder()
+      alice.fundingInputTxHashbuf = new Buffer(32)
+      alice.fundingInputTxHashbuf.fill(0)
+      alice.fundingInputTxoutnum = 0
+      alice.fundingInputTxout = Txout(BN(500000)).setScript(alice.fundingScriptPubkey)
+      alice.fundingTxb.fromPubkeyhash(alice.fundingInputTxHashbuf, alice.fundingInputTxoutnum, alice.fundingInputTxout, alice.fundingTxInputKeypair.pubkey)
+      alice.fundingTxb.setChangeAddress(alice.fundingTxChangeAddress)
+      alice.fundingTxb.toAddress(BN(100000), alice.msAddress)
+      alice.fundingTxb.build()
+      alice.fundingTxb.sign(0, alice.fundingTxInputKeypair, alice.fundingInputTxout)
+      Txverifier(alice.fundingTxb.tx, alice.fundingTxb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
-      // TODO: Not finished! Add the other transactions.
+      // Alice now has the funding transaction, but does not yet broadcast it.
+      // She wants to confirm that she gets a signed refund transaction from
+      // Bob first. The refund transaction is simply the first payment
+      // transaction, sending 0 to Bob and the full amount (100000) back to
+      // Alice. This transaction needs to be revokable, like all subsequent
+      // payments, to Alice can't send the full amount back to herself after
+      // sending payments to Bob. Alice builds this transaction, but doesn't
+      // sign it, and requests that Bob signs it and sends it back.
+      alice.fundingTxHashbuf = alice.fundingTxb.tx.hash()
+      alice.fundingTxOutnum = 0
+      alice.fundingTxAmount = BN(100000)
+      alice.revokeSecret1 = Random.getRandomBuffer(32)
+      alice.revokeHash1 = Hash.sha256ripemd160(alice.revokeSecret1)
+      alice.commitmentTxb1 = Txbuilder()
+      alice.commitmentTxb1.fromScripthashMultisig(alice.fundingTxHashbuf, alice.fundingTxOutnum, alice.fundingTxb.tx.txouts[0], alice.msRedeemScript)
+      alice.commitmentTxb1.setChangeScript(alice.changeScript)
+
+      bob.fundingTxHashbuf = alice.fundingTxHashbuf
+      bob.fundingTxOutnum = alice.fundingTxOutnum
+      bob.fundingTxAmount = alice.fundingTxAmount
+
+      // TODO: Not finished!!!
     })
   })
 })
