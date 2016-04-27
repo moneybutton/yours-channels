@@ -122,25 +122,26 @@ public keys to Alice. Both create the same multisig address from the keys.
 spends to the shared multisig address, but does not broadcast it yet. She then
 sends the funding amount and funding transaction hash to Bob.
 
-**3. Bob builds a refund transaction, sends it to Alice.** Alice and Bob go
-through the protocol described above for creating a payment, in the case where
-Bob sends a payment to Alice. The payment spends all funds from the funding
-transaction to Alice.
+**3. Bob builds and signs a refund transaction, sends it to Alice.** Alice and
+Bob go through the protocol described below for creating a payment, in the case
+where Bob sends a payment to Alice. The payment spends all funds from the
+funding transaction to Alice.
 
-**4. Alice broadcasts the funding transactions.** When the refund transaction
-is created and distributed between the two parties, Alice broadcasts the
-funding transaction. The channel is open when the funding transaction is
-confirmed into the blockchain.
+**4. Alice broadcasts the funding transaction.** When the refund transaction is
+created and distributed between the two parties, Alice broadcasts the funding
+transaction. The channel is open when the funding transaction is confirmed into
+the blockchain.
 
-Note that when the first "real" payment is sent, the funding transaction is
-invalidated as described in the section above.
+Note that when the first "real" payment is sent, the refund transaction is
+invalidated as described in the section below.
 
 ### Creating the payment
 
-We describe a payment from Alice to Bob. Note that Alice has the following
-information from the previous payment: her own revocation secret, her own HTLC
-secret, the hash of Bob's last revocation secret, the hash of Bob's last HTLC
-secret.
+We describe a payment from Alice to Bob. Note that if this is not the first
+payment, Alice has the following information from the previous payment: her own
+revocation secret, her own HTLC secret, the hash of Bob's last revocation
+secret, the hash of Bob's last HTLC secret. If this is the first payment,
+revoking isn't necessary and those secrets are not needed.
 
 **1. Alice generates a new revocation secret.** She then sends the hash of the
 revocation secret to Bob. She will later use the revocation secret to revoke
@@ -180,7 +181,8 @@ blockchain. In this case both parties go through the following protcol
 
 **3. Broadcast that transaction.**
 
-The party that broadcasts the commitment transaction must wait for a day to do that, the other party can do so as soon as possible.
+The party that broadcasts the commitment transaction must wait for a day to do
+that, the other party can do so as soon as possible.
 
 ### Broadcasting an old commitment transaction
 
@@ -194,10 +196,10 @@ In that case the party that did not broadcast goes trough the following:
 
 **4. Create an output script that spends the revocation output.**
 
-
 **5. Build a transaction that spends both outputs.**
 
-This has to happen within one day, in order to make sure that the revocation output can be spent.
+This has to happen within one day, in order to make sure that the revocation
+output can be spent.
 
 ## Security Properties
 
@@ -290,8 +292,6 @@ needs to be signed by the other party.
 
 **acceptCommitmentTx(txb).** Check if payment should be accepted. If so sign
 and return.
-
-
 
 ## References
 
