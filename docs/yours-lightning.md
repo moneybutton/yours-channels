@@ -108,8 +108,32 @@ that each party can revoke their own HTLC but not the other party's.
 
 ## Protocols
 
+### Funding the channel
+
 As there are inherent malleability problems if two parties fund a payment
-channel, we use a version where only one party funds.
+channel, we describe the version where only Alice funds the channel.
+
+**1. Alice and Bob exchange public keys and create a multisig address.** Alice
+sends two public key to Bob - one to build a multisig address and one at which
+she wishes to receive payments at. Symmetrically, Bob sends two corresponding
+public keys to Alice. Both create the same multisig address from the keys.
+
+**2. Alice builds a funding transaction.** Alice creates a transaction that
+spends to the shared multisig address, but does not broadcast it yet. She then
+sends the funding amount and funding transaction hash to Bob.
+
+**3. Bob builds a refund transaction, sends it to Alice.** Alice and Bob go
+through the protocol described above for creating a payment, in the case where
+Bob sends a payment to Alice. The payment spends all funds from the funding
+transaction to Alice.
+
+**4. Alice broadcasts the funding transactions.** When the refund transaction
+is created and distributed between the two parties, Alice broadcasts the
+funding transaction. The channel is open when the funding transaction is
+confirmed into the blockchain.
+
+Note that when the first "real" payment is sent, the funding transaction is
+invalidated as described in the section above.
 
 ### Creating the payment
 
@@ -144,32 +168,6 @@ revocation secret from the last commitment transaction to Bob.
 
 **6. Bob revokes.** Symmetrically, Bob sends Alice his revocation secret from
 the last commitment transaction.
-
-### Funding the channel
-
-We describe the version where only Alice funds the channel.
-
-**1. Alice and Bob exchange public keys and create a multisig address.** Alice
-sends two public key to Bob - one to build a multisig address and one at which
-she wishes to receive payments at. Symmetrically, Bob sends two corresponding
-public keys to Alice. Both create the same multisig address from the keys.
-
-**2. Alice builds a funding transaction.** Alice creates a transaction that
-spends to the shared multisig address, but does not broadcast it yet. She then
-sends the funding amount and funding transaction hash to Bob.
-
-**3. Bob builds a refund transaction, sends it to Alice.** Alice and Bob go
-through the protocol described above for creating a payment, in the case where
-Bob sends a payment to Alice. The payment spends all funds from the funding
-transaction to Alice.
-
-**4. Alice broadcasts the funding transactions.** When the refund transaction
-is created and distributed between the two parties, Alice broadcasts the
-funding transaction. The channel is open when the funding transaction is
-confirmed into the blockchain.
-
-Note that when the first "real" payment is sent, the funding transaction is
-invalidated as described in the section above.
 
 ### Closing the channel
 
