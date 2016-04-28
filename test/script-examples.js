@@ -331,10 +331,10 @@ describe('Script Examples', function () {
       let txhashbuf = new Buffer(32)
       txhashbuf.fill(0)
       let txoutnum = 0
-      let txout = Txout(BN(500000)).setScript(scriptPubkey)
+      let txout = Txout(BN(5000000)).setScript(scriptPubkey)
       txb.fromScript(txhashbuf, txoutnum, txout, scriptSig)
       txb.setChangeAddress(Address().fromPrivkey(Privkey().fromRandom()))
-      txb.toAddress(BN(100000), Address().fromPrivkey(Privkey().fromRandom()))
+      txb.toAddress(BN(1000000), Address().fromPrivkey(Privkey().fromRandom()))
 
       txb.build()
       let sig = txb.getSig(keypair, Sig.SIGHASH_ALL, 0, redeemScript)
@@ -346,6 +346,51 @@ describe('Script Examples', function () {
 
   describe('Yours Lightning Network', function () {
     // Based on Clemens' document: yours-lightning.md
+    function makeRevokableOutputScript(paymentPubkey, refundPubkey, revokeHash, htlcHash) {
+      return Script()
+        .writeOpcode(Opcode.OP_IF)
+          .writeBuffer(paymentPubkey.toBuffer())
+          .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
+          .writeOpcode(Opcode.OP_HASH160)
+          .writeBuffer(revokeHash)
+          .writeOpcode(Opcode.OP_EQUALVERIFY)
+        .writeOpcode(Opcode.OP_ELSE)
+          .writeOpcode(Opcode.OP_IF)
+            .writeBN(BN(6 * 24)) // one day = six blocks per hour for 24 hours
+            .writeOpcode(Opcode.OP_CHECKSEQUENCEVERIFY)
+            .writeOpcode(Opcode.OP_DROP)
+            .writeBuffer(paymentPubkey.toBuffer())
+            .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
+            .writeOpcode(Opcode.OP_HASH160)
+            .writeBuffer(htlcHash)
+            .writeOpcode(Opcode.OP_EQUALVERIFY)
+          .writeOpcode(Opcode.OP_ELSE)
+            .writeBN(BN(6 * 48)) // two days = six blocks per hour for 48 hours
+            .writeOpcode(Opcode.OP_CHECKSEQUENCEVERIFY)
+            .writeOpcode(Opcode.OP_DROP)
+            .writeBuffer(refundPubkey.toBuffer())
+            .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
+          .writeOpcode(Opcode.OP_ENDIF)
+        .writeOpcode(Opcode.OP_ENDIF)
+    }
+
+    function makeHTLCOutputScript(paymentPubkey, refundPubkey, revokeHash) {
+      return Script()
+        .writeOpcode(Opcode.OP_IF)
+          .writeBuffer(paymentPubkey.toBuffer())
+          .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
+          .writeOpcode(Opcode.OP_HASH160)
+          .writeBuffer(revokeHash)
+          .writeOpcode(Opcode.OP_EQUALVERIFY)
+        .writeOpcode(Opcode.OP_ELSE)
+          .writeBN(BN(6 * 48)) // two days = six blocks per hour for 48 hours
+          .writeOpcode(Opcode.OP_CHECKSEQUENCEVERIFY)
+          .writeOpcode(Opcode.OP_DROP)
+          .writeBuffer(refundPubkey.toBuffer())
+          .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
+        .writeOpcode(Opcode.OP_ENDIF)
+    }
+
     it('should send payments from alice to bob', function () {
       this.timeout(10000)
       let alice = {}
@@ -404,7 +449,7 @@ describe('Script Examples', function () {
       // comes from the funding tx.
       alice.fundingTxHashbuf = alice.fundingTxb.tx.hash()
       alice.fundingTxOutnum = 0
-      alice.fundingTxAmount = BN(100000)
+      alice.fundingTxAmount = BN(1000000)
       alice.revokeSecret1 = Random.getRandomBuffer(32)
       alice.revokeHash1 = Hash.sha256ripemd160(alice.revokeSecret1)
       alice.commitmentTxb1 = Txbuilder()
@@ -427,31 +472,7 @@ describe('Script Examples', function () {
       bob.otherHtlcHash1 = alice.htlcHash1
 
       // Alice creates the RHTLC output to herself.
-      alice.refundOutputScript = Script()
-        .writeOpcode(Opcode.OP_IF)
-          .writeBuffer(alice.otherPaymentPubkey.toBuffer())
-          .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
-          .writeOpcode(Opcode.OP_HASH160)
-          .writeBuffer(alice.revokeHash1)
-          .writeOpcode(Opcode.OP_EQUALVERIFY)
-        .writeOpcode(Opcode.OP_ELSE)
-          .writeOpcode(Opcode.OP_IF)
-            .writeBN(BN(6 * 24)) // one day = six blocks per hour for 24 hours
-            .writeOpcode(Opcode.OP_CHECKSEQUENCEVERIFY)
-            .writeOpcode(Opcode.OP_DROP)
-            .writeBuffer(alice.otherPaymentPubkey.toBuffer())
-            .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
-            .writeOpcode(Opcode.OP_HASH160)
-            .writeBuffer(alice.otherHtlcHash1)
-            .writeOpcode(Opcode.OP_EQUALVERIFY)
-          .writeOpcode(Opcode.OP_ELSE)
-            .writeBN(BN(6 * 48)) // two days = six blocks per hour for 48 hours
-            .writeOpcode(Opcode.OP_CHECKSEQUENCEVERIFY)
-            .writeOpcode(Opcode.OP_DROP)
-            .writeBuffer(alice.paymentKeypair.pubkey.toBuffer())
-            .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
-          .writeOpcode(Opcode.OP_ENDIF)
-        .writeOpcode(Opcode.OP_ENDIF)
+      alice.revokableOutputScript = makeRevokableOutputScript(alice.otherPaymentPubkey, alice.paymentKeypair.pubkey, alice.revokeHash1, alice.otherHtlcHash1)
 
       // Alice does NOT create an HTLC output to Bob yet - since that would
       // only send 0 bitcoins at this point.
@@ -460,7 +481,7 @@ describe('Script Examples', function () {
       // - that is, the total amount sent back to herself will be everything
       // not sent in one of the other outputs minus the fee. Since there will
       // be no other outputs, it's just the total input amount minus the fee.
-      alice.commitmentTxb1.setChangeScript(alice.refundOutputScript)
+      alice.commitmentTxb1.setChangeScript(alice.revokableOutputScript)
 
       // Alice now builds the tx. It has only one output - the RHTLC output
       // going back to Alice.
