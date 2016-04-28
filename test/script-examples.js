@@ -488,7 +488,7 @@ describe('Script Examples', function () {
       alice.commitmentTxb1.build()
 
       // Alice does not yet sign the commitment tx. She sends it to Bob.
-      bob.commitmentTxb1 = Txbuilder().fromJSON(alice.commitmentTxb1.toJSON())
+      bob.otherCommitmentTxb1 = Txbuilder().fromJSON(alice.commitmentTxb1.toJSON())
 
       // Here Bob needs to check that the transaction is something he is really
       // willing to accept. We will skip the checking for now and assume it
@@ -500,11 +500,11 @@ describe('Script Examples', function () {
       bob.fundingInputTxout = alice.fundingInputTxout
 
       // Bob signs the transaction.
-      bob.commitmentTxb1.sign(0, bob.msKeypair, bob.fundingInputTxout)
+      bob.otherCommitmentTxb1.sign(0, bob.msKeypair, bob.fundingInputTxout)
 
       // The transaction is not fully signed yet - only Bob has signed. Bob
       // sends the transaction back to Alice so she can finish signing it.
-      alice.commitmentTxb1 = Txbuilder().fromJSON(bob.commitmentTxb1.toJSON())
+      alice.commitmentTxb1 = Txbuilder().fromJSON(bob.otherCommitmentTxb1.toJSON())
 
       // TODO: Alice performs checks to make sure that the transaction builder
       // is the same as before, but also signed by Bob.
@@ -525,8 +525,8 @@ describe('Script Examples', function () {
 
       // Now that the fundingTx is in a block, Alice can start making actual
       // payments to Bob. Alice has funded the channel with 1,000,000 satoshis.
-      // She decides she wishes to pay Bob 50,000 satoshis. She will need to
-      // create a new transaction with a 50,000 HTLC output to Bob and a RHTLC
+      // She decides she wishes to pay Bob 10,000 satoshis. She will need to
+      // create a new transaction with a 10,000 HTLC output to Bob and a RHTLC
       // change output back to herself.
 
       // Alice and both both generate new secrets, and exchange their hashes
@@ -550,9 +550,37 @@ describe('Script Examples', function () {
       // Alice makes the HTLC output for paying to Bob
       alice.htlcOutputScript2 = makeHTLCOutputScript(alice.otherPaymentPubkey, alice.paymentKeypair.pubkey, alice.otherHtlcHash2)
 
-      // Now Alice can assemble the commitment tx
+      // Now Alice can assemble her commitment tx
       alice.commitmentTxb2 = Txbuilder()
       alice.commitmentTxb2.fromScripthashMultisig(alice.fundingTxHashbuf, alice.fundingTxOutnum, alice.fundingTxb.tx.txouts[0], alice.msRedeemScript)
+      alice.commitmentTxb2.toScript(BN(10000), alice.htlcOutputScript2)
+      alice.commitmentTxb2.setChangeScript(alice.revokableOutputScript2)
+      alice.commitmentTxb2.build()
+
+      // Alice does not yet sign the commitment tx. She sends it to Bob.
+      bob.otherCommitmentTxb2 = Txbuilder().fromJSON(alice.commitmentTxb2.toJSON())
+
+      // Here Bob needs to check that the transaction is something he is really
+      // willing to accept. We will skip the checking for now and assume it
+      // correct. TODO: Perform all the necessary checks so Bob knows and
+      // agrees with what he is signing.
+
+      // Bob signs the transaction.
+      bob.otherCommitmentTxb2.sign(0, bob.msKeypair, bob.fundingInputTxout)
+
+      // The transaction is not fully signed yet - only Bob has signed. Bob
+      // sends the transaction back to Alice so she can finish signing it.
+      alice.commitmentTxb2 = Txbuilder().fromJSON(bob.otherCommitmentTxb2.toJSON())
+
+      // TODO: Alice performs checks to make sure that the transaction builder
+      // is the same as before, but also signed by Bob.
+
+      // Now that Alice has the refund transaction back, and is signed by Bob,
+      // she signs it herself, making it fully valid.
+      alice.commitmentTxb2.sign(0, alice.msKeypair, alice.fundingInputTxout)
+
+      // Since the transaction is fully signed, it should now be valid.
+      Txverifier(alice.commitmentTxb2.tx, alice.commitmentTxb2.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
       // TODO: Not finished!!!
     })
