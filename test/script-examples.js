@@ -346,7 +346,7 @@ describe('Script Examples', function () {
 
   describe('Yours Lightning Network', function () {
     // Based on Clemens' document: yours-lightning.md
-    function makeRevokableOutputScript(paymentPubkey, refundPubkey, revokeHash, htlcHash) {
+    function makeRevokableOutputScript (paymentPubkey, refundPubkey, revokeHash, htlcHash) {
       return Script()
         .writeOpcode(Opcode.OP_IF)
           .writeBuffer(paymentPubkey.toBuffer())
@@ -374,13 +374,13 @@ describe('Script Examples', function () {
         .writeOpcode(Opcode.OP_ENDIF)
     }
 
-    function makeHTLCOutputScript(paymentPubkey, refundPubkey, revokeHash) {
+    function makeHTLCOutputScript (paymentPubkey, refundPubkey, htlcHash) {
       return Script()
         .writeOpcode(Opcode.OP_IF)
           .writeBuffer(paymentPubkey.toBuffer())
           .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
           .writeOpcode(Opcode.OP_HASH160)
-          .writeBuffer(revokeHash)
+          .writeBuffer(htlcHash)
           .writeOpcode(Opcode.OP_EQUALVERIFY)
         .writeOpcode(Opcode.OP_ELSE)
           .writeBN(BN(6 * 48)) // two days = six blocks per hour for 48 hours
@@ -472,7 +472,7 @@ describe('Script Examples', function () {
       bob.otherHtlcHash1 = alice.htlcHash1
 
       // Alice creates the RHTLC output to herself.
-      alice.revokableOutputScript = makeRevokableOutputScript(alice.otherPaymentPubkey, alice.paymentKeypair.pubkey, alice.revokeHash1, alice.otherHtlcHash1)
+      alice.revokableOutputScript1 = makeRevokableOutputScript(alice.otherPaymentPubkey, alice.paymentKeypair.pubkey, alice.revokeHash1, alice.otherHtlcHash1)
 
       // Alice does NOT create an HTLC output to Bob yet - since that would
       // only send 0 bitcoins at this point.
@@ -481,7 +481,7 @@ describe('Script Examples', function () {
       // - that is, the total amount sent back to herself will be everything
       // not sent in one of the other outputs minus the fee. Since there will
       // be no other outputs, it's just the total input amount minus the fee.
-      alice.commitmentTxb1.setChangeScript(alice.revokableOutputScript)
+      alice.commitmentTxb1.setChangeScript(alice.revokableOutputScript1)
 
       // Alice now builds the tx. It has only one output - the RHTLC output
       // going back to Alice.
@@ -515,6 +515,44 @@ describe('Script Examples', function () {
 
       // Since the transaction is fully signed, it should now be valid.
       Txverifier(alice.commitmentTxb1.tx, alice.commitmentTxb1.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+
+      // Now that Alice has a fully-signed and valid refund transaction, it is
+      // safe for her to broadcast the fundingTx. After she has broadcast the
+      // fundingTx, Alice and Bob need to wait for that tranaction to get in a
+      // block before continuing.
+
+      // Pause ~ 10 minutes for the fundingTx to get in a block.
+
+      // Now that the fundingTx is in a block, Alice can start making actual
+      // payments to Bob. Alice has funded the channel with 1,000,000 satoshis.
+      // She decides she wishes to pay Bob 50,000 satoshis. She will need to
+      // create a new transaction with a 50,000 HTLC output to Bob and a RHTLC
+      // change output back to herself.
+
+      // Alice and both both generate new secrets, and exchange their hashes
+      // with each other.
+      alice.revokeSecret2 = Random.getRandomBuffer(32)
+      alice.revokeHash2 = Hash.sha256ripemd160(alice.revokeSecret2)
+      bob.revokeSecret2 = Random.getRandomBuffer(32)
+      bob.revokeHash2 = Hash.sha256ripemd160(alice.revokeSecret2)
+      alice.htlcSecret2 = Random.getRandomBuffer(32)
+      alice.htlcHash2 = Hash.sha256ripemd160(alice.htlcSecret2)
+      bob.htlcSecret2 = Random.getRandomBuffer(32)
+      bob.htlcHash2 = Hash.sha256ripemd160(alice.htlcSecret2)
+      alice.otherRevokeHash2 = bob.revokeHash2
+      alice.otherHtlcHash2 = bob.htlcHash2
+      bob.otherRevokeHash2 = alice.revokeHash2
+      bob.otherHtlcHash2 = alice.htlcHash2
+
+      // Alice makes the revokable output script for herself
+      alice.revokableOutputScript2 = makeRevokableOutputScript(alice.otherPaymentPubkey, alice.paymentKeypair.pubkey, alice.revokeHash1, alice.otherHtlcHash1)
+
+      // Alice makes the HTLC output for paying to Bob
+      alice.htlcOutputScript2 = makeHTLCOutputScript(alice.otherPaymentPubkey, alice.paymentKeypair.pubkey, alice.otherHtlcHash2)
+
+      // Now Alice can assemble the commitment tx
+      alice.commitmentTxb2 = Txbuilder()
+      alice.commitmentTxb2.fromScripthashMultisig(alice.fundingTxHashbuf, alice.fundingTxOutnum, alice.fundingTxb.tx.txouts[0], alice.msRedeemScript)
 
       // TODO: Not finished!!!
     })
