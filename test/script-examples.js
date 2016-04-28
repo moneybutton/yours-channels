@@ -346,49 +346,75 @@ describe('Script Examples', function () {
 
   describe('Yours Lightning Network', function () {
     // Based on Clemens' document: yours-lightning.md
-    function makeRevokableOutputScript (paymentPubkey, refundPubkey, revokeHash, htlcHash) {
+    function makeRHTLCOutputScript (bobPaymentPubkey, aliceRefundPubkey, aliceRHTLCHash, carolHTLCHash) {
       return Script()
         .writeOpcode(Opcode.OP_IF)
-          .writeBuffer(paymentPubkey.toBuffer())
+          .writeBuffer(bobPaymentPubkey.toBuffer())
           .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
           .writeOpcode(Opcode.OP_HASH160)
-          .writeBuffer(revokeHash)
+          .writeBuffer(aliceRHTLCHash)
           .writeOpcode(Opcode.OP_EQUALVERIFY)
         .writeOpcode(Opcode.OP_ELSE)
           .writeOpcode(Opcode.OP_IF)
             .writeBN(BN(6 * 24)) // one day = six blocks per hour for 24 hours
             .writeOpcode(Opcode.OP_CHECKSEQUENCEVERIFY)
             .writeOpcode(Opcode.OP_DROP)
-            .writeBuffer(paymentPubkey.toBuffer())
+            .writeBuffer(bobPaymentPubkey.toBuffer())
             .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
             .writeOpcode(Opcode.OP_HASH160)
-            .writeBuffer(htlcHash)
+            .writeBuffer(carolHTLCHash)
             .writeOpcode(Opcode.OP_EQUALVERIFY)
           .writeOpcode(Opcode.OP_ELSE)
             .writeBN(BN(6 * 48)) // two days = six blocks per hour for 48 hours
             .writeOpcode(Opcode.OP_CHECKSEQUENCEVERIFY)
             .writeOpcode(Opcode.OP_DROP)
-            .writeBuffer(refundPubkey.toBuffer())
+            .writeBuffer(aliceRefundPubkey.toBuffer())
             .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
           .writeOpcode(Opcode.OP_ENDIF)
         .writeOpcode(Opcode.OP_ENDIF)
     }
 
-    function makeHTLCOutputScript (paymentPubkey, refundPubkey, htlcHash) {
+    function makeHTLCOutputScript (bobPubkey, aliceRefundPubkey, carolHTLCHash) {
       return Script()
         .writeOpcode(Opcode.OP_IF)
-          .writeBuffer(paymentPubkey.toBuffer())
+          .writeBuffer(bobPubkey.toBuffer())
           .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
           .writeOpcode(Opcode.OP_HASH160)
-          .writeBuffer(htlcHash)
+          .writeBuffer(carolHTLCHash)
           .writeOpcode(Opcode.OP_EQUALVERIFY)
         .writeOpcode(Opcode.OP_ELSE)
           .writeBN(BN(6 * 48)) // two days = six blocks per hour for 48 hours
           .writeOpcode(Opcode.OP_CHECKSEQUENCEVERIFY)
           .writeOpcode(Opcode.OP_DROP)
-          .writeBuffer(refundPubkey.toBuffer())
+          .writeBuffer(aliceRefundPubkey.toBuffer())
           .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
         .writeOpcode(Opcode.OP_ENDIF)
+    }
+
+    function makeFundingTxObj (inputAmountBN, outputAmountBN, msAddress) {
+      let inputTxKeypair = Keypair().fromRandom()
+      let inputTxAddress = Address().fromPubkey(inputTxKeypair.pubkey)
+      let txChangeKeypair = Keypair().fromRandom()
+      let txChangeAddress = Address().fromPubkey(txChangeKeypair.pubkey)
+      let scriptPubkey = inputTxAddress.toScript()
+      let txb = Txbuilder()
+      let inputTxHashbuf = new Buffer(32)
+      inputTxHashbuf.fill(0) // a fake, non-existent input transaction
+      let inputTxoutnum = 0
+      let inputTxout = Txout(BN(5000000)).setScript(scriptPubkey)
+      txb.fromPubkeyhash(inputTxHashbuf, inputTxoutnum, inputTxout, inputTxKeypair.pubkey)
+      txb.setChangeAddress(txChangeAddress)
+      txb.toAddress(BN(1000000), msAddress)
+      txb.build()
+      txb.sign(0, inputTxKeypair, inputTxout)
+      return {
+        txb,
+        tx: txb.tx,
+        txhashbuf: txb.tx.hash(),
+        txoutnum: 0,
+        txout: txb.tx.txouts[0],
+        hash: txb.tx.hash()
+      }
     }
 
     it('should send payments from alice to bob', function () {
@@ -419,22 +445,8 @@ describe('Script Examples', function () {
 
       // Building, signing, and verifying the funding tx. We assume the payment
       // is made from a normal pubkeyhash address.
-      alice.fundingInputTxKeypair = Keypair().fromRandom()
-      alice.fundingInputTxAddress = Address().fromPubkey(alice.fundingInputTxKeypair.pubkey)
-      alice.fundingTxChangeKeypair = Keypair().fromRandom()
-      alice.fundingTxChangeAddress = Address().fromPubkey(alice.fundingTxChangeKeypair.pubkey)
-      alice.fundingScriptPubkey = alice.fundingInputTxAddress.toScript()
-      alice.fundingTxb = Txbuilder()
-      alice.fundingInputTxHashbuf = new Buffer(32)
-      alice.fundingInputTxHashbuf.fill(0) // a fake, non-existent input transaction
-      alice.fundingInputTxTxoutnum = 0
-      alice.fundingInputTxTxout = Txout(BN(500000)).setScript(alice.fundingScriptPubkey)
-      alice.fundingTxb.fromPubkeyhash(alice.fundingInputTxHashbuf, alice.fundingInputTxTxoutnum, alice.fundingInputTxTxout, alice.fundingInputTxKeypair.pubkey)
-      alice.fundingTxb.setChangeAddress(alice.fundingTxChangeAddress)
-      alice.fundingTxb.toAddress(BN(100000), alice.msAddress)
-      alice.fundingTxb.build()
-      alice.fundingTxb.sign(0, alice.fundingInputTxKeypair, alice.fundingTxTxout)
-      Txverifier(alice.fundingTxb.tx, alice.fundingTxb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+      alice.fundingTxObj = makeFundingTxObj(BN(500000), BN(100000), alice.msAddress)
+      Txverifier(alice.fundingTxObj.tx, alice.fundingTxObj.txb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
       // Alice now has the funding transaction, but does not yet broadcast it.
       // She wants to confirm that she gets a signed refund transaction from
@@ -447,14 +459,10 @@ describe('Script Examples', function () {
 
       // Alice begins creating the commitment tx by first specifying that it
       // comes from the funding tx.
-      alice.fundingTxHashbuf = alice.fundingTxb.tx.hash()
-      alice.fundingTxTxoutnum = 0
-      alice.fundingTxAmount = BN(1000000)
-      alice.fundingTxTxout = alice.fundingTxb.tx.txouts[0]
       alice.revokeSecret1 = Random.getRandomBuffer(32)
       alice.revokeHash1 = Hash.sha256ripemd160(alice.revokeSecret1)
       alice.commitmentTxb1 = Txbuilder()
-      alice.commitmentTxb1.fromScripthashMultisig(alice.fundingTxHashbuf, alice.fundingTxTxoutnum, alice.fundingTxTxout, alice.msRedeemScript)
+      alice.commitmentTxb1.fromScripthashMultisig(alice.fundingTxObj.hash, alice.fundingTxObj.txoutnum, alice.fundingTxObj.txout, alice.msRedeemScript)
 
       // Alice needs the hash of Bob's secrets to continue building the tx.
       // Alice and bob generate revoke secrets and HTLC secrets and share their
@@ -473,7 +481,7 @@ describe('Script Examples', function () {
       bob.otherHtlcHash1 = alice.htlcHash1
 
       // Alice creates the RHTLC output to herself.
-      alice.revokableOutputScript1 = makeRevokableOutputScript(alice.otherPaymentPubkey, alice.paymentKeypair.pubkey, alice.revokeHash1, alice.otherHtlcHash1)
+      alice.revokableOutputScript1 = makeRHTLCOutputScript(alice.otherPaymentPubkey, alice.paymentKeypair.pubkey, alice.revokeHash1, alice.otherHtlcHash1)
 
       // Alice does NOT create an HTLC output to Bob yet - since that would
       // only send 0 bitcoins at this point.
@@ -498,12 +506,14 @@ describe('Script Examples', function () {
 
       // Alice shares the fundingTxTxout because Bob needs this to be able to
       // sign the transaction.
-      bob.fundingTxTxout = alice.fundingTxTxout
-      bob.fundingTxHashbuf = alice.fundingTxHashbuf
-      bob.fundingTxTxoutnum = alice.fundingTxTxoutnum
+      bob.fundingTxObj = {
+        txout: alice.fundingTxObj.txout,
+        hash: alice.fundingTxObj.hash,
+        txoutnum: alice.fundingTxObj.txoutnum
+      }
 
       // Bob signs the transaction.
-      bob.otherCommitmentTxb1.sign(0, bob.msKeypair, bob.fundingTxTxout)
+      bob.otherCommitmentTxb1.sign(0, bob.msKeypair, bob.fundingTxObj.txout)
 
       // The transaction is not fully signed yet - only Bob has signed. Bob
       // sends the transaction back to Alice so she can finish signing it.
@@ -514,9 +524,7 @@ describe('Script Examples', function () {
 
       // Now that Alice has the refund transaction back, and is signed by Bob,
       // she signs it herself, making it fully valid.
-      alice.commitmentTxb1.sign(0, alice.msKeypair, alice.fundingTxTxout)
-
-      // Since the transaction is fully signed, it should now be valid.
+      alice.commitmentTxb1.sign(0, alice.msKeypair, alice.fundingTxObj.txout)
       Txverifier(alice.commitmentTxb1.tx, alice.commitmentTxb1.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
       // Now that Alice has a fully-signed and valid refund transaction, it is
@@ -548,14 +556,14 @@ describe('Script Examples', function () {
       bob.otherHtlcHash2 = alice.htlcHash2
 
       // Alice makes the revokable output script for herself
-      alice.revokableOutputScript2 = makeRevokableOutputScript(alice.otherPaymentPubkey, alice.paymentKeypair.pubkey, alice.revokeHash1, alice.otherHtlcHash1)
+      alice.revokableOutputScript2 = makeRHTLCOutputScript(alice.otherPaymentPubkey, alice.paymentKeypair.pubkey, alice.revokeHash1, alice.otherHtlcHash1)
 
       // Alice makes the HTLC output for paying to Bob
       alice.htlcOutputScript2 = makeHTLCOutputScript(alice.otherPaymentPubkey, alice.paymentKeypair.pubkey, alice.otherHtlcHash2)
 
       // Now Alice can assemble her commitment tx
       alice.commitmentTxb2 = Txbuilder()
-      alice.commitmentTxb2.fromScripthashMultisig(alice.fundingTxHashbuf, alice.fundingTxTxoutnum, alice.fundingTxb.tx.txouts[0], alice.msRedeemScript)
+      alice.commitmentTxb2.fromScripthashMultisig(alice.fundingTxObj.hash, alice.fundingTxObj.txoutnum, alice.fundingTxObj.txout, alice.msRedeemScript)
       alice.commitmentTxb2.toScript(BN(10000), alice.htlcOutputScript2)
       alice.commitmentTxb2.setChangeScript(alice.revokableOutputScript2)
       alice.commitmentTxb2.build()
@@ -569,7 +577,7 @@ describe('Script Examples', function () {
       // agrees with what he is signing.
 
       // Bob signs the transaction.
-      bob.otherCommitmentTxb2.sign(0, bob.msKeypair, bob.fundingTxTxout)
+      bob.otherCommitmentTxb2.sign(0, bob.msKeypair, bob.fundingTxObj.txout)
 
       // The transaction is not fully signed yet - only Bob has signed. Bob
       // sends the transaction back to Alice so she can finish signing it.
@@ -578,9 +586,9 @@ describe('Script Examples', function () {
       // TODO: Alice performs checks to make sure that the transaction builder
       // is the same as before, but also signed by Bob.
 
-      // Now that Alice has the refund transaction back, and is signed by Bob,
-      // she signs it herself, making it fully valid.
-      alice.commitmentTxb2.sign(0, alice.msKeypair, alice.fundingTxTxout)
+      // Now that Alice has the commitment transaction back, and is signed by
+      // Bob, she signs it herself, making it fully valid.
+      alice.commitmentTxb2.sign(0, alice.msKeypair, alice.fundingTxObj.txout)
       Txverifier(alice.commitmentTxb2.tx, alice.commitmentTxb2.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
       // Only Alice has her fully signed commitment tx. Alice can revoke the
@@ -588,7 +596,7 @@ describe('Script Examples', function () {
       // tx, where he can revoke the output spending to himself.
 
       // Bob makes the revokable output script for herself
-      bob.revokableOutputScript2 = makeRevokableOutputScript(bob.otherPaymentPubkey, bob.paymentKeypair.pubkey, bob.revokeHash1, bob.otherHtlcHash1)
+      bob.revokableOutputScript2 = makeRHTLCOutputScript(bob.otherPaymentPubkey, bob.paymentKeypair.pubkey, bob.revokeHash1, bob.otherHtlcHash1)
 
       // Bob makes the HTLC output for paying to Bob
       bob.htlcOutputScript2 = makeHTLCOutputScript(bob.otherPaymentPubkey, bob.paymentKeypair.pubkey, bob.otherHtlcHash2)
@@ -597,7 +605,7 @@ describe('Script Examples', function () {
       // Alice's commitment tx. Bob spends the money to his revokable output
       // script, and the change to an HTLC output script spendable by Alice.
       bob.commitmentTxb2 = Txbuilder()
-      bob.commitmentTxb2.fromScripthashMultisig(bob.fundingTxHashbuf, bob.fundingTxTxoutnum, bob.fundingTxTxout, bob.msRedeemScript)
+      bob.commitmentTxb2.fromScripthashMultisig(bob.fundingTxObj.hash, bob.fundingTxObj.txoutnum, bob.fundingTxObj.txout, bob.msRedeemScript)
       bob.commitmentTxb2.toScript(BN(10000), bob.revokableOutputScript2)
       bob.commitmentTxb2.setChangeScript(bob.htlcOutputScript2)
       bob.commitmentTxb2.build()
@@ -611,7 +619,7 @@ describe('Script Examples', function () {
       // agrees with what she is signing.
 
       // Alice signs the transaction.
-      alice.otherCommitmentTxb2.sign(0, alice.msKeypair, alice.fundingTxTxout)
+      alice.otherCommitmentTxb2.sign(0, alice.msKeypair, alice.fundingTxObj.txout)
 
       // Alice sends it back to Bob.
       bob.commitmentTxb2 = Txbuilder().fromJSON(alice.otherCommitmentTxb2.toJSON())
@@ -620,8 +628,12 @@ describe('Script Examples', function () {
       // the same as before, but also signed by Alice.
 
       // Bob now signs it, making his commitment tx fully signed and valid.
-      bob.commitmentTxb2.sign(0, bob.msKeypair, bob.fundingTxTxout)
+      bob.commitmentTxb2.sign(0, bob.msKeypair, bob.fundingTxObj.txout)
       Txverifier(bob.commitmentTxb2.tx, alice.commitmentTxb2.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+
+      // Alice and Bob now both have their versions of the first payment
+      // commitment tx. They do not broadcast their transactions, because they
+      // would like to keep the channel open.
 
       // TODO: Not finished!!!
     })
