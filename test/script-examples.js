@@ -346,6 +346,25 @@ describe('Script Examples', function () {
 
   describe('Yours Lightning Network', function () {
     // Based on Clemens' document: yours-lightning.md
+    function makeAgent () {
+      let agent = {}
+      agent.paymentKeys = undefined
+      agent.otherPaymentKeys = undefined
+      agent.msKeys = undefined
+      agent.otherMsKeys = undefined
+      agent.msRedeemScript = undefined
+      agent.msAddress = undefined
+      agent.fundingTxObj = {}
+      agent.RHTLCOutputScripts = []
+      agent.HTLCOutputScripts = []
+      agent.commitmentTxbs = []
+      agent.RHTLCSecrets = []
+      agent.HTLCSecrets = []
+      agent.otherRHTLCSecrets = []
+      agent.otherHTLCSecrets = []
+      return agent
+    }
+
     function makeRHTLCOutputScript (bobPaymentPubkey, aliceRefundPubkey, aliceRHTLCHash, carolHTLCHash) {
       return Script()
         .writeOpcode(Opcode.OP_IF)
@@ -391,7 +410,7 @@ describe('Script Examples', function () {
         .writeOpcode(Opcode.OP_ENDIF)
     }
 
-    function makePrivkeyObj () {
+    function makeKeysObj () {
       let keypair = Keypair().fromRandom()
       let privkey = keypair.privkey
       let pubkey = keypair.pubkey
@@ -399,10 +418,22 @@ describe('Script Examples', function () {
       return {keypair, privkey, pubkey, address}
     }
 
-    function makePubkeyObjFromPrivkeyObj (obj) {
+    function keysObj2Public (obj) {
       return {
         pubkey: obj.pubkey,
         address: obj.address
+      }
+    }
+
+    function makeHTLCObj () {
+      let secret = Random.getRandomBuffer(32)
+      let hash = Hash.sha256ripemd160(secret)
+      return {secret, hash}
+    }
+
+    function HTLCObj2Public (obj) {
+      return {
+        hash: obj.hash
       }
     }
 
@@ -434,20 +465,20 @@ describe('Script Examples', function () {
 
     it('should send payments from alice to bob', function () {
       this.timeout(10000)
-      let alice = {}
-      let bob = {}
+      let alice = makeAgent()
+      let bob = makeAgent()
 
       // Creating addresses to receive payments and refunds.
-      alice.paymentKeys = makePrivkeyObj()
-      bob.paymentKeys = makePrivkeyObj()
-      alice.otherPaymentKeys = makePubkeyObjFromPrivkeyObj(bob.paymentKeys)
-      bob.otherPaymentKeys = makePubkeyObjFromPrivkeyObj(alice.paymentKeys)
+      alice.paymentKeys = makeKeysObj()
+      bob.paymentKeys = makeKeysObj()
+      alice.otherPaymentKeys = keysObj2Public(bob.paymentKeys)
+      bob.otherPaymentKeys = keysObj2Public(alice.paymentKeys)
 
       // Creating the multisig address.
-      alice.msKeys = makePrivkeyObj()
-      bob.msKeys = makePrivkeyObj()
-      alice.otherMsKeys = makePubkeyObjFromPrivkeyObj(bob.msKeys)
-      bob.otherMsKeys = makePubkeyObjFromPrivkeyObj(alice.msKeys)
+      alice.msKeys = makeKeysObj()
+      bob.msKeys = makeKeysObj()
+      alice.otherMsKeys = keysObj2Public(bob.msKeys)
+      bob.otherMsKeys = keysObj2Public(alice.msKeys)
       alice.msRedeemScript = Script().fromPubkeys(2, [alice.msKeys.pubkey, alice.otherMsKeys.pubkey])
       alice.msAddress = Address().fromRedeemScript(alice.msRedeemScript)
       bob.msRedeemScript = Script().fromPubkeys(2, [bob.msKeys.pubkey, bob.otherMsKeys.pubkey])
@@ -472,29 +503,23 @@ describe('Script Examples', function () {
 
       // Alice begins creating the commitment tx by first specifying that it
       // comes from the funding tx.
-      alice.revokeSecret1 = Random.getRandomBuffer(32)
-      alice.revokeHash1 = Hash.sha256ripemd160(alice.revokeSecret1)
       alice.commitmentTxb1 = Txbuilder()
       alice.commitmentTxb1.fromScripthashMultisig(alice.fundingTxObj.hash, alice.fundingTxObj.txoutnum, alice.fundingTxObj.txout, alice.msRedeemScript)
 
       // Alice needs the hash of Bob's secrets to continue building the tx.
       // Alice and bob generate revoke secrets and HTLC secrets and share their
       // hashes.
-      alice.revokeSecret1 = Random.getRandomBuffer(32)
-      alice.revokeHash1 = Hash.sha256ripemd160(alice.revokeSecret1)
-      bob.revokeSecret1 = Random.getRandomBuffer(32)
-      bob.revokeHash1 = Hash.sha256ripemd160(alice.revokeSecret1)
-      alice.htlcSecret1 = Random.getRandomBuffer(32)
-      alice.htlcHash1 = Hash.sha256ripemd160(alice.htlcSecret1)
-      bob.htlcSecret1 = Random.getRandomBuffer(32)
-      bob.htlcHash1 = Hash.sha256ripemd160(alice.htlcSecret1)
-      alice.otherRevokeHash1 = bob.revokeHash1
-      alice.otherHtlcHash1 = bob.htlcHash1
-      bob.otherRevokeHash1 = alice.revokeHash1
-      bob.otherHtlcHash1 = alice.htlcHash1
+      alice.RHTLCSecrets[0] = makeHTLCObj()
+      alice.HTLCSecrets[0] = makeHTLCObj()
+      bob.RHTLCSecrets[0] = makeHTLCObj()
+      bob.HTLCSecrets[0] = makeHTLCObj()
+      alice.otherRHTLCSecrets[0] = HTLCObj2Public(bob.RHTLCSecrets[0])
+      alice.otherHTLCSecrets[0] = HTLCObj2Public(bob.HTLCSecrets[0])
+      bob.otherRHTLCSecrets[0] = HTLCObj2Public(alice.RHTLCSecrets[0])
+      bob.otherHTLCSecrets[0] = HTLCObj2Public(alice.HTLCSecrets[0])
 
       // Alice creates the RHTLC output to herself.
-      alice.revokableOutputScript1 = makeRHTLCOutputScript(alice.otherPaymentKeys.pubkey, alice.paymentKeys.pubkey, alice.revokeHash1, alice.otherHtlcHash1)
+      alice.revokableOutputScript1 = makeRHTLCOutputScript(alice.otherPaymentKeys.pubkey, alice.paymentKeys.pubkey, alice.RHTLCSecrets[0].hash, alice.otherHTLCSecrets[0].hash)
 
       // Alice does NOT create an HTLC output to Bob yet - since that would
       // only send 0 bitcoins at this point.
@@ -555,24 +580,20 @@ describe('Script Examples', function () {
 
       // Alice and both both generate new secrets, and exchange their hashes
       // with each other.
-      alice.revokeSecret2 = Random.getRandomBuffer(32)
-      alice.revokeHash2 = Hash.sha256ripemd160(alice.revokeSecret2)
-      bob.revokeSecret2 = Random.getRandomBuffer(32)
-      bob.revokeHash2 = Hash.sha256ripemd160(alice.revokeSecret2)
-      alice.htlcSecret2 = Random.getRandomBuffer(32)
-      alice.htlcHash2 = Hash.sha256ripemd160(alice.htlcSecret2)
-      bob.htlcSecret2 = Random.getRandomBuffer(32)
-      bob.htlcHash2 = Hash.sha256ripemd160(alice.htlcSecret2)
-      alice.otherRevokeHash2 = bob.revokeHash2
-      alice.otherHtlcHash2 = bob.htlcHash2
-      bob.otherRevokeHash2 = alice.revokeHash2
-      bob.otherHtlcHash2 = alice.htlcHash2
+      alice.RHTLCSecrets[1] = makeHTLCObj()
+      alice.HTLCSecrets[1] = makeHTLCObj()
+      bob.RHTLCSecrets[1] = makeHTLCObj()
+      bob.HTLCSecrets[1] = makeHTLCObj()
+      alice.otherRHTLCSecrets[1] = HTLCObj2Public(bob.RHTLCSecrets[1])
+      alice.otherHTLCSecrets[1] = HTLCObj2Public(bob.HTLCSecrets[1])
+      bob.otherRHTLCSecrets[1] = HTLCObj2Public(alice.RHTLCSecrets[1])
+      bob.otherHTLCSecrets[1] = HTLCObj2Public(alice.HTLCSecrets[1])
 
       // Alice makes the revokable output script for herself
-      alice.revokableOutputScript2 = makeRHTLCOutputScript(alice.otherPaymentKeys.pubkey, alice.paymentKeys.pubkey, alice.revokeHash1, alice.otherHtlcHash1)
+      alice.revokableOutputScript2 = makeRHTLCOutputScript(alice.otherPaymentKeys.pubkey, alice.paymentKeys.pubkey, alice.RHTLCSecrets[1].hash, alice.otherHTLCSecrets[1].hash)
 
       // Alice makes the HTLC output for paying to Bob
-      alice.htlcOutputScript2 = makeHTLCOutputScript(alice.otherPaymentKeys.pubkey, alice.paymentKeys.pubkey, alice.otherHtlcHash2)
+      alice.htlcOutputScript2 = makeHTLCOutputScript(alice.otherPaymentKeys.pubkey, alice.paymentKeys.pubkey, alice.otherHTLCSecrets[1].hash)
 
       // Now Alice can assemble her commitment tx
       alice.commitmentTxb2 = Txbuilder()
@@ -609,10 +630,10 @@ describe('Script Examples', function () {
       // tx, where he can revoke the output spending to himself.
 
       // Bob makes the revokable output script for herself
-      bob.revokableOutputScript2 = makeRHTLCOutputScript(bob.otherPaymentKeys.pubkey, bob.paymentKeys.pubkey, bob.revokeHash1, bob.otherHtlcHash1)
+      bob.revokableOutputScript2 = makeRHTLCOutputScript(bob.otherPaymentKeys.pubkey, bob.paymentKeys.pubkey, bob.RHTLCSecrets[1].hash, bob.otherHTLCSecrets[1].hash)
 
       // Bob makes the HTLC output for paying to Bob
-      bob.htlcOutputScript2 = makeHTLCOutputScript(bob.otherPaymentKeys.pubkey, bob.paymentKeys.pubkey, bob.otherHtlcHash2)
+      bob.htlcOutputScript2 = makeHTLCOutputScript(bob.otherPaymentKeys.pubkey, bob.paymentKeys.pubkey, bob.otherHTLCSecrets[1].hash)
 
       // Bob assembles his commitment tx. The outputs are different that
       // Alice's commitment tx. Bob spends the money to his revokable output
