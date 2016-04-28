@@ -9,7 +9,7 @@ opcodes that are active in Bitcoin script today.
 
 We will need two kinds of smart contracts: HTLCs and revokable HTLCs.
 
-### HTLCs
+### Hash Time Lock Contracts (HTLCs)
 
 A HTLC between Alice (A) and Bob (B) expresses the following:
 
@@ -42,7 +42,7 @@ Alice can spend it after two days with this input script:
 <A's signature> false
 ```
 
-### Revocable HTLCs
+### Revocable HTLCs (RHTLCs)
 
 In order for channels to remain open an unlimited amount of time, the parties
 must be able to revoke previously made payments. A Revocable Sequence Maturity
