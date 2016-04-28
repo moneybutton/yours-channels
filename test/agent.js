@@ -2,7 +2,7 @@
 'use strict'
 let should = require('should')
 let Agent = require('../lib/agent.js')
-let Secret = require('../lib/secret.js')
+// let Secret = require('../lib/secret.js')
 let asink = require('asink')
 let Privkey = require('fullnode/lib/privkey')
 let Pubkey = require('fullnode/lib/pubkey')
@@ -141,69 +141,6 @@ describe('Agent', function () {
 
   /* building a payment */
 
-  describe('#generateRevocationSecret', function () {
-    it('generateRevocationSecret should exist', function () {
-      return asink(function *() {
-        let agent = Agent()
-        yield agent.asyncInitialize(privkey, msPrivkey)
-        yield agent.asyncInitializeOther(otherPubkey, otherMsPubkey)
-        agent.generateRevocationSecret()
-        should.exist(agent.revocationSecret)
-      }, this)
-    })
-  })
-
-  describe('#storeOtherRevocationSecret', function () {
-    it('storeOtherRevocationSecret should exist', function () {
-      return asink(function *() {
-        let agent = Agent()
-        yield agent.asyncInitialize(privkey, msPrivkey)
-        yield agent.asyncInitializeOther(otherPubkey, otherMsPubkey)
-
-        let otherAgent = Agent()
-        yield otherAgent.asyncInitialize(otherPrivkey, otherMsPrivkey)
-        yield otherAgent.asyncInitializeOther(pubkey, msPubkey)
-
-        otherAgent.generateRevocationSecret()
-        should.exist(otherAgent.revocationSecret.buf)
-        yield otherAgent.revocationSecret.asyncGenerateHash()
-        should.exist(otherAgent.revocationSecret.hash)
-
-        agent.storeOtherRevocationSecret(otherAgent.revocationSecret.hidden())
-        should.exist(agent.other.revocationSecret)
-        should.not.exist(agent.other.revocationSecret.buf)
-        should.exist(agent.other.revocationSecret.hash)
-      }, this)
-    })
-  })
-
-  describe('#generateHtlcSecret', function () {
-    it('generateHtlcSecret should exist', function () {
-      return asink(function *() {
-        let agent = Agent()
-        yield agent.asyncInitialize(privkey, msPrivkey)
-        yield agent.asyncInitializeOther(otherPubkey, otherMsPubkey)
-        agent.generateHtlcSecret()
-        should.exist(agent.htlcSecret)
-      }, this)
-    })
-  })
-
-  describe('#storeOtherHTLCSecretHash', function () {
-    it('storeOtherHTLCSecretHash should exist', function () {
-      return asink(function *() {
-        let agent = Agent()
-        yield agent.asyncInitialize(privkey, msPrivkey)
-        yield agent.asyncInitializeOther(otherPubkey, otherMsPubkey)
-        let secret = Secret(new Buffer('abc'))
-        yield secret.asyncGenerateHash()
-
-        agent.storeOtherHTLCSecret(secret)
-        should.exist(agent.other.htlcSecret)
-      }, this)
-    })
-  })
-
   describe('#asyncBuildCommitmentTxb', function () {
     it('asyncBuildCommitmentTxb should create a partial payment tx', function () {
       return asink(function *() {
@@ -252,6 +189,7 @@ describe('Agent', function () {
         yield agent.asyncInitialize(privkey, msPrivkey)
         yield agent.asyncInitializeOther(otherPubkey, otherMsPubkey)
         yield agent.asyncBuildMultisig()
+        yield agent.asyncGenerateSecrets()
         // generate funding transaction
         let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
         let fundingAmount = BN(2e7)
@@ -261,23 +199,16 @@ describe('Agent', function () {
         let txout = Txout(txoutamount, scriptout)
         yield agent.asyncBuildFundingTx(fundingAmount, txhashbuf, txoutnum, txout, pubkey)
 
-        // generate agents secrets
-        agent.generateRevocationSecret()
-        agent.generateHtlcSecret()
-
         // asyncInitialize another agent
         let otherAgent = Agent()
         yield otherAgent.asyncInitialize(otherPrivkey, otherMsPrivkey)
         yield otherAgent.asyncInitializeOther(pubkey, msPubkey)
+        yield otherAgent.asyncBuildMultisig()
+        yield otherAgent.asyncGenerateSecrets()
 
-        // generate other agents secrets
-        otherAgent.generateRevocationSecret()
-        yield otherAgent.revocationSecret.asyncGenerateHash()
-        otherAgent.generateHtlcSecret()
-        yield otherAgent.htlcSecret.asyncGenerateHash()
-
-        agent.storeOtherRevocationSecret(otherAgent.revocationSecret.hidden())
-        agent.storeOtherHTLCSecret(otherAgent.htlcSecret.hidden())
+        // exchange secrets
+        agent.storeOtherSecrets(otherAgent.htlcSecret.hidden(), otherAgent.revocationSecret.hidden())
+        otherAgent.storeOtherSecrets(agent.htlcSecret.hidden(), agent.revocationSecret.hidden())
 
         let amount = BN(5e6)
         let amountToOther = BN(5e6)
@@ -302,6 +233,7 @@ describe('Agent', function () {
         yield agent.asyncInitialize(privkey, msPrivkey)
         yield agent.asyncInitializeOther(otherPubkey, otherMsPubkey)
         yield agent.asyncBuildMultisig()
+        yield agent.asyncGenerateSecrets()
         // generate funding transaction
         let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
         let fundingAmount = BN(2e7)
@@ -311,29 +243,16 @@ describe('Agent', function () {
         let txout = Txout(txoutamount, scriptout)
         yield agent.asyncBuildFundingTx(fundingAmount, txhashbuf, txoutnum, txout, pubkey)
 
-        // generate agents secrets
-        agent.generateRevocationSecret()
-        yield agent.revocationSecret.asyncGenerateHash()
-        agent.generateHtlcSecret()
-        yield agent.htlcSecret.asyncGenerateHash()
-
         // asyncInitialize another agent
         let otherAgent = Agent()
         yield otherAgent.asyncInitialize(otherPrivkey, otherMsPrivkey)
         yield otherAgent.asyncInitializeOther(pubkey, msPubkey)
         yield otherAgent.asyncBuildMultisig()
-
-        // generate other agents secrets
-        otherAgent.generateRevocationSecret()
-        yield otherAgent.revocationSecret.asyncGenerateHash()
-        otherAgent.generateHtlcSecret()
-        yield otherAgent.htlcSecret.asyncGenerateHash()
+        yield otherAgent.asyncGenerateSecrets()
 
         // exchange secrets
-        agent.storeOtherRevocationSecret(otherAgent.revocationSecret.hidden())
-        agent.storeOtherHTLCSecret(otherAgent.htlcSecret.hidden())
-        otherAgent.storeOtherRevocationSecret(agent.revocationSecret.hidden())
-        otherAgent.storeOtherHTLCSecret(agent.htlcSecret.hidden())
+        agent.storeOtherSecrets(otherAgent.htlcSecret.hidden(), otherAgent.revocationSecret.hidden())
+        otherAgent.storeOtherSecrets(agent.htlcSecret.hidden(), agent.revocationSecret.hidden())
 
         let amount = BN(5e6)
         let amountToOther = BN(5e6)
@@ -357,17 +276,21 @@ describe('Agent', function () {
         // initialize agent
         let agent = Agent()
         yield agent.asyncInitialize(privkey, msPrivkey)
-        yield agent.asyncInitializeOther(otherPubkey, otherMsPubkey)
 
-        // initialize another agent
+        yield agent.asyncGenerateSecrets()
+
+        // asyncInitialize another agent
         let otherAgent = Agent()
         yield otherAgent.asyncInitialize(otherPrivkey, otherMsPrivkey)
-        yield otherAgent.asyncInitializeOther(pubkey, msPubkey)
-        otherAgent.generateHtlcSecret()
+
+        yield otherAgent.asyncGenerateSecrets()
 
         // step 1: agent and other agent exchange public keys
-        // and create a refund trasnaction
+        // and create a multisig address
+        yield agent.asyncInitializeOther(otherPubkey, otherMsPubkey)
         yield agent.asyncBuildMultisig()
+
+        yield otherAgent.asyncInitializeOther(pubkey, msPubkey)
         yield otherAgent.asyncBuildMultisig()
 
         // step 2: agent builds a funding transaction
@@ -384,6 +307,7 @@ describe('Agent', function () {
 
         otherAgent.asyncStoreOtherFundingTxHash(agent.fundingTxhashbuf, agent.fundingTxout)
 
+/* deprecated atm
         // step 3: other agent builds refund transaction, sends to agent
         // this executes the protocoll from the section "Creating a payment"
         // note that in this step agent takes the role of Bob and other agent of Alice
@@ -415,6 +339,7 @@ describe('Agent', function () {
         let refundTx = yield agent.asyncAcceptCommitmentTx(refundTxb)
 
         refundTx.toJSON().txouts[0].valuebn.should.equal('19900000')
+*/
       }, this)
     })
   })
