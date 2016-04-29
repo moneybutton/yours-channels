@@ -363,4 +363,30 @@ describe('Agent', function () {
       }, this)
     })
   })
+
+  describe('#asyncInitPayment', function () {
+    it('asyncInitPayment should store the other agents addeses and build a multisig address', function () {
+      return asink(function *() {
+        let alice = Agent('Alice')
+        yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+
+        let bob = Agent('Bob')
+        yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+
+        // right now Alice and Bob communicate by storing a reference to one another
+        // eventually this will be replaced by some form of remote proceedure calls
+        alice.remoteAgent = bob
+        bob.remoteAgent = alice
+
+        // Alice opens a channel to bob
+        alice.funder = true
+        yield bob.asyncOpenChannel(BN(1e6), alice.pubkey, alice.msPubkey)
+        // Alice and Bob generate new secrets for upcoming payment
+        alice.sender = true
+        yield alice.asyncGenerateSecrets()
+        yield bob.asyncGenerateSecrets()
+        yield bob.asyncInitPayment(alice.revocationSecret.hidden(), alice.htlcSecret.hidden(), BN(1e5), BN(1e5))
+      }, this)
+    })
+  })
 })
