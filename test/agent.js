@@ -385,7 +385,16 @@ describe('Agent', function () {
         alice.sender = true
         yield alice.asyncGenerateSecrets()
         yield bob.asyncGenerateSecrets()
+
+        should.not.exist(alice.other.revocationSecret)
+        should.not.exist(bob.other.revocationSecret)
+        should.not.exist(alice.other.htlcSecret)
+        should.not.exist(bob.other.htlcSecret)
         yield bob.asyncInitPayment(alice.revocationSecret.hidden(), alice.htlcSecret.hidden(), BN(1e5), BN(1e5))
+        should.exist(alice.other.revocationSecret)
+        should.exist(bob.other.revocationSecret)
+        should.exist(alice.other.htlcSecret)
+        should.exist(bob.other.htlcSecret)
       }, this)
     })
   })
