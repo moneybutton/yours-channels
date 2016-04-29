@@ -22,10 +22,10 @@ can be encoded by the following output script:
 ```
 IF
   <B's pubkey> CHECKSIGVERIFY
-  HASH160 <Hash160 (secret)> EQUALVERIFY
+  HASH160 <Hash160 (secret)> EQUAL
 ELSE
   <2 days> CHECKSEQUENCEVERIFY DROP
-  <A's pubkey> CHECKSIGVERIFY
+  <A's pubkey> CHECKSIG
 ENDIF
 ```
 
@@ -65,15 +65,15 @@ In Bitcoin script the condition above can be expressed as follows:
 ```
 IF
   <B's pubkey> CHECKSIGVERIFY
-  HASH160 <Hash160 (A's revocation secret)> EQUALVERIFY
+  HASH160 <Hash160 (A's revocation secret)> EQUAL
 ELSE
   IF
     <1 day> CHECKSEQUENCEVERIFY DROP
     <B's pubkey> CHECKSIGVERIFY
-    HASH160 <Hash160 (HTLC secret)> EQUALVERIFY
+    HASH160 <Hash160 (HTLC secret)> EQUAL
   ELSE
     <2 days> CHECKSEQUENCEVERIFY DROP
-    <A's pubkey> CHECKSIGVERIFY
+    <A's pubkey> CHECKSIG
   ENDIF
 ENDIF
 ```

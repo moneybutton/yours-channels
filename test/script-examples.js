@@ -363,6 +363,8 @@ describe('Script Examples', function () {
       agent.HTLCSecrets = []
       agent.otherRHTLCSecrets = []
       agent.otherHTLCSecrets = []
+      agent.settlementTx = undefined
+      agent.settlementHTLCSecret = undefined
       return agent
     }
 
@@ -373,7 +375,7 @@ describe('Script Examples', function () {
           .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
           .writeOpcode(Opcode.OP_HASH160)
           .writeBuffer(aliceRHTLCHash)
-          .writeOpcode(Opcode.OP_EQUALVERIFY)
+          .writeOpcode(Opcode.OP_EQUAL)
         .writeOpcode(Opcode.OP_ELSE)
           .writeOpcode(Opcode.OP_IF)
             .writeBN(BN(6 * 24)) // one day = six blocks per hour for 24 hours
@@ -383,13 +385,13 @@ describe('Script Examples', function () {
             .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
             .writeOpcode(Opcode.OP_HASH160)
             .writeBuffer(carolHTLCHash)
-            .writeOpcode(Opcode.OP_EQUALVERIFY)
+            .writeOpcode(Opcode.OP_EQUAL)
           .writeOpcode(Opcode.OP_ELSE)
             .writeBN(BN(6 * 48)) // two days = six blocks per hour for 48 hours
             .writeOpcode(Opcode.OP_CHECKSEQUENCEVERIFY)
             .writeOpcode(Opcode.OP_DROP)
             .writeBuffer(aliceRefundPubkey.toBuffer())
-            .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
+            .writeOpcode(Opcode.OP_CHECKSIG)
           .writeOpcode(Opcode.OP_ENDIF)
         .writeOpcode(Opcode.OP_ENDIF)
     }
@@ -401,13 +403,13 @@ describe('Script Examples', function () {
           .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
           .writeOpcode(Opcode.OP_HASH160)
           .writeBuffer(carolHTLCHash)
-          .writeOpcode(Opcode.OP_EQUALVERIFY)
+          .writeOpcode(Opcode.OP_EQUAL)
         .writeOpcode(Opcode.OP_ELSE)
           .writeBN(BN(6 * 48)) // two days = six blocks per hour for 48 hours
           .writeOpcode(Opcode.OP_CHECKSEQUENCEVERIFY)
           .writeOpcode(Opcode.OP_DROP)
           .writeBuffer(aliceRefundPubkey.toBuffer())
-          .writeOpcode(Opcode.OP_CHECKSIGVERIFY)
+          .writeOpcode(Opcode.OP_CHECKSIG)
         .writeOpcode(Opcode.OP_ENDIF)
     }
 
@@ -448,10 +450,10 @@ describe('Script Examples', function () {
       let inputTxHashbuf = new Buffer(32)
       inputTxHashbuf.fill(0) // a fake, non-existent input transaction
       let inputTxoutnum = 0
-      let inputTxout = Txout(BN(5000000)).setScript(scriptPubkey)
+      let inputTxout = Txout(BN(50000000)).setScript(scriptPubkey)
       txb.fromPubkeyhash(inputTxHashbuf, inputTxoutnum, inputTxout, inputTxKeypair.pubkey)
       txb.setChangeAddress(txChangeAddress)
-      txb.toAddress(BN(1000000), msAddress)
+      txb.toAddress(BN(10000000), msAddress)
       txb.build()
       txb.sign(0, inputTxKeypair, inputTxout)
       return {
@@ -490,7 +492,7 @@ describe('Script Examples', function () {
 
       // Building, signing, and verifying the funding tx. We assume the payment
       // is made from a normal pubkeyhash address.
-      alice.fundingTxObj = makeFundingTxObj(BN(500000), BN(100000), alice.msAddress)
+      alice.fundingTxObj = makeFundingTxObj(BN(50000000), BN(10000000), alice.msAddress)
       Txverifier(alice.fundingTxObj.tx, alice.fundingTxObj.txb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
       // Alice now has the funding transaction, but does not yet broadcast it.
@@ -574,10 +576,10 @@ describe('Script Examples', function () {
       // Pause ~ 10 minutes for the fundingTx to get in a block.
 
       // Now that the fundingTx is in a block, Alice can start making actual
-      // payments to Bob. Alice has funded the channel with 1,000,000 satoshis.
-      // She decides she wishes to pay Bob 10,000 satoshis. She will need to
-      // create a new transaction with a 10,000 HTLC output to Bob and a RHTLC
-      // change output back to herself.
+      // payments to Bob. Alice has funded the channel with 50,000,000
+      // satoshis.  She decides she wishes to pay Bob 100,000 satoshis. She
+      // will need to create a new transaction with a 100,000 HTLC output to
+      // Bob and a RHTLC change output back to herself.
 
       // Alice and both both generate new secrets, and exchange their hashes
       // with each other.
@@ -599,7 +601,7 @@ describe('Script Examples', function () {
       // Now Alice can assemble her commitment tx
       alice.commitmentTxbs[1] = Txbuilder()
       alice.commitmentTxbs[1].fromScripthashMultisig(alice.fundingTxObj.hash, alice.fundingTxObj.txoutnum, alice.fundingTxObj.txout, alice.msRedeemScript)
-      alice.commitmentTxbs[1].toScript(BN(10000), alice.HTLCOutputScripts[1])
+      alice.commitmentTxbs[1].toScript(BN(100000), alice.HTLCOutputScripts[1])
       alice.commitmentTxbs[1].setChangeScript(alice.RHTLCOutputScripts[1])
       alice.commitmentTxbs[1].build()
 
@@ -641,7 +643,7 @@ describe('Script Examples', function () {
       // script, and the change to an HTLC output script spendable by Alice.
       bob.commitmentTxbs[1] = Txbuilder()
       bob.commitmentTxbs[1].fromScripthashMultisig(bob.fundingTxObj.hash, bob.fundingTxObj.txoutnum, bob.fundingTxObj.txout, bob.msRedeemScript)
-      bob.commitmentTxbs[1].toScript(BN(10000), bob.RHTLCOutputScripts[1])
+      bob.commitmentTxbs[1].toScript(BN(100000), bob.RHTLCOutputScripts[1])
       bob.commitmentTxbs[1].setChangeScript(bob.HTLCOutputScripts[1])
       bob.commitmentTxbs[1].build()
 
@@ -667,8 +669,35 @@ describe('Script Examples', function () {
       Txverifier(bob.commitmentTxbs[1].tx, alice.commitmentTxbs[1].utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
       // Alice and Bob now both have their versions of the first payment
-      // commitment tx. They do not broadcast their transactions, because they
-      // would like to keep the channel open.
+      // commitment tx. Normally they would not broadcast their transactions,
+      // because they would like to keep the channel open. However, in order to
+      // test the various scenarios, let's assume that Alice and Bob mutually
+      // agree to settle.
+
+      // First, assume Alice has broadcast her fully signed transaction
+      // alice.commitmentTxbs[1].tx. Both Alice and Bob, therefore, share the
+      // same settlement tx.
+      alice.settlementTx = alice.commitmentTxbs[1].tx
+      bob.settlementTx = alice.commitmentTxbs[1].tx
+
+      // To spend his output, Bob has managed to acquire the HTLC secret. Since
+      // this payment is being made to Bob, the HTLC secret is the one he
+      // generated. He also must wait 1 day for the CSV lock to expire.
+      bob.settlementHTLCSecret = bob.HTLCSecrets[1].secret
+
+      // First, Bob spends because he (somehow) found the RHTLC secret.
+      bob.settlementSpendTxb = Txbuilder()
+      let inputScript = Script()
+        .writeBuffer(bob.settlementHTLCSecret)
+        .writeOpcode(Opcode.OP_0) // to be replaced with signature
+        .writeOpcode(Opcode.OP_TRUE)
+      bob.settlementSpendTxb.fromScript(bob.settlementTx.hash(), 0, bob.settlementTx.txouts[0], inputScript)
+      bob.settlementSpendTxb.setChangeAddress(Address().fromPrivkey(Privkey().fromRandom()))
+      bob.settlementSpendTxb.build()
+      let sig = bob.settlementSpendTxb.getSig(bob.paymentKeys.keypair, Sig.SIGHASH_ALL, 0, bob.settlementTx.txouts[0].script)
+      inputScript.setChunkBuffer(1, sig.toTxFormat()) // insert sig into script
+      bob.settlementSpendTxb.tx.txins[0].setScript(inputScript)
+      Txverifier(bob.settlementSpendTxb.tx, bob.settlementSpendTxb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
       // TODO: Not finished!!!
     })
