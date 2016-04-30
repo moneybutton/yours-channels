@@ -2,6 +2,7 @@
 'use strict'
 let should = require('should')
 let Agent = require('../lib/agent.js')
+let Scripts = require('../lib/scripts.js')
 let asink = require('asink')
 let Privkey = require('fullnode/lib/privkey')
 let Pubkey = require('fullnode/lib/pubkey')
@@ -50,37 +51,41 @@ describe('Agent', function () {
 
     it('asyncInitialize should set a multisig script and address', function () {
       return asink(function *() {
-        let agent = Agent()
-        yield agent.asyncInitialize(privkey, msPrivkey)
-        should.exist(agent.privkey)
-        should.exist(agent.pubkey)
-        should.exist(agent.address)
-        should.exist(agent.keypair)
+        let alice = Agent('Alice')
+        yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+        should.exist(alice.privkey)
+        should.exist(alice.pubkey)
+        should.exist(alice.address)
+        should.exist(alice.keypair)
+        should.exist(alice.msPrivkey)
+        should.exist(alice.msPubkey)
+        should.exist(alice.wallet)
 
-        agent.initialized.should.equal(true)
+        alice.initialized.should.equal(true)
       }, this)
     })
   })
 
   it('asyncInitializeOther should set a multisig script and address', function () {
     return asink(function *() {
-      let agent = Agent()
-      yield agent.asyncInitialize(privkey, msPrivkey)
-      yield agent.asyncInitializeOther(otherPubkey, otherMsPubkey)
-      should.exist(agent.other.address)
-      agent.other.initialized.should.equal(true)
+      let alice = Agent('Alice')
+      yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+      yield alice.asyncInitializeOther(Privkey().fromRandom(), Privkey().fromRandom())
+
+      should.exist(alice.other.address)
+      alice.other.initialized.should.equal(true)
     }, this)
   })
 
   describe('#asyncBuildMultisig', function () {
     it('asyncBuildMultisig should create a multisig address', function () {
       return asink(function *() {
-        let agent = Agent()
-        yield agent.asyncInitialize(privkey, msPrivkey)
-        yield agent.asyncInitializeOther(otherPubkey, otherMsPubkey)
-        yield agent.asyncBuildMultisig()
+        let alice = Agent('Alice')
+        yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+        yield alice.asyncInitializeOther(Privkey().fromRandom(), Privkey().fromRandom())
+        yield alice.asyncBuildMultisig()
 
-        should.exist(agent.multisig)
+        should.exist(alice.multisig)
       }, this)
     })
   })
@@ -91,10 +96,10 @@ describe('Agent', function () {
     it('asyncBuildFundingTxb should create a funding tx', function () {
       return asink(function *() {
         // asyncInitialize an agent
-        let agent = Agent()
-        yield agent.asyncInitialize(privkey, msPrivkey)
-        yield agent.asyncInitializeOther(otherPubkey, otherMsPubkey)
-        yield agent.asyncBuildMultisig()
+        let alice = Agent('Alice')
+        yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+        yield alice.asyncInitializeOther(Privkey().fromRandom(), Privkey().fromRandom())
+        yield alice.asyncBuildMultisig()
 
         // build output to be spent in funding transaction
         let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
@@ -104,9 +109,7 @@ describe('Agent', function () {
         let txoutamount = BN(1e8)
         let txout = Txout(txoutamount, scriptout)
 
-        let tx = yield agent.asyncBuildFundingTx(amount, txhashbuf, txoutnum, txout, pubkey)
-
-        tx.toString().should.equal(consts.fundingTx)
+        let tx = yield alice.asyncBuildFundingTx(amount, txhashbuf, txoutnum, txout, pubkey)
 
         let outValbn0 = tx.txouts[0].valuebn
         let outValbn1 = tx.txouts[1].valuebn
@@ -121,55 +124,72 @@ describe('Agent', function () {
         tx.toJSON().txouts.length.should.equal(2)
         ;(tx.toJSON().txouts[0].valuebn).should.equal(amount.toString())
         // agents balane should be updated
-        agent.balance.should.equal(amount)
+        alice.balance.should.equal(amount)
       }, this)
     })
   })
 
-  describe('#asyncBuildRefundTxb', function () {
-    it.skip('asyncBuildRefundTxb should exist', function () {
+  describe('#asyncGenerateSecrets', function () {
+    it('asyncGenerateSecrets should create a htlc and revocation secret', function () {
       return asink(function *() {
-        let agent = Agent()
-        yield agent.asyncInitialize(privkey, otherPubkey)
-        should.exist(agent.asyncBuildRefundTxb)
+        let alice = Agent('Alice')
+        yield alice.asyncGenerateSecrets()
+
+        should.exist(alice.revocationSecret)
+        should.exist(alice.revocationSecret.buf)
+        should.exist(alice.revocationSecret.hash)
+        should.exist(alice.htlcSecret)
+        should.exist(alice.htlcSecret.buf)
+        should.exist(alice.htlcSecret.hash)
       }, this)
     })
   })
+
+  describe('#storeOtherSecrets', function () {
+    it('storeOtherSecrets should create a htlc and revocation secret', function () {
+      return asink(function *() {
+        let alice = Agent('Alice')
+        yield alice.asyncGenerateSecrets()
+
+        let bob = Agent('Bob')
+        yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+        yield bob.asyncInitializeOther(Privkey().fromRandom(), Privkey().fromRandom())
+        bob.storeOtherSecrets(alice.revocationSecret, alice.revocationSecret)
+
+        should.exist(bob.other.revocationSecret)
+        should.exist(bob.other.htlcSecret)
+      }, this)
+    })
+  })
+
 
   /* building a payment */
 
   describe('#asyncBuildCommitmentTxb', function () {
     it.skip('asyncBuildCommitmentTxb should create a partial payment tx', function () {
       return asink(function *() {
-        // asyncInitialize agent
-        let agent = Agent()
-        yield agent.asyncInitialize(privkey, msPrivkey)
-        yield agent.asyncInitializeOther(otherPubkey, otherMsPubkey)
-        yield agent.asyncBuildMultisig()
-        // generate funding transaction
-        let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
-        let fundingAmount = BN(2e7)
-        let txhashbuf = new Buffer(32).fill(0)
-        let txoutnum = 0
-        let txoutamount = BN(1e8)
-        let txout = Txout(txoutamount, scriptout)
-        yield agent.asyncBuildFundingTx(fundingAmount, txhashbuf, txoutnum, txout, pubkey)
+        let alice = Agent('Alice')
+        yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+        yield alice.asyncInitializeOther(Privkey().fromRandom(), Privkey().fromRandom())
+        yield alice.asyncBuildMultisig()
 
-        // asyncInitialize another agent
-        let otherAgent = Agent()
-        yield otherAgent.asyncInitialize(otherPrivkey, otherMsPrivkey)
-        yield otherAgent.asyncInitializeOther(pubkey, msPubkey)
+        let unspentAmount = BN(1e6)
+        let output = alice.wallet.getUnspentOutput(unspentAmount, alice.address)
+        yield alice.asyncBuildFundingTx(unspentAmount, output.txhashbuf, output.txoutnum, output.txout, output.pubkey)
 
-        let amount = BN(1e6)
-        let script = Script().fromScripthash(agent.address.hashbuf)
+        let bob = Agent('Bob')
+        yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+        yield bob.asyncInitializeOther(Privkey().fromRandom(), Privkey().fromRandom())
+        yield bob.asyncBuildMultisig()
+        yield bob.asyncGenerateSecrets()
 
-        let amountToOther = BN(5e6)
-        let scriptToOther = Script().fromScripthash(agent.other.address.hashbuf)
+        alice.storeOtherSecrets(bob.revocationSecret, bob.revocationSecret)
 
-        let txb = yield agent.asyncBuildCommitmentTxb(amount, script, amountToOther, scriptToOther)
+        let scriptToAlice = Scripts.htlc(alice)
+        let scriptToBob = Scripts.rhtlc(alice)
+        let txb = yield alice.asyncBuildCommitmentTxb(BN(5e6), scriptToAlice, BN(5e6), scriptToBob)
         let tx = txb.tx
 
-        tx.toString().should.equal(consts.partialPaymentTx)
         tx.toJSON().txins.length.should.equal(1)
         tx.toJSON().txouts.length.should.equal(3)
         ;(tx.toJSON().txouts[0].valuebn).should.equal(amount.toString())
