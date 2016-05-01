@@ -331,6 +331,9 @@ describe('Agent', function () {
 
         should.exist(alice.commitmentTx)
         should.exist(bob.commitmentTx)
+
+        alice.other.revocationSecrets.length.should.equal(1)
+        // alice.revocationSecret.should
       }, this)
     })
   })
