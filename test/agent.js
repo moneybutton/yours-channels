@@ -187,8 +187,8 @@ describe('Agent', function () {
     })
   })
 
-  describe('#asyncBuildHtlcTxb', function () {
-    it.skip('asyncBuildHtlcTxb should create a partial htlc tx', function () {
+  describe('#asyncBuildCommitmentTxb', function () {
+    it.skip('asyncBuildCommitmentTxb should create a partial htlc tx', function () {
       return asink(function *() {
         // asyncInitialize agent
         let agent = Agent()
@@ -218,7 +218,7 @@ describe('Agent', function () {
 
         let amount = BN(5e6)
         let amountToOther = BN(5e6)
-        let txb = yield agent.asyncBuildHtlcTxb(amount, amountToOther)
+        let txb = yield agent.asyncBuildCommitmentTxb(amount, amountToOther)
         let tx = txb.tx
 
         tx.toJSON().txins.length.should.equal(1)
@@ -262,88 +262,12 @@ describe('Agent', function () {
 
         let amount = BN(5e6)
         let amountToOther = BN(5e6)
-        let txb = yield agent.asyncBuildHtlcTxb(amount, amountToOther)
+        let txb = yield agent.asyncBuildCommitmentTxb(amount, amountToOther)
         let tx = yield otherAgent.asyncAcceptCommitmentTx(txb)
 
         tx.toJSON().txins.length.should.equal(1)
         tx.toJSON().txouts.length.should.equal(3)
         // ;(tx.toJSON().txouts[0].valuebn).should.equal(amountToOther.toString())
-      }, this)
-    })
-  })
-
-  /*
-   * This should be as similar as possible to the "Funding the channel"
-   * protocoll described in the doc
-   */
-  describe('#Full setup example', function () {
-    it.skip('should build a funding tx, a refund tx', function () {
-      return asink(function *() {
-        // initialize agent
-        let agent = Agent()
-        yield agent.asyncInitialize(privkey, msPrivkey)
-        yield agent.asyncGenerateSecrets()
-
-        // asyncInitialize another agent
-        let otherAgent = Agent()
-        yield otherAgent.asyncInitialize(otherPrivkey, otherMsPrivkey)
-        yield otherAgent.asyncGenerateSecrets()
-
-        // step 1: agent and other agent exchange public keys
-        // and create a multisig address
-        yield agent.asyncInitializeOther(otherPubkey, otherMsPubkey)
-        yield agent.asyncBuildMultisig()
-
-        yield otherAgent.asyncInitializeOther(pubkey, msPubkey)
-        yield otherAgent.asyncBuildMultisig()
-
-        // step 2: agent builds a funding transaction
-        // and sends the hash of the funding transaction to other agent
-        let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
-        let amount = BN(2e7)
-        let txhashbuf = new Buffer(32).fill(0)
-        let txoutnum = 0
-        let txoutamount = BN(1e8)
-        let txout = Txout(txoutamount, scriptout)
-        yield agent.asyncBuildFundingTx(amount, txhashbuf, txoutnum, txout, pubkey)
-        should.exist(agent.fundingTxhashbuf)
-        should.exist(agent.fundingTxout)
-
-        otherAgent.asyncStoreOtherFundingTxHash(agent.fundingTxhashbuf, agent.fundingTxout)
-
-/* deprecated atm
-        // step 3: other agent builds refund transaction, sends to agent
-        // this executes the protocoll from the section "Creating a payment"
-        // note that in this step agent takes the role of Bob and other agent of Alice
-
-        // step 3.1 other agent generates a revocation secret and sends it to agent
-        otherAgent.generateRevocationSecret()
-        should.exist(otherAgent.revocationSecret.buf)
-        yield otherAgent.revocationSecret.asyncGenerateHash()
-        should.exist(otherAgent.revocationSecret.hash)
-
-        agent.storeOtherRevocationSecret(otherAgent.revocationSecret.hidden())
-        should.exist(agent.other.revocationSecret.hash)
-        should.not.exist(agent.other.revocationSecret.buf)
-
-        // step 3.2 other agent generates a revocation secret and sends it to agent
-        agent.generateRevocationSecret()
-        yield agent.revocationSecret.asyncGenerateHash()
-        otherAgent.storeOtherRevocationSecret(agent.revocationSecret.hidden())
-
-        // step 3.2.5 agent generates a HTLC secret
-        agent.generateHtlcSecret()
-        yield agent.htlcSecret.asyncGenerateHash()
-        otherAgent.storeOtherHTLCSecret(agent.htlcSecret.hidden())
-        should.not.exist(otherAgent.other.htlcSecret.buf)
-        should.exist(otherAgent.other.htlcSecret.hash)
-
-        // step 3 other agent builds a commitment tx that spends the funded amount back to agent
-        let refundTxb = yield otherAgent.asyncBuildHtlcTxb(amount.sub(BN(100000)), BN(0))
-        let refundTx = yield agent.asyncAcceptCommitmentTx(refundTxb)
-
-        refundTx.toJSON().txouts[0].valuebn.should.equal('19900000')
-*/
       }, this)
     })
   })
@@ -404,6 +328,9 @@ describe('Agent', function () {
         should.exist(bob.other.revocationSecret)
         should.exist(alice.other.htlcSecret)
         should.exist(bob.other.htlcSecret)
+
+        should.exist(alice.commitmentTx)
+        should.exist(bob.commitmentTx)
       }, this)
     })
   })
