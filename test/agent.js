@@ -3,6 +3,7 @@
 let should = require('should')
 let Agent = require('../lib/agent.js')
 let Scripts = require('../lib/scripts.js')
+let Wallet = require('../lib/wallet.js')
 let asink = require('asink')
 let Privkey = require('fullnode/lib/privkey')
 let Pubkey = require('fullnode/lib/pubkey')
@@ -42,6 +43,7 @@ describe('Agent', function () {
     it('asyncInitialize should set a multisig script and address', function () {
       return asink(function *() {
         let alice = Agent('Alice')
+        Object.keys(alice).should.deepEqual([ 'name' ])
         yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
         should.exist(alice.privkey)
         should.exist(alice.pubkey)
@@ -62,7 +64,10 @@ describe('Agent', function () {
       yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
       yield alice.asyncInitializeOther(Privkey().fromRandom(), Privkey().fromRandom())
 
+      should.exist(alice.other.revocationSecrets)
+      should.exist(alice.other.pubkey)
       should.exist(alice.other.address)
+      should.exist(alice.other.msPubkey)
       alice.other.initialized.should.equal(true)
     }, this)
   })
@@ -92,14 +97,11 @@ describe('Agent', function () {
         yield alice.asyncBuildMultisig()
 
         // build output to be spent in funding transaction
-        let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
         let amount = BN(2e7)
-        let txhashbuf = new Buffer(32).fill(0)
-        let txoutnum = 0
-        let txoutamount = BN(1e8)
-        let txout = Txout(txoutamount, scriptout)
+        let wallet = Wallet()
+        let output = wallet.getUnspentOutput(amount, address)
 
-        let tx = yield alice.asyncBuildFundingTx(amount, txhashbuf, txoutnum, txout, pubkey)
+        let tx = yield alice.asyncBuildFundingTx(amount, output.txhashbuf, output.txoutnum, output.txout, output.pubkey)
 
         let outValbn0 = tx.txouts[0].valuebn
         let outValbn1 = tx.txouts[1].valuebn
@@ -107,7 +109,7 @@ describe('Agent', function () {
         // first output should equal amount
         outValbn0.eq(amount).should.equal(true)
         // sum of outputs should be smaller than inputs
-        outValbn0.add(outValbn1).lt(txoutamount).should.equal(true)
+        outValbn0.add(outValbn1).lt(BN(1e10)).should.equal(true)
         // there should be one output
         tx.toJSON().txins.length.should.equal(1)
         // and two inputs
@@ -136,7 +138,7 @@ describe('Agent', function () {
   })
 
   describe('#storeOtherSecrets', function () {
-    it('storeOtherSecrets should create a htlc and revocation secret', function () {
+    it('storeOtherSecrets store the other users hidden htlc and revocation secret', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncGenerateSecrets()
@@ -144,10 +146,29 @@ describe('Agent', function () {
         let bob = Agent('Bob')
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
         yield bob.asyncInitializeOther(Privkey().fromRandom(), Privkey().fromRandom())
-        bob.storeOtherSecrets(alice.revocationSecret, alice.revocationSecret)
 
-        should.exist(bob.other.revocationSecret)
+        bob.storeOtherSecrets(alice.revocationSecret.hidden(), alice.revocationSecret.hidden())
+
         should.exist(bob.other.htlcSecret)
+        should.exist(bob.other.htlcSecret.hash)
+        should.not.exist(bob.other.htlcSecret.buf)
+        should.exist(bob.other.revocationSecret)
+        should.exist(bob.other.revocationSecret.hash)
+        should.not.exist(bob.other.revocationSecret.buf)
+      }, this)
+    })
+
+    it('storeOtherSecrets should throw an error when called with a non-hidden secret', function () {
+      return asink(function *() {
+        let alice = Agent('Alice')
+        yield alice.asyncGenerateSecrets()
+
+        let bob = Agent('Bob')
+        yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+        yield bob.asyncInitializeOther(Privkey().fromRandom(), Privkey().fromRandom())
+        bob.storeOtherSecrets.bind(alice.revocationSecret.hidden(), alice.revocationSecret.hidden()).should.throw()
+        bob.storeOtherSecrets.bind(alice.revocationSecret, alice.revocationSecret.hidden()).should.throw()
+        bob.storeOtherSecrets.bind(alice.revocationSecret.hidden(), alice.revocationSecret).should.throw()
       }, this)
     })
   })
@@ -277,7 +298,6 @@ describe('Agent', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
-
         let bob = Agent('Bob')
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
 
@@ -285,6 +305,11 @@ describe('Agent', function () {
         // eventually this will be replaced by some form of remote proceedure calls
         alice.remoteAgent = bob
         bob.remoteAgent = alice
+
+        should.not.exist(alice.fundingTx)
+        should.not.exist(alice.fundingTxhashbuf)
+        should.not.exist(bob.fundingTx)
+        should.not.exist(bob.fundingTxhashbuf)
 
         // Alice opens a channel to bob
         alice.funder = true
@@ -319,11 +344,15 @@ describe('Agent', function () {
         yield alice.asyncGenerateSecrets()
         yield bob.asyncGenerateSecrets()
 
-        should.not.exist(alice.other.revocationSecret)
-        should.not.exist(bob.other.revocationSecret)
-        should.not.exist(alice.other.htlcSecret)
-        should.not.exist(bob.other.htlcSecret)
+        // they also should not have a funding trasnaction
+        should.exists(alice.fundingTx)
+        should.exists(alice.fundingTxhashbuf)
+        should.not.exists(bob.fundingTx)
+        should.exists(bob.fundingTxhashbuf)
+
         yield bob.asyncInitPayment(alice.revocationSecret.hidden(), alice.htlcSecret.hidden(), BN(1e5), BN(1e5))
+
+        // after the initialization phase of the protocol, both should have secrest
         should.exist(alice.other.revocationSecret)
         should.exist(bob.other.revocationSecret)
         should.exist(alice.other.htlcSecret)
