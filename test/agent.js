@@ -6,27 +6,9 @@ let Wallet = require('../lib/wallet.js')
 let asink = require('asink')
 let Privkey = require('fullnode/lib/privkey')
 let Pubkey = require('fullnode/lib/pubkey')
-let Script = require('fullnode/lib/script')
-let Txout = require('fullnode/lib/txout')
-let Address = require('fullnode/lib/address')
 let BN = require('fullnode/lib/bn')
 
 describe('Agent', function () {
-  // generate data to initialize an agent
-  let privkey = Privkey().fromBN(BN(30))
-//  let privkey = Privkey().fromRandom()
-  let pubkey = Pubkey().fromPrivkey(privkey)
-  let address = Address().fromPubkey(pubkey)
-  let msPrivkey = Privkey().fromBN(BN(40))
-  let msPubkey = Pubkey().fromPrivkey(msPrivkey)
-
-  // generate data to initialize another agent (first cnlbuilder will need some of this data too)
-  let otherPrivkey = Privkey().fromBN(BN(60))
-  let otherPubkey = Pubkey().fromPrivkey(otherPrivkey)
-  // let otherAddress = Address().fromPubkey(otherPubkey)
-  let otherMsPrivkey = Privkey().fromBN(BN(50))
-  let otherMsPubkey = Pubkey().fromPrivkey(otherMsPrivkey)
-
   it('should exist', function () {
     should.exist(Agent)
     should.exist(new Agent())
@@ -98,8 +80,7 @@ describe('Agent', function () {
         // build output to be spent in funding transaction
         let amount = BN(2e7)
         let wallet = Wallet()
-        let output = wallet.getUnspentOutput(amount, address)
-
+        let output = wallet.getUnspentOutput(amount, alice.address)
         let tx = yield alice.asyncBuildFundingTx(amount, output.txhashbuf, output.txoutnum, output.txout, output.pubkey)
 
         let outValbn0 = tx.txouts[0].valuebn
@@ -208,34 +189,25 @@ describe('Agent', function () {
   describe('#asyncAcceptCommitmentTxb', function () {
     it('asyncAcceptCommitmentTxb should create a htlc tx', function () {
       return asink(function *() {
-        // asyncInitialize agent
-        let agent = Agent()
-        yield agent.asyncInitialize(privkey, msPrivkey)
-        yield agent.asyncInitializeOther(otherPubkey, otherMsPubkey)
-        yield agent.asyncBuildMultisig()
-        yield agent.asyncGenerateSecrets()
-        // generate funding transaction
-        let scriptout = Script().fromString('OP_DUP OP_HASH160 20 0x' + address.hashbuf.toString('hex') + ' OP_EQUALVERIFY OP_CHECKSIG')
-        let fundingAmount = BN(2e7)
-        let txhashbuf = new Buffer(32).fill(0)
-        let txoutnum = 0
-        let txoutamount = BN(1e8)
-        let txout = Txout(txoutamount, scriptout)
-        yield agent.asyncBuildFundingTx(fundingAmount, txhashbuf, txoutnum, txout, pubkey)
+        let alice = Agent('Alice')
+        yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()))
+        yield alice.asyncBuildMultisig()
 
-        // asyncInitialize another agent
-        let otherAgent = Agent()
-        yield otherAgent.asyncInitialize(otherPrivkey, otherMsPrivkey)
-        yield otherAgent.asyncInitializeOther(pubkey, msPubkey)
-        yield otherAgent.asyncBuildMultisig()
-        yield otherAgent.asyncGenerateSecrets()
+        let unspentAmount = BN(1e8)
+        let output = alice.wallet.getUnspentOutput(unspentAmount, alice.address)
+        yield alice.asyncBuildFundingTx(unspentAmount, output.txhashbuf, output.txoutnum, output.txout, output.pubkey)
 
-        // exchange secrets
-        agent.storeOtherSecrets(otherAgent.htlcSecret.hidden(), otherAgent.revocationSecret.hidden())
-        otherAgent.storeOtherSecrets(agent.htlcSecret.hidden(), agent.revocationSecret.hidden())
+        let bob = Agent('Bob')
+        yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+        yield bob.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()))
+        yield bob.asyncBuildMultisig()
+        yield bob.asyncGenerateSecrets()
 
-        let txb = yield agent.asyncBuildCommitmentTxb(BN(5e6), BN(5e6))
-        let tx = yield otherAgent.asyncAcceptCommitmentTx(txb)
+        alice.storeOtherSecrets(bob.revocationSecret.hidden(), bob.revocationSecret.hidden())
+
+        let txb = yield alice.asyncBuildCommitmentTxb(BN(5e6), BN(5e6))
+        let tx = yield bob.asyncAcceptCommitmentTx(txb)
 
         tx.toJSON().txins.length.should.equal(1)
         tx.toJSON().txouts.length.should.equal(3)
