@@ -51,11 +51,11 @@ describe('Agent', function () {
       let alice = Agent('Alice')
       yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
 
-      let bob = Agent('Alice')
+      let bob = Agent('Bob')
       yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
       yield bob.asyncGenerateRevocationSecret()
 
-      yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
+      yield alice.asyncInitializeOther(bob.pubkey, bob.msPubkey, bob.revocationSecret.hidden())
 
       should.exist(alice.other.revocationSecrets)
       should.exist(alice.other.pubkey)
@@ -71,11 +71,11 @@ describe('Agent', function () {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
 
-        let bob = Agent('Alice')
+        let bob = Agent('Bob')
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.pubkey, bob.msPubkey, bob.revocationSecret.hidden())
         yield alice.asyncBuildMultisig()
 
         should.exist(alice.multisig)
@@ -91,11 +91,11 @@ describe('Agent', function () {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
 
-        let bob = Agent('Alice')
+        let bob = Agent('Bob')
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.pubkey, bob.msPubkey, bob.revocationSecret.hidden())
         yield alice.asyncBuildMultisig()
 
         // build output to be spent in funding transaction
@@ -142,12 +142,12 @@ describe('Agent', function () {
         yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
         yield alice.asyncGenerateRevocationSecret()
 
-        let bob = Agent('Alice')
+        let bob = Agent('Bob')
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
-        yield bob.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.pubkey, bob.msPubkey, bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.pubkey, alice.msPubkey, bob.revocationSecret.hidden())
 
         bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
 
@@ -163,12 +163,12 @@ describe('Agent', function () {
         yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
         yield alice.asyncGenerateRevocationSecret()
 
-        let bob = Agent('Alice')
+        let bob = Agent('Bob')
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
-        yield bob.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.pubkey, bob.msPubkey, bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.pubkey, alice.msPubkey, bob.revocationSecret.hidden())
 
         bob.storeOtherRevocationSecret.bind(alice.revocationSecret).should.throw()
       }, this)
@@ -188,10 +188,10 @@ describe('Agent', function () {
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.pubkey, bob.msPubkey, bob.revocationSecret.hidden())
         yield alice.asyncBuildMultisig()
 
-        yield bob.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.pubkey, alice.msPubkey, bob.revocationSecret.hidden())
         yield bob.asyncBuildMultisig()
 
         let unspentAmount = BN(1e8)
@@ -223,10 +223,10 @@ describe('Agent', function () {
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.pubkey, bob.msPubkey, bob.revocationSecret.hidden())
         yield alice.asyncBuildMultisig()
 
-        yield bob.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.pubkey, alice.msPubkey, bob.revocationSecret.hidden())
         yield bob.asyncBuildMultisig()
 
         let unspentAmount = BN(1e8)
