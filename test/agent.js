@@ -117,7 +117,7 @@ describe('Agent', function () {
         tx.toJSON().txouts.length.should.equal(2)
         ;(tx.toJSON().txouts[0].valuebn).should.equal(amount.toString())
         // agents balane should be updated
-        alice.balance.should.equal(amount)
+        alice.amountFunded.should.equal(amount)
       }, this)
     })
   })
@@ -201,13 +201,13 @@ describe('Agent', function () {
         alice.storeOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        let txb = yield alice.asyncBuildCommitmentTxb(BN(5e6), BN(5e6))
+        let txb = yield alice.asyncBuildCommitmentTxb(BN(5e7), BN(5e7))
         let tx = txb.tx
 
         tx.toJSON().txins.length.should.equal(1)
-        tx.toJSON().txouts.length.should.equal(3)
-        ;(tx.toJSON().txouts[0].valuebn).should.equal(BN(5e6).toString())
-        ;(tx.toJSON().txouts[1].valuebn).should.equal(BN(5e6).toString())
+        tx.toJSON().txouts.length.should.equal(2)
+        ;(tx.toJSON().txouts[0].valuebn).should.equal(BN(5e7).toString())
+        ;(tx.toJSON().txouts[1].valuebn).should.equal(BN(49990000).toString())
       }, this)
     })
   })
@@ -236,13 +236,13 @@ describe('Agent', function () {
         alice.storeOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        let txb = yield alice.asyncBuildCommitmentTxb(BN(5e6), BN(5e6))
+        let txb = yield alice.asyncBuildCommitmentTxb(BN(5e7), BN(5e7))
         let tx = yield bob.asyncAcceptCommitmentTx(txb)
 
         tx.toJSON().txins.length.should.equal(1)
-        tx.toJSON().txouts.length.should.equal(3)
-        ;(tx.toJSON().txouts[0].valuebn).should.equal(BN(5e6).toString())
-        ;(tx.toJSON().txouts[1].valuebn).should.equal(BN(5e6).toString())
+        tx.toJSON().txouts.length.should.equal(2)
+        ;(tx.toJSON().txouts[0].valuebn).should.equal(BN(5e7).toString())
+        ;(tx.toJSON().txouts[1].valuebn).should.equal(BN(49990000).toString())
       }, this)
     })
   })
@@ -314,7 +314,7 @@ describe('Agent', function () {
         should.not.exists(bob.fundingTx)
         should.exists(bob.fundingTxhashbuf)
 
-        yield bob.asyncSend(BN(1e5), BN(1e5), alice.revocationSecret.hidden())
+        yield bob.asyncSend(BN(5e5), BN(5e5), alice.revocationSecret.hidden())
 
         // after the initialization phase of the protocol, both should have secrest
         should.exist(alice.other.revocationSecret)
