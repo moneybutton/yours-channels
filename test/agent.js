@@ -26,13 +26,20 @@ describe('Agent', function () {
         let alice = Agent('Alice')
         Object.keys(alice).should.deepEqual([ 'name' ])
         yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+
         should.exist(alice.privkey)
         should.exist(alice.pubkey)
         should.exist(alice.address)
         should.exist(alice.keypair)
+
         should.exist(alice.msPrivkey)
         should.exist(alice.msPubkey)
+
         should.exist(alice.wallet)
+
+        should.exist(alice.htlcSecret)
+        should.exist(alice.htlcSecret.buf)
+        should.exist(alice.htlcSecret.hash)
 
         alice.initialized.should.equal(true)
       }, this)
@@ -43,7 +50,12 @@ describe('Agent', function () {
     return asink(function *() {
       let alice = Agent('Alice')
       yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
-      yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()))
+
+      let bob = Agent('Alice')
+      yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+      yield bob.asyncGenerateRevocationSecret()
+
+      yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
 
       should.exist(alice.other.revocationSecrets)
       should.exist(alice.other.pubkey)
@@ -58,7 +70,12 @@ describe('Agent', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
-        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()))
+
+        let bob = Agent('Alice')
+        yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+        yield bob.asyncGenerateRevocationSecret()
+
+        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
         yield alice.asyncBuildMultisig()
 
         should.exist(alice.multisig)
@@ -71,10 +88,14 @@ describe('Agent', function () {
   describe('#asyncBuildFundingTxb', function () {
     it('asyncBuildFundingTxb should create a funding tx', function () {
       return asink(function *() {
-        // asyncInitialize an agent
         let alice = Agent('Alice')
         yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
-        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()))
+
+        let bob = Agent('Alice')
+        yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+        yield bob.asyncGenerateRevocationSecret()
+
+        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
         yield alice.asyncBuildMultisig()
 
         // build output to be spent in funding transaction
@@ -101,37 +122,35 @@ describe('Agent', function () {
     })
   })
 
-  describe('#asyncGenerateSecrets', function () {
-    it('asyncGenerateSecrets should create a htlc and revocation secret', function () {
+  describe('#asyncGenerateRevocationSecret', function () {
+    it('asyncGenerateRevocationSecret should create a htlc and revocation secret', function () {
       return asink(function *() {
         let alice = Agent('Alice')
-        yield alice.asyncGenerateSecrets()
+        yield alice.asyncGenerateRevocationSecret()
 
         should.exist(alice.revocationSecret)
         should.exist(alice.revocationSecret.buf)
         should.exist(alice.revocationSecret.hash)
-        should.exist(alice.htlcSecret)
-        should.exist(alice.htlcSecret.buf)
-        should.exist(alice.htlcSecret.hash)
       }, this)
     })
   })
 
-  describe('#storeOtherSecrets', function () {
-    it('storeOtherSecrets store the other users hidden htlc and revocation secret', function () {
+  describe('#storeOtherRevocationSecret', function () {
+    it('storeOtherRevocationSecret store the other users hidden htlc and revocation secret', function () {
       return asink(function *() {
         let alice = Agent('Alice')
-        yield alice.asyncGenerateSecrets()
+        yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+        yield alice.asyncGenerateRevocationSecret()
 
-        let bob = Agent('Bob')
+        let bob = Agent('Alice')
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
-        yield bob.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()))
+        yield bob.asyncGenerateRevocationSecret()
 
-        bob.storeOtherSecrets(alice.revocationSecret.hidden(), alice.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
 
-        should.exist(bob.other.htlcSecret)
-        should.exist(bob.other.htlcSecret.hash)
-        should.not.exist(bob.other.htlcSecret.buf)
+        bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
+
         should.exist(bob.other.revocationSecret)
         should.exist(bob.other.revocationSecret.hash)
         should.not.exist(bob.other.revocationSecret.buf)
@@ -141,14 +160,17 @@ describe('Agent', function () {
     it('storeOtherSecrets should throw an error when called with a non-hidden secret', function () {
       return asink(function *() {
         let alice = Agent('Alice')
-        yield alice.asyncGenerateSecrets()
+        yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+        yield alice.asyncGenerateRevocationSecret()
 
-        let bob = Agent('Bob')
+        let bob = Agent('Alice')
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
-        yield bob.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()))
-        bob.storeOtherSecrets.bind(alice.revocationSecret.hidden(), alice.revocationSecret.hidden()).should.throw()
-        bob.storeOtherSecrets.bind(alice.revocationSecret, alice.revocationSecret.hidden()).should.throw()
-        bob.storeOtherSecrets.bind(alice.revocationSecret.hidden(), alice.revocationSecret).should.throw()
+        yield bob.asyncGenerateRevocationSecret()
+
+        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
+
+        bob.storeOtherRevocationSecret.bind(alice.revocationSecret).should.throw()
       }, this)
     })
   })
@@ -160,20 +182,24 @@ describe('Agent', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
-        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()))
+        yield alice.asyncGenerateRevocationSecret()
+
+        let bob = Agent('Bob')
+        yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+        yield bob.asyncGenerateRevocationSecret()
+
+        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
         yield alice.asyncBuildMultisig()
+
+        yield bob.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
+        yield bob.asyncBuildMultisig()
 
         let unspentAmount = BN(1e8)
         let output = alice.wallet.getUnspentOutput(unspentAmount, alice.address)
         yield alice.asyncBuildFundingTx(unspentAmount, output.txhashbuf, output.txoutnum, output.txout, output.pubkey)
 
-        let bob = Agent('Bob')
-        yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
-        yield bob.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()))
-        yield bob.asyncBuildMultisig()
-        yield bob.asyncGenerateSecrets()
-
-        alice.storeOtherSecrets(bob.revocationSecret.hidden(), bob.revocationSecret.hidden())
+        alice.storeOtherRevocationSecret(bob.revocationSecret.hidden())
+        bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
 
         let txb = yield alice.asyncBuildCommitmentTxb(BN(5e6), BN(5e6))
         let tx = txb.tx
@@ -191,20 +217,24 @@ describe('Agent', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
-        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()))
+        yield alice.asyncGenerateRevocationSecret()
+
+        let bob = Agent('Bob')
+        yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
+        yield bob.asyncGenerateRevocationSecret()
+
+        yield alice.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
         yield alice.asyncBuildMultisig()
+
+        yield bob.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()), bob.revocationSecret.hidden())
+        yield bob.asyncBuildMultisig()
 
         let unspentAmount = BN(1e8)
         let output = alice.wallet.getUnspentOutput(unspentAmount, alice.address)
         yield alice.asyncBuildFundingTx(unspentAmount, output.txhashbuf, output.txoutnum, output.txout, output.pubkey)
 
-        let bob = Agent('Bob')
-        yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
-        yield bob.asyncInitializeOther(Pubkey().fromPrivkey(Privkey().fromRandom()), Pubkey().fromPrivkey(Privkey().fromRandom()))
-        yield bob.asyncBuildMultisig()
-        yield bob.asyncGenerateSecrets()
-
-        alice.storeOtherSecrets(bob.revocationSecret.hidden(), bob.revocationSecret.hidden())
+        alice.storeOtherRevocationSecret(bob.revocationSecret.hidden())
+        bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
 
         let txb = yield alice.asyncBuildCommitmentTxb(BN(5e6), BN(5e6))
         let tx = yield bob.asyncAcceptCommitmentTx(txb)
@@ -237,17 +267,27 @@ describe('Agent', function () {
 
         // Alice opens a channel to bob
         alice.funder = true
-        yield bob.asyncOpenChannel(BN(1e6), alice.pubkey, alice.msPubkey)
+        yield bob.asyncOpenChannel(BN(1e6), alice.pubkey, alice.msPubkey, alice.htlcSecret.hidden())
 
         should.exist(alice.multisig)
         should.exist(alice.fundingTx)
+        should.exist(alice.other)
+        should.exist(alice.other.htlcSecret)
+        should.exist(alice.other.htlcSecret.hash)
+        should.not.exist(alice.other.htlcSecret.buf)
+
         should.exist(bob.multisig)
+        should.not.exist(bob.fundingTx)
+        should.exist(bob.other)
+        should.exist(bob.other.htlcSecret)
+        should.exist(bob.other.htlcSecret.hash)
+        should.not.exist(bob.other.htlcSecret.buf)
       }, this)
     })
   })
 
-  describe('#asyncInitPayment', function () {
-    it('asyncInitPayment should store the other agents addeses and build a multisig address', function () {
+  describe('#asyncSend', function () {
+    it('asyncSend should store the other agents addeses and build a multisig address', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
@@ -262,11 +302,11 @@ describe('Agent', function () {
 
         // Alice opens a channel to bob
         alice.funder = true
-        yield bob.asyncOpenChannel(BN(1e6), alice.pubkey, alice.msPubkey)
+        yield bob.asyncOpenChannel(BN(1e6), alice.pubkey, alice.msPubkey, alice.htlcSecret.hidden())
         // Alice and Bob generate new secrets for upcoming payment
         alice.sender = true
-        yield alice.asyncGenerateSecrets()
-        yield bob.asyncGenerateSecrets()
+        yield alice.asyncGenerateRevocationSecret()
+        yield bob.asyncGenerateRevocationSecret()
 
         // they also should not have a funding trasnaction
         should.exists(alice.fundingTx)
@@ -274,7 +314,7 @@ describe('Agent', function () {
         should.not.exists(bob.fundingTx)
         should.exists(bob.fundingTxhashbuf)
 
-        yield bob.asyncInitPayment(alice.revocationSecret.hidden(), alice.htlcSecret.hidden(), BN(1e5), BN(1e5))
+        yield bob.asyncSend(BN(1e5), BN(1e5), alice.revocationSecret.hidden())
 
         // after the initialization phase of the protocol, both should have secrest
         should.exist(alice.other.revocationSecret)
