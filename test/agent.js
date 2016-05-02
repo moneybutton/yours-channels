@@ -5,7 +5,7 @@ let Agent = require('../lib/agent.js')
 let Wallet = require('../lib/wallet.js')
 let asink = require('asink')
 let Privkey = require('fullnode/lib/privkey')
-let Pubkey = require('fullnode/lib/pubkey')
+// let Pubkey = require('fullnode/lib/pubkey')
 let BN = require('fullnode/lib/bn')
 
 describe('Agent', function () {
