@@ -206,6 +206,8 @@ describe('Agent', function () {
         let txb = yield alice.asyncBuildCommitmentTxb(BN(5e7), BN(5e7))
         let tx = txb.tx
 
+        // Txverifier(txb.tx, txb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+
         tx.toJSON().txins.length.should.equal(1)
         tx.toJSON().txouts.length.should.equal(2)
         ;(tx.toJSON().txouts[0].valuebn).should.equal(BN(5e7).toString())
@@ -238,13 +240,15 @@ describe('Agent', function () {
         alice.storeOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        let txb = yield alice.asyncBuildCommitmentTxb(BN(5e7), BN(5e7))
-        let tx = yield bob.asyncAcceptCommitmentTx(txb)
+        let partialTxb = yield alice.asyncBuildCommitmentTxb(BN(5e7), BN(5e7))
+        let txb = yield bob.asyncAcceptCommitmentTx(partialTxb)
 
-        tx.toJSON().txins.length.should.equal(1)
-        tx.toJSON().txouts.length.should.equal(2)
-        ;(tx.toJSON().txouts[0].valuebn).should.equal(BN(5e7).toString())
-        ;(tx.toJSON().txouts[1].valuebn).should.equal(BN(49990000).toString())
+        Txverifier(txb.tx, txb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+
+        txb.tx.toJSON().txins.length.should.equal(1)
+        txb.tx.toJSON().txouts.length.should.equal(2)
+        ;(txb.tx.toJSON().txouts[0].valuebn).should.equal(BN(5e7).toString())
+        ;(txb.tx.toJSON().txouts[1].valuebn).should.equal(BN(49990000).toString())
       }, this)
     })
   })
@@ -289,7 +293,7 @@ describe('Agent', function () {
   })
 
   describe('#asyncSend', function () {
-    it('asyncSend should store the other agents addeses and build a multisig address', function () {
+    it.skip('asyncSend should store the other agents addeses and build a multisig address', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
