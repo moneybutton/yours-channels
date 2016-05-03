@@ -5,7 +5,8 @@ let Agent = require('../lib/agent.js')
 let Wallet = require('../lib/wallet.js')
 let asink = require('asink')
 let Privkey = require('fullnode/lib/privkey')
-// let Pubkey = require('fullnode/lib/pubkey')
+let Txverifier = require('fullnode/lib/txverifier')
+let Interp = require('fullnode/lib/interp')
 let BN = require('fullnode/lib/bn')
 
 describe('Agent', function () {
@@ -99,25 +100,26 @@ describe('Agent', function () {
         yield alice.asyncBuildMultisig()
 
         // build output to be spent in funding transaction
-        let amount = BN(2e7)
+        let inputAmountBN = BN(1e10)
+        let fundingAmount = BN(1e8)
         let wallet = Wallet()
-        let output = wallet.getUnspentOutput(amount, alice.address)
-        let tx = yield alice.asyncBuildFundingTx(amount, output.txhashbuf, output.txoutnum, output.txout, output.pubkey)
+        let output = wallet.getUnspentOutput(inputAmountBN, alice.pubkey)
+        let txb = yield alice.asyncBuildFundingTx(fundingAmount, output.txhashbuf, output.txoutnum, output.txout, output.pubkey, output.inputTxout)
 
-        let outValbn0 = tx.txouts[0].valuebn
-        let outValbn1 = tx.txouts[1].valuebn
+        Txverifier(txb.tx, txb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+
+        let outValbn0 = txb.tx.txouts[0].valuebn
+        // let outValbn1 = txb.tx.txouts[1].valuebn
 
         // first output should equal amount
-        outValbn0.eq(amount).should.equal(true)
-        // sum of outputs should be smaller than inputs
-        outValbn0.add(outValbn1).lt(BN(1e10)).should.equal(true)
+        outValbn0.eq(fundingAmount).should.equal(true)
         // there should be one output
-        tx.toJSON().txins.length.should.equal(1)
+        txb.tx.toJSON().txins.length.should.equal(1)
         // and two inputs
-        tx.toJSON().txouts.length.should.equal(2)
-        ;(tx.toJSON().txouts[0].valuebn).should.equal(amount.toString())
+        txb.tx.toJSON().txouts.length.should.equal(2)
+        ;(txb.tx.toJSON().txouts[0].valuebn).should.equal(fundingAmount.toString())
         // agents balane should be updated
-        alice.amountFunded.should.equal(amount)
+        alice.amountFunded.should.equal(fundingAmount)
       }, this)
     })
   })
@@ -194,9 +196,9 @@ describe('Agent', function () {
         yield bob.asyncInitializeOther(alice.pubkey, alice.msPubkey, bob.revocationSecret.hidden())
         yield bob.asyncBuildMultisig()
 
-        let unspentAmount = BN(1e8)
-        let output = alice.wallet.getUnspentOutput(unspentAmount, alice.address)
-        yield alice.asyncBuildFundingTx(unspentAmount, output.txhashbuf, output.txoutnum, output.txout, output.pubkey)
+        let wallet = Wallet()
+        let output = wallet.getUnspentOutput(BN(1e10), alice.pubkey)
+        yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubkey, output.inputTxout)
 
         alice.storeOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
@@ -229,9 +231,9 @@ describe('Agent', function () {
         yield bob.asyncInitializeOther(alice.pubkey, alice.msPubkey, bob.revocationSecret.hidden())
         yield bob.asyncBuildMultisig()
 
-        let unspentAmount = BN(1e8)
-        let output = alice.wallet.getUnspentOutput(unspentAmount, alice.address)
-        yield alice.asyncBuildFundingTx(unspentAmount, output.txhashbuf, output.txoutnum, output.txout, output.pubkey)
+        let wallet = Wallet()
+        let output = wallet.getUnspentOutput(BN(1e10), alice.pubkey)
+        yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubkey, output.inputTxout)
 
         alice.storeOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
@@ -314,7 +316,7 @@ describe('Agent', function () {
         should.not.exists(bob.fundingTx)
         should.exists(bob.fundingTxhashbuf)
 
-        yield bob.asyncSend(BN(5e5), BN(5e5), alice.revocationSecret.hidden())
+        yield bob.asyncSend(BN(4e5), BN(6e5), alice.revocationSecret.hidden())
 
         // after the initialization phase of the protocol, both should have secrest
         should.exist(alice.other.revocationSecret)

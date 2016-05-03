@@ -450,10 +450,10 @@ describe('Script Examples', function () {
       let inputTxHashbuf = new Buffer(32)
       inputTxHashbuf.fill(0) // a fake, non-existent input transaction
       let inputTxoutnum = 0
-      let inputTxout = Txout(BN(50000000)).setScript(scriptPubkey)
+      let inputTxout = Txout(inputAmountBN).setScript(scriptPubkey)
       txb.fromPubkeyhash(inputTxHashbuf, inputTxoutnum, inputTxout, inputTxKeypair.pubkey)
       txb.setChangeAddress(txChangeAddress)
-      txb.toAddress(BN(10000000), msAddress)
+      txb.toAddress(outputAmountBN, msAddress)
       txb.build()
       txb.sign(0, inputTxKeypair, inputTxout)
       return {
