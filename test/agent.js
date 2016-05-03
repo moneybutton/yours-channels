@@ -293,11 +293,10 @@ describe('Agent', function () {
   })
 
   describe('#asyncSend', function () {
-    it.skip('asyncSend should store the other agents addeses and build a multisig address', function () {
+    it('asyncSend should store the other agents addeses and build a multisig address', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
-
         let bob = Agent('Bob')
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
 
@@ -322,14 +321,17 @@ describe('Agent', function () {
 
         yield bob.asyncSend(BN(4e5), BN(6e5), alice.revocationSecret.hidden())
 
+        Txverifier(bob.commitmentTxb.tx, bob.commitmentTxb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+        Txverifier(alice.commitmentTxb.tx, alice.commitmentTxb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+
         // after the initialization phase of the protocol, both should have secrest
         should.exist(alice.other.revocationSecret)
         should.exist(bob.other.revocationSecret)
         should.exist(alice.other.htlcSecret)
         should.exist(bob.other.htlcSecret)
 
-        should.exist(alice.commitmentTx)
-        should.exist(bob.commitmentTx)
+        should.exist(alice.commitmentTxb)
+        should.exist(bob.commitmentTxb)
 
         alice.other.revocationSecrets.length.should.equal(1)
         // alice.revocationSecret.should
