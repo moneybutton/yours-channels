@@ -28,13 +28,13 @@ describe('Agent', function () {
         Object.keys(alice).should.deepEqual([ 'name' ])
         yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
 
-        should.exist(alice.privkey)
-        should.exist(alice.pubkey)
-        should.exist(alice.address)
-        should.exist(alice.keypair)
+        should.exist(alice.funding.keypair.privkey)
+        should.exist(alice.funding.keypair.pubkey)
+        should.exist(alice.funding.address)
+        should.exist(alice.funding.keypair)
 
-        should.exist(alice.msPrivkey)
-        should.exist(alice.msPubkey)
+        should.exist(alice.multisig.privkey)
+        should.exist(alice.multisig.pubkey)
 
         should.exist(alice.wallet)
 
@@ -56,7 +56,7 @@ describe('Agent', function () {
       yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
       yield bob.asyncGenerateRevocationSecret()
 
-      yield alice.asyncInitializeOther(bob.pubkey, bob.msPubkey, bob.revocationSecret.hidden())
+      yield alice.asyncInitializeOther(bob.funding.keypair.pubkey, bob.multisig.pubkey, bob.revocationSecret.hidden())
 
       should.exist(alice.other.revocationSecrets)
       should.exist(alice.other.pubkey)
@@ -76,7 +76,7 @@ describe('Agent', function () {
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(bob.pubkey, bob.msPubkey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.funding.keypair.pubkey, bob.multisig.pubkey, bob.revocationSecret.hidden())
         yield alice.asyncBuildMultisig()
 
         should.exist(alice.multisig)
@@ -96,14 +96,14 @@ describe('Agent', function () {
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(bob.pubkey, bob.msPubkey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.funding.keypair.pubkey, bob.multisig.pubkey, bob.revocationSecret.hidden())
         yield alice.asyncBuildMultisig()
 
         // build output to be spent in funding transaction
         let inputAmountBN = BN(1e10)
         let fundingAmount = BN(1e8)
         let wallet = Wallet()
-        let output = wallet.getUnspentOutput(inputAmountBN, alice.pubkey)
+        let output = wallet.getUnspentOutput(inputAmountBN, alice.funding.keypair.pubkey)
         let txb = yield alice.asyncBuildFundingTx(fundingAmount, output.txhashbuf, output.txoutnum, output.txout, output.pubkey, output.inputTxout)
 
         Txverifier(txb.tx, txb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
@@ -148,8 +148,8 @@ describe('Agent', function () {
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(bob.pubkey, bob.msPubkey, bob.revocationSecret.hidden())
-        yield bob.asyncInitializeOther(alice.pubkey, alice.msPubkey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.funding.keypair.pubkey, bob.multisig.pubkey, bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.funding.keypair.pubkey, alice.multisig.pubkey, bob.revocationSecret.hidden())
 
         bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
 
@@ -169,8 +169,8 @@ describe('Agent', function () {
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(bob.pubkey, bob.msPubkey, bob.revocationSecret.hidden())
-        yield bob.asyncInitializeOther(alice.pubkey, alice.msPubkey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.funding.keypair.pubkey, bob.multisig.pubkey, bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.funding.keypair.pubkey, alice.multisig.pubkey, bob.revocationSecret.hidden())
 
         bob.storeOtherRevocationSecret.bind(alice.revocationSecret).should.throw()
       }, this)
@@ -190,14 +190,14 @@ describe('Agent', function () {
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(bob.pubkey, bob.msPubkey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.funding.keypair.pubkey, bob.multisig.pubkey, bob.revocationSecret.hidden())
         yield alice.asyncBuildMultisig()
 
-        yield bob.asyncInitializeOther(alice.pubkey, alice.msPubkey, bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.funding.keypair.pubkey, alice.multisig.pubkey, bob.revocationSecret.hidden())
         yield bob.asyncBuildMultisig()
 
         let wallet = Wallet()
-        let output = wallet.getUnspentOutput(BN(1e10), alice.pubkey)
+        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keypair.pubkey)
         yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubkey, output.inputTxout)
 
         alice.storeOtherRevocationSecret(bob.revocationSecret.hidden())
@@ -227,14 +227,14 @@ describe('Agent', function () {
         yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(bob.pubkey, bob.msPubkey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.funding.keypair.pubkey, bob.multisig.pubkey, bob.revocationSecret.hidden())
         yield alice.asyncBuildMultisig()
 
-        yield bob.asyncInitializeOther(alice.pubkey, alice.msPubkey, bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.funding.keypair.pubkey, alice.multisig.pubkey, bob.revocationSecret.hidden())
         yield bob.asyncBuildMultisig()
 
         let wallet = Wallet()
-        let output = wallet.getUnspentOutput(BN(1e10), alice.pubkey)
+        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keypair.pubkey)
         yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubkey, output.inputTxout)
 
         alice.storeOtherRevocationSecret(bob.revocationSecret.hidden())
@@ -273,7 +273,7 @@ describe('Agent', function () {
 
         // Alice opens a channel to bob
         alice.funder = true
-        yield bob.asyncOpenChannel(BN(1e6), alice.pubkey, alice.msPubkey, alice.htlcSecret.hidden())
+        yield bob.asyncOpenChannel(BN(1e6), alice.funding.keypair.pubkey, alice.multisig.pubkey, alice.htlcSecret.hidden())
 
         should.exist(alice.multisig)
         should.exist(alice.fundingTx)
@@ -307,7 +307,7 @@ describe('Agent', function () {
 
         // Alice opens a channel to bob
         alice.funder = true
-        yield bob.asyncOpenChannel(BN(1e6), alice.pubkey, alice.msPubkey, alice.htlcSecret.hidden())
+        yield bob.asyncOpenChannel(BN(1e6), alice.funding.keypair.pubkey, alice.multisig.pubkey, alice.htlcSecret.hidden())
         // Alice and Bob generate new secrets for upcoming payment
         alice.sender = true
         yield alice.asyncGenerateRevocationSecret()
