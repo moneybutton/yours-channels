@@ -283,9 +283,9 @@ describe('Agent', function () {
         let commitmentTxb = yield bob.asyncAcceptCommitmentTx(partialCommitmentTxb)
         Txverifier(commitmentTxb.tx, commitmentTxb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
-        let spendingTxb = alice.asyncBuildSpendingTxb(commitmentTxb.tx)
+        let spendingTxb = yield alice.asyncBuildSpendingTxb(commitmentTxb.tx)
 
-        // Txverifier(spendingTxb.tx, spendingTxb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+        Txverifier(spendingTxb.tx, spendingTxb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
         should.exist(spendingTxb)
       }, this)
