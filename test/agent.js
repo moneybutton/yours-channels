@@ -216,38 +216,6 @@ describe('Agent', function () {
     })
   })
 
-  /* building a spending trasnaction */
-
-  describe('#asyncBuildSpendingTxb', function () {
-    it.skip('asyncBuildSpendingTxb should create a spending tx', function () {
-      return asink(function *() {
-        let alice = Agent('Alice')
-        yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom(), Privkey().fromRandom())
-        yield alice.asyncGenerateRevocationSecret()
-
-        let bob = Agent('Bob')
-        yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom(), Privkey().fromRandom())
-        yield bob.asyncGenerateRevocationSecret()
-
-        yield alice.asyncInitializeOther(bob.funding.keypair.pubkey, bob.multisig.pubkey, bob.revocationSecret.hidden())
-        yield alice.asyncBuildMultisig()
-
-        yield bob.asyncInitializeOther(alice.funding.keypair.pubkey, alice.multisig.pubkey, bob.revocationSecret.hidden())
-        yield bob.asyncBuildMultisig()
-
-        let wallet = Wallet()
-        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keypair.pubkey)
-        yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubkey, output.inputTxout)
-
-        alice.storeOtherRevocationSecret(bob.revocationSecret.hidden())
-        bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
-
-        yield alice.asyncBuildCommitmentTxb(BN(5e7), BN(5e7))
-        // TODO
-      }, this)
-    })
-  })
-
   describe('#asyncAcceptCommitmentTxb', function () {
     it('asyncAcceptCommitmentTxb should create a htlc tx', function () {
       return asink(function *() {
@@ -281,6 +249,45 @@ describe('Agent', function () {
         txb.tx.toJSON().txouts.length.should.equal(2)
         ;(txb.tx.toJSON().txouts[0].valuebn).should.equal(BN(5e7).toString())
         ;(txb.tx.toJSON().txouts[1].valuebn).should.equal(BN(49990000).toString())
+      }, this)
+    })
+  })
+
+  /* building a spending trasnaction */
+
+  describe('#asyncBuildSpendingTxb', function () {
+    it.skip('asyncBuildSpendingTxb should create a spending tx', function () {
+      return asink(function *() {
+        let alice = Agent('Alice')
+        yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom(), Privkey().fromRandom())
+        yield alice.asyncGenerateRevocationSecret()
+
+        let bob = Agent('Bob')
+        yield bob.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom(), Privkey().fromRandom())
+        yield bob.asyncGenerateRevocationSecret()
+
+        yield alice.asyncInitializeOther(bob.funding.keypair.pubkey, bob.multisig.pubkey, bob.revocationSecret.hidden())
+        yield alice.asyncBuildMultisig()
+
+        yield bob.asyncInitializeOther(alice.funding.keypair.pubkey, alice.multisig.pubkey, bob.revocationSecret.hidden())
+        yield bob.asyncBuildMultisig()
+
+        let wallet = Wallet()
+        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keypair.pubkey)
+        yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubkey, output.inputTxout)
+
+        alice.storeOtherRevocationSecret(bob.revocationSecret.hidden())
+        bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
+
+        let partialCommitmentTxb = yield alice.asyncBuildCommitmentTxb(BN(5e7), BN(5e7))
+        let commitmentTxb = yield bob.asyncAcceptCommitmentTx(partialCommitmentTxb)
+        Txverifier(commitmentTxb.tx, commitmentTxb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+
+        let spendingTxb = alice.asyncBuildSpendingTxb(commitmentTxb.tx)
+
+        // Txverifier(spendingTxb.tx, spendingTxb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+
+        should.exist(spendingTxb)
       }, this)
     })
   })
