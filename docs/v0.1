@@ -1,0 +1,19 @@
+## Formal Languages
+
+A *formal language* is a set of words, where a word is a sequence of symbols like *abab*. An example of a formal language is *{abab, ababab, abcdef}*, the set of words of even length, or the set of pairs *(x,y,z)* such that z=x+y.
+
+A machine is said to *decide* a language if given a word, it can decide if that word is an element of the language. Deciding a language requires computation, for example given *(x,y,z)* one has to compute x+y to determine whether *(x,y,z)* is in the "addition language" described in the above paragraph.
+
+## Transaction chains
+
+Let *t<sub>1</sub>, t<sub>2</sub>, t<sub>3</sub>, ...* be a chain of transactions, each with a single input and a single output. By "chain" we mean that the (single) output of *t<sub>i</sub>* is spent by the single input of *t<sub>i+1</sub>*. We denote the input script if *t<sub>i</sub>* by *in<sub>i</sub>* and it's output script by *out<sub>i</sub>*.
+
+Note that the scripts are evaluated in the following order
+
+in<sub>1</sub> out<sub>0</sub> | in<sub>2</sub> out<sub>1</sub> | in<sub>2</sub> out<sub>1</sub> | in<sub>2</sub> out<sub>1</sub> | ...
+
+The vertical bars "|" illustrate the fact that the stack is cleared after evaluating the output scripts.
+
+### Accepting formal languages in Bitcoin script
+
+We will say that Bitcoin script can accept a language if there is a transaction chain *t<sub>1</sub>, t<sub>2</sub>, t<sub>3</sub>, ..., t<sub>n</sub>* such that t<sub>n</sub> is spendable if and only if in<sub>1</sub> pushes a word to the stack that belongs to the language
