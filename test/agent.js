@@ -256,7 +256,7 @@ describe('Agent', function () {
   /* building a spending trasnaction */
 
   describe('#asyncBuildSpendingTxb', function () {
-    it.only('asyncBuildSpendingTxb should create a spending tx', function () {
+    it.skip('asyncBuildSpendingTxb should create a spending tx', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(Privkey().fromRandom(), Privkey().fromRandom(), Privkey().fromRandom())
@@ -284,7 +284,7 @@ describe('Agent', function () {
 
         Txverifier(commitmentTxb.tx, commitmentTxb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
-        let spendingTxb = yield bob.asyncBuildSpendingTxb(commitmentTxb.tx)
+        let spendingTxb = yield alice.asyncBuildSpendingTxb(commitmentTxb.tx)
 
         Txverifier(spendingTxb.tx, spendingTxb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
