@@ -3,12 +3,12 @@
 let should = require('should')
 let asink = require('asink')
 let Multisig = require('../lib/multisig.js')
-let Privkey = require('fullnode/lib/privkey')
-let Pubkey = require('fullnode/lib/pubkey')
+let PrivKey = require('yours-bitcoin/lib/priv-key')
+let PubKey = require('yours-bitcoin/lib/pub-key')
 
 describe('Multisig', function () {
-  let privkey = Privkey().fromRandom()
-  let pubkey = Pubkey().fromPrivkey(privkey)
+  let privKey = PrivKey.fromRandom()
+  let pubKey = PubKey.fromPrivKey(privKey)
 
   it('should exist', function () {
     should.exist(Multisig)
@@ -24,13 +24,13 @@ describe('Multisig', function () {
 
     it('asyncInitialize should set a multisig script and address', function () {
       return asink(function *() {
-        let multisig = Multisig(privkey)
-        yield multisig.asyncInitialize(pubkey)
-        should.exist(multisig.privkey)
-        should.exist(multisig.pubkeys)
+        let multisig = Multisig(privKey)
+        yield multisig.asyncInitialize(pubKey)
+        should.exist(multisig.privKey)
+        should.exist(multisig.pubKeys)
         should.exist(multisig.script)
         should.exist(multisig.address)
-        should.exist(multisig.keypair)
+        should.exist(multisig.keyPair)
         multisig.initialized.should.equal(true)
       }, this)
     })

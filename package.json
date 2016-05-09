@@ -1,5 +1,5 @@
 {
-  "name": "fullnode-pc",
+  "name": "yours-channels",
   "version": "1.0.0",
   "description": "Payment channels for fullnode.",
   "main": "index.js",
@@ -19,10 +19,9 @@
   "homepage": "https://github.com/dattnetwork/fullnode-pc#readme",
   "dependencies": {
     "asink": "1.0.4",
-    "fullnode": "0.13.18"
+    "yours-bitcoin": "0.14.3"
   },
   "devDependencies": {
-    "fullnode": "0.13.18",
     "mocha": "2.4.5",
     "should": "8.3.1",
     "standard": "6.0.8"
