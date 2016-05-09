@@ -106,7 +106,7 @@ describe('Agent', function () {
         let output = wallet.getUnspentOutput(inputAmountBN, alice.funding.keyPair.pubKey)
         let txb = yield alice.asyncBuildFundingTx(fundingAmount, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
-        // new TxVerifier(txb.tx, txb.utxoutmap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+        new TxVerifier(txb.tx, txb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
         let outValbn0 = txb.tx.txOuts[0].valueBn
         // let outValbn1 = txb.tx.txOuts[1].valueBn
@@ -206,7 +206,7 @@ describe('Agent', function () {
         let txb = yield alice.asyncBuildCommitmentTxb(BN(5e7), BN(5e7))
         let tx = txb.tx
 
-        // Txverifier(txb.tx, txb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+        // new TxVerifier(txb.tx, txb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
         tx.toJson().txIns.length.should.equal(1)
         tx.toJson().txOuts.length.should.equal(2)
@@ -282,11 +282,11 @@ describe('Agent', function () {
         let partialCommitmentTxb = yield alice.asyncBuildCommitmentTxb(BN(5e7), BN(5e7))
         let commitmentTxb = yield bob.asyncAcceptCommitmentTx(partialCommitmentTxb)
 
-        // new TxVerifier(commitmentTxb.tx, commitmentTxb.utxoutmap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+        new TxVerifier(commitmentTxb.tx, commitmentTxb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
         let spendingTxb = yield alice.asyncBuildSpendingTxb(commitmentTxb.tx)
 
-        // new TxVerifier(spendingTxb.tx, spendingTxb.utxoutmap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+        // new TxVerifier(spendingTxb.tx, spendingTxb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
         should.exist(spendingTxb)
       }, this)
@@ -361,8 +361,8 @@ describe('Agent', function () {
 
         yield bob.asyncSend(BN(4e5), BN(6e5), alice.revocationSecret.hidden())
 
-        // Txverifier(bob.commitmentTxb.tx, bob.commitmentTxb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
-        // Txverifier(alice.commitmentTxb.tx, alice.commitmentTxb.utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+        new TxVerifier(bob.commitmentTxb.tx, bob.commitmentTxb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+        new TxVerifier(alice.commitmentTxb.tx, alice.commitmentTxb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
         // after the initialization phase of the protocol, both should have secrest
         should.exist(alice.other.revocationSecret)
