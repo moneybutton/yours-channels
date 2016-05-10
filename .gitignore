@@ -1,3 +1,4 @@
 node_modules
 *.swp
 npm-debug.log
+docs/v01.md

@@ -56,7 +56,9 @@ describe('Agent', function () {
       yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
       yield bob.asyncGenerateRevocationSecret()
 
-      yield alice.asyncInitializeOther(bob.funding.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
+      yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
+
+      alice.other.pubKey.toString('hex').should.equal(bob.spending.keyPair.pubKey.toString('hex'))
 
       should.exist(alice.other.revocationSecrets)
       should.exist(alice.other.pubKey)
@@ -76,7 +78,7 @@ describe('Agent', function () {
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(bob.funding.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
         yield alice.asyncBuildMultisig()
 
         should.exist(alice.multisig)
@@ -227,10 +229,10 @@ describe('Agent', function () {
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(bob.funding.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
         yield alice.asyncBuildMultisig()
 
-        yield bob.asyncInitializeOther(alice.funding.keyPair.pubKey, alice.multisig.pubKey, bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.revocationSecret.hidden())
         yield bob.asyncBuildMultisig()
 
         let wallet = Wallet()
@@ -245,10 +247,10 @@ describe('Agent', function () {
 
         new TxVerifier(txb.tx, txb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
-        txb.tx.toJson().txIns.length.should.equal(1)
-        txb.tx.toJson().txOuts.length.should.equal(2)
-        ;(txb.tx.toJson().txOuts[0].valueBn).should.equal(BN(5e7).toString())
-        ;(txb.tx.toJson().txOuts[1].valueBn).should.equal(BN(49990000).toString())
+        txb.tx.txIns.length.should.equal(1)
+        txb.tx.txOuts.length.should.equal(2)
+        ;(txb.tx.txOuts[0].valueBn.toString()).should.equal(BN(5e7).toString())
+        ;(txb.tx.txOuts[1].valueBn.toString()).should.equal(BN(49990000).toString())
       }, this)
     })
   })
@@ -256,7 +258,7 @@ describe('Agent', function () {
   /* building a spending trasnaction */
 
   describe('#asyncBuildSpendingTxb', function () {
-    it('asyncBuildSpendingTxb should create a spending tx', function () {
+    it.only('asyncBuildSpendingTxb should create a spending tx', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -266,11 +268,15 @@ describe('Agent', function () {
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(bob.funding.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
         yield alice.asyncBuildMultisig()
 
-        yield bob.asyncInitializeOther(alice.funding.keyPair.pubKey, alice.multisig.pubKey, bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.revocationSecret.hidden())
         yield bob.asyncBuildMultisig()
+
+console.log('alice.spending.pubkey', alice.spending.keyPair.pubKey.toString('hex'));
+console.log('bob.spending.pubkey', bob.spending.keyPair.pubKey.toString('hex'));
+console.log();
 
         let wallet = Wallet()
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
@@ -284,9 +290,17 @@ describe('Agent', function () {
 
         new TxVerifier(commitmentTxb.tx, commitmentTxb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
-        let spendingTxb = yield alice.asyncBuildSpendingTxb(commitmentTxb.tx)
+        let spendingTxb = yield bob.asyncBuildSpendingTxb(commitmentTxb.tx)
 
-        // new TxVerifier(spendingTxb.tx, spendingTxb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+        let txVerifier = new TxVerifier(spendingTxb.tx, spendingTxb.uTxOutMap)
+
+console.log('verifying the script');
+
+        let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY) // verifystr returns a string on error, or false if the tx is valid
+
+        console.log(txVerifier.interp.getDebugString());
+
+        error.should.equal(false)
 
         should.exist(spendingTxb)
       }, this)
