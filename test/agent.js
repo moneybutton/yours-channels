@@ -258,7 +258,7 @@ describe('Agent', function () {
   /* building a spending trasnaction */
 
   describe('#asyncBuildSpendingTxb', function () {
-    it.only('asyncBuildSpendingTxb should create a spending tx', function () {
+    it('asyncBuildSpendingTxb should create a spending tx', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -273,10 +273,6 @@ describe('Agent', function () {
 
         yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.revocationSecret.hidden())
         yield bob.asyncBuildMultisig()
-
-console.log('alice.spending.pubkey', alice.spending.keyPair.pubKey.toString('hex'));
-console.log('bob.spending.pubkey', bob.spending.keyPair.pubKey.toString('hex'));
-console.log();
 
         let wallet = Wallet()
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
@@ -293,15 +289,13 @@ console.log();
         let spendingTxb = yield bob.asyncBuildSpendingTxb(commitmentTxb.tx)
 
         let txVerifier = new TxVerifier(spendingTxb.tx, spendingTxb.uTxOutMap)
-
-console.log('verifying the script');
-
         let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY) // verifystr returns a string on error, or false if the tx is valid
 
-        console.log(txVerifier.interp.getDebugString());
+        if (error) {
+          console.log(txVerifier.interp.getDebugString())
+        }
 
         error.should.equal(false)
-
         should.exist(spendingTxb)
       }, this)
     })
