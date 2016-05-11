@@ -291,8 +291,8 @@ describe('Agent', function () {
 
   /* spending trasnactions */
 
-  describe('#asyncBuildSpendingOwnCommitmentTxb', function () {
-    it('asyncBuildSpendingOwnCommitmentTxb should create a spending tx', function () {
+  describe('#asyncBuildHtlcEnforcementTxb', function () {
+    it('asyncBuildHtlcEnforcementTxb should create a spending tx', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -320,7 +320,7 @@ describe('Agent', function () {
 
         new TxVerifier(commitmentTxb.tx, commitmentTxb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
-        let spendingTxb = yield bob.asyncBuildSpendingOwnCommitmentTxb(commitmentTxb.tx)
+        let spendingTxb = yield bob.asyncBuildHtlcEnforcementTxb(commitmentTxb.tx)
 
         let txVerifier = new TxVerifier(spendingTxb.tx, spendingTxb.uTxOutMap)
         let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY) // verifystr returns a string on error, or false if the tx is valid
@@ -335,8 +335,8 @@ describe('Agent', function () {
     })
   })
 
-  describe('#asyncBuildSpendingOtherCommitmentTxb', function () {
-    it('asyncBuildSpendingOtherCommitmentTxb should create a spending tx', function () {
+  describe('#asyncBuildOtherHtlcEnforcementTxb', function () {
+    it.skip('asyncBuildOtherHtlcEnforcementTxb should create a spending tx', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -364,7 +364,7 @@ describe('Agent', function () {
 
         new TxVerifier(commitmentTxb.tx, commitmentTxb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
-        let spendingTxb = yield alice.asyncBuildSpendingOtherCommitmentTxb(commitmentTxb.tx)
+        let spendingTxb = yield alice.asyncBuildOtherHtlcEnforcementTxb(commitmentTxb.tx)
 
         let txVerifier = new TxVerifier(spendingTxb.tx, spendingTxb.uTxOutMap)
         let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY) // verifystr returns a string on error, or false if the tx is valid

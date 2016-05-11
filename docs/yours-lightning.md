@@ -173,20 +173,29 @@ the last commitment transaction.
 ### Closing the channel
 
 Either party can broadcast their most recent commitment transaction to the
-blockchain. In this case both parties go through the following protcol
+blockchain. In this case both parties go through the following protocol
 
 **1. Find the most recent HTLC secret.**
 
 **2. Build a spending transaction.**
 
-**3. Broadcast that transaction.**
+**3. Broadcast spending transaction and the most recent commitment transaction.**
 
 The party that broadcasts the commitment transaction must wait for a day to do
 that, the other party can do so as soon as possible.
 
+### Enforcing the HTLC
+
+In case one party fails to spend an output by providing the HTLC secret, the other party can spend the HTLC output after 2 days.
+
+**1. Build spending transaction using spending key.**
+
+**3. Broadcast spending transaction and the most recent commitment transaction.**
+
 ### Broadcasting an old commitment transaction
 
-In that case the party that did not broadcast goes trough the following:
+In that case one party broadcasts an old commitment transaction,
+the other party goes trough the following:
 
 **1. Find the corresponding HTLC secret.**
 
