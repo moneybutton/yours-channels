@@ -206,7 +206,7 @@ describe('Agent', function () {
   /* building a payment */
 
   describe('#asyncBuildCommitmentTxb', function () {
-    it.skip('asyncBuildCommitmentTxb should create a partial payment tx', function () {
+    it('asyncBuildCommitmentTxb should create a partial payment tx', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -232,18 +232,16 @@ describe('Agent', function () {
         let txb = yield alice.asyncBuildCommitmentTxb(BN(5e7), BN(5e7))
         let tx = txb.tx
 
-        // new TxVerifier(txb.tx, txb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
-
         let txVerifier = new TxVerifier(txb.tx, txb.uTxOutMap)
         let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
-        if (error) {
-          console.log(txVerifier.interp.getDebugString())
-        }
 
-        tx.toJson().txIns.length.should.equal(1)
-        tx.toJson().txOuts.length.should.equal(2)
-        ;(tx.toJson().txOuts[0].valueBn).should.equal(BN(5e7).toString())
-        ;(tx.toJson().txOuts[1].valueBn).should.equal(BN(49990000).toString())
+        // we expect an error here as the transaction is not fully signed
+        error.should.equal('input 0 failed script verify')
+
+        tx.txIns.length.should.equal(1)
+        tx.txOuts.length.should.equal(2)
+        ;(tx.txOuts[0].valueBn.toString()).should.equal(BN(5e7).toString())
+        ;(tx.txOuts[1].valueBn.toString()).should.equal(BN(49990000).toString())
       }, this)
     })
   })
