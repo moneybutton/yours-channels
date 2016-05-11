@@ -331,6 +331,50 @@ describe('Agent', function () {
     })
   })
 
+  describe('#asyncBuildSpendingOtherCommitmentTxb', function () {
+    it.skip('asyncBuildSpendingOtherCommitmentTxb should create a spending tx', function () {
+      return asink(function *() {
+        let alice = Agent('Alice')
+        yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        yield alice.asyncGenerateRevocationSecret()
+
+        let bob = Agent('Bob')
+        yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        yield bob.asyncGenerateRevocationSecret()
+
+        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
+        yield alice.asyncBuildMultisig()
+
+        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.revocationSecret.hidden())
+        yield bob.asyncBuildMultisig()
+
+        let wallet = Wallet()
+        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
+        yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+
+        alice.storeOtherRevocationSecret(bob.revocationSecret.hidden())
+        bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
+
+        let partialCommitmentTxb = yield alice.asyncBuildCommitmentTxb(BN(5e7), BN(5e7))
+        let commitmentTxb = yield bob.asyncAcceptCommitmentTx(partialCommitmentTxb)
+
+        new TxVerifier(commitmentTxb.tx, commitmentTxb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+
+        let spendingTxb = yield alice.asyncBuildSpendingOtherCommitmentTxb(commitmentTxb.tx)
+
+        let txVerifier = new TxVerifier(spendingTxb.tx, spendingTxb.uTxOutMap)
+        let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY) // verifystr returns a string on error, or false if the tx is valid
+
+        if (error) {
+          console.log(txVerifier.interp.getDebugString())
+        }
+
+        error.should.equal(false)
+        should.exist(spendingTxb)
+      }, this)
+    })
+  })
+
   /* ---- protocol ---- */
 
   describe('#asyncOpenChannel', function () {
