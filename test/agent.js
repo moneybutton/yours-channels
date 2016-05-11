@@ -73,15 +73,39 @@ describe('Agent', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        yield alice.asyncGenerateRevocationSecret()
 
         let bob = Agent('Bob')
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.funding.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
         yield alice.asyncBuildMultisig()
 
+        yield bob.asyncInitializeOther(alice.funding.keyPair.pubKey, alice.multisig.pubKey, bob.revocationSecret.hidden())
+        yield bob.asyncBuildMultisig()
+
         should.exist(alice.multisig)
+        should.exist(bob.multisig)
+        should.exist(alice.multisig.otherPubKey)
+        should.exist(bob.multisig.otherPubKey)
+        should.exist(alice.multisig.pubKey)
+        should.exist(bob.multisig.pubKey)
+        should.exist(alice.multisig.pubKeys)
+        should.exist(bob.multisig.pubKeys)
+        should.exist(alice.multisig.script)
+        should.exist(bob.multisig.script)
+        should.exist(alice.multisig.address)
+        should.exist(bob.multisig.address)
+        should.exist(alice.multisig.keyPair)
+        should.exist(bob.multisig.keyPair)
+
+        alice.multisig.initialized.should.equal(true)
+        bob.multisig.initialized.should.equal(true)
+
+        ;(alice.multisig.address.toString()).should.equal(bob.multisig.address.toString())
+        ;(alice.multisig.otherPubKey.toString()).should.equal(bob.multisig.pubKey.toString())
+        ;(bob.multisig.otherPubKey.toString()).should.equal(alice.multisig.pubKey.toString())
       }, this)
     })
   })
@@ -182,7 +206,7 @@ describe('Agent', function () {
   /* building a payment */
 
   describe('#asyncBuildCommitmentTxb', function () {
-    it('asyncBuildCommitmentTxb should create a partial payment tx', function () {
+    it.skip('asyncBuildCommitmentTxb should create a partial payment tx', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -209,6 +233,12 @@ describe('Agent', function () {
         let tx = txb.tx
 
         // new TxVerifier(txb.tx, txb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
+
+        let txVerifier = new TxVerifier(txb.tx, txb.uTxOutMap)
+        let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        if (error) {
+          console.log(txVerifier.interp.getDebugString())
+        }
 
         tx.toJson().txIns.length.should.equal(1)
         tx.toJson().txOuts.length.should.equal(2)
@@ -255,10 +285,10 @@ describe('Agent', function () {
     })
   })
 
-  /* building a spending trasnaction */
+  /* spending trasnactions */
 
-  describe('#asyncBuildSpendingTxb', function () {
-    it('asyncBuildSpendingTxb should create a spending tx', function () {
+  describe('#asyncBuildSpendingOwnCommitmentTxb', function () {
+    it('asyncBuildSpendingOwnCommitmentTxb should create a spending tx', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -286,7 +316,7 @@ describe('Agent', function () {
 
         new TxVerifier(commitmentTxb.tx, commitmentTxb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
-        let spendingTxb = yield bob.asyncBuildSpendingTxb(commitmentTxb.tx)
+        let spendingTxb = yield bob.asyncBuildSpendingOwnCommitmentTxb(commitmentTxb.tx)
 
         let txVerifier = new TxVerifier(spendingTxb.tx, spendingTxb.uTxOutMap)
         let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY) // verifystr returns a string on error, or false if the tx is valid
@@ -300,6 +330,8 @@ describe('Agent', function () {
       }, this)
     })
   })
+
+  /* ---- protocol ---- */
 
   describe('#asyncOpenChannel', function () {
     it('asyncOpenChannel should store the other agents addeses and build a multisig address', function () {
