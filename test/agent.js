@@ -113,7 +113,7 @@ describe('Agent', function () {
   /* funding the channel */
 
   describe('#asyncBuildFundingTxb', function () {
-    it.only('asyncBuildFundingTxb should create a funding tx', function () {
+    it('asyncBuildFundingTxb should create a funding tx', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -139,7 +139,6 @@ describe('Agent', function () {
         should.exist(txb.tx.toJson())
 
         let outValbn0 = txb.tx.txOuts[0].valueBn
-        // let outValbn1 = txb.tx.txOuts[1].valueBn
 
         // first output should equal amount
         outValbn0.eq(fundingAmount).should.equal(true)
@@ -251,7 +250,7 @@ describe('Agent', function () {
   })
 
   describe('#asyncAcceptCommitmentTxb', function () {
-    it.skip('asyncAcceptCommitmentTxb should create a htlc tx', function () {
+    it('asyncAcceptCommitmentTxb should create a htlc tx', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -277,16 +276,11 @@ describe('Agent', function () {
         let partialTxb = yield alice.asyncBuildCommitmentTxb(BN(5e7), BN(5e7))
         let txb = yield bob.asyncAcceptCommitmentTx(partialTxb)
 
-        // new TxVerifier(txb.tx, txb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
-
         let txVerifier = new TxVerifier(txb.tx, txb.uTxOutMap)
         let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         error.should.equal(false)
 
-console.log(txb.tx);
-console.log();
-console.log(txb.tx.txIns.toJson());
-
+        should.exist(txb.tx.toJson())
         txb.tx.txIns.length.should.equal(1)
         txb.tx.txOuts.length.should.equal(2)
         ;(txb.tx.txOuts[0].valueBn.toString()).should.equal(BN(5e7).toString())
@@ -342,7 +336,7 @@ console.log(txb.tx.txIns.toJson());
   })
 
   describe('#asyncBuildSpendingOtherCommitmentTxb', function () {
-    it.skip('asyncBuildSpendingOtherCommitmentTxb should create a spending tx', function () {
+    it('asyncBuildSpendingOtherCommitmentTxb should create a spending tx', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
