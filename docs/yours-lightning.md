@@ -21,11 +21,11 @@ can be encoded by the following output script:
 
 ```
 IF
-  <B's pubkey> CHECKSIGVERIFY
+  <B's pubkey> CHECKSIG
   HASH160 <Hash160 (secret)> EQUAL
 ELSE
-  <2 days> CHECKSEQUENCEVERIFY DROP
   <A's pubkey> CHECKSIG
+  <2 days> CHECKSEQUENCEVERIFY
 ENDIF
 ```
 
@@ -33,13 +33,13 @@ If the transaction is settled, Bob may spend the output with the following
 input script:
 
 ```
-<secret> <B's signature> true
+<secret> <B's signature> TRUE
 ```
 
 Alice can spend it after two days with this input script:
 
 ```
-<A's signature> false
+<A's signature> FALSE
 ```
 
 ### Revocable HTLCs (RHTLCs)
@@ -82,19 +82,19 @@ If the transaction is settled, Bob may spend the output immediately with the
 following input script:
 
 ```
-<A's revocation secret> <B's signature> true
+<A's revocation secret> <B's signature> TRUE
 ```
 
 Bob may spend it after one day with the following input script:
 
 ```
-<HTLC secret> <B's signature> true false
+<HTLC secret> <B's signature> TRUE FALSE
 ```
 
 Alice may spend it after two days with the following input script:
 
 ```
-<A's signature> false false
+<A's signature> FALSE FALSE
 ```
 
 ## Transactions

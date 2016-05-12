@@ -79,10 +79,10 @@ describe('Agent', function () {
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(bob.funding.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.hidden())
         yield alice.asyncBuildMultisig()
 
-        yield bob.asyncInitializeOther(alice.funding.keyPair.pubKey, alice.multisig.pubKey, bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
         yield bob.asyncBuildMultisig()
 
         should.exist(alice.multisig)
@@ -120,10 +120,12 @@ describe('Agent', function () {
 
         let bob = Agent('Bob')
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
-        yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(bob.funding.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.hidden())
         yield alice.asyncBuildMultisig()
+
+        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
+        yield bob.asyncBuildMultisig()
 
         // build output to be spent in funding transaction
         let inputAmountBN = BN(1e10)
@@ -177,8 +179,8 @@ describe('Agent', function () {
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(bob.funding.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
-        yield bob.asyncInitializeOther(alice.funding.keyPair.pubKey, alice.multisig.pubKey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.funding.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.hidden())
+        yield bob.asyncInitializeOther(alice.funding.keyPair.pubKey, alice.multisig.pubKey, alice.htlcSecret.hidden())
 
         bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
 
@@ -198,8 +200,8 @@ describe('Agent', function () {
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(bob.funding.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
-        yield bob.asyncInitializeOther(alice.funding.keyPair.pubKey, alice.multisig.pubKey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.funding.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.hidden())
+        yield bob.asyncInitializeOther(alice.funding.keyPair.pubKey, alice.multisig.pubKey, alice.htlcSecret.hidden())
 
         bob.storeOtherRevocationSecret.bind(alice.revocationSecret).should.throw()
       }, this)
@@ -219,10 +221,10 @@ describe('Agent', function () {
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(bob.funding.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.hidden())
         yield alice.asyncBuildMultisig()
 
-        yield bob.asyncInitializeOther(alice.funding.keyPair.pubKey, alice.multisig.pubKey, bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
         yield bob.asyncBuildMultisig()
 
         let wallet = Wallet()
@@ -261,10 +263,10 @@ describe('Agent', function () {
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         yield bob.asyncGenerateRevocationSecret()
 
-        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.hidden())
         yield alice.asyncBuildMultisig()
 
-        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
         yield bob.asyncBuildMultisig()
 
         let wallet = Wallet()
@@ -290,6 +292,51 @@ describe('Agent', function () {
     })
   })
 
+  /* spending transactions */
+
+  describe('#asyncBuildOtherSpendingTxb', function () {
+    it('asyncBuildOtherSpendingTxb should create a htlc enforcing tx; case where Alice funds channel', function () {
+      return asink(function *() {
+        let alice = Agent('Alice')
+        yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        yield alice.asyncGenerateRevocationSecret()
+        alice.funder = true
+
+        let bob = Agent('Bob')
+        yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        yield bob.asyncGenerateRevocationSecret()
+        // bob.funder = true
+
+        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.hidden())
+        yield alice.asyncBuildMultisig()
+
+        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
+        yield bob.asyncBuildMultisig()
+
+        let wallet = Wallet()
+        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
+        yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+
+        alice.storeOtherRevocationSecret(bob.revocationSecret.hidden())
+        bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
+
+        let partialCommitmentTxb = yield alice.asyncBuildCommitmentTxb(BN(5e7), BN(5e7))
+        let bobsCommitmentTxb = yield bob.asyncAcceptCommitmentTx(partialCommitmentTxb)
+        let txVerifier, error
+
+        // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
+        let bobsSpendingTxb = yield bob.asyncBuildSpendingTxb(bobsCommitmentTxb.tx)
+        txVerifier = new TxVerifier(bobsSpendingTxb.tx, bobsSpendingTxb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        should.exist(bobsSpendingTxb)
+        if (error) {
+          console.log(txVerifier.interp.getDebugString())
+        }
+        error.should.equal(false)
+      }, this)
+    })
+  })
+
   /* enforcement trasnactions */
 
   describe('#asyncBuildHtlcEnforcementTxb', function () {
@@ -305,10 +352,10 @@ describe('Agent', function () {
         yield bob.asyncGenerateRevocationSecret()
         // bob.funder = true
 
-        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.hidden())
         yield alice.asyncBuildMultisig()
 
-        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
         yield bob.asyncBuildMultisig()
 
         let wallet = Wallet()
@@ -331,16 +378,6 @@ describe('Agent', function () {
           console.log(txVerifier.interp.getDebugString())
         }
         error.should.equal(false)
-
-        // Alice cannot spend using asyncBuildHtlcEnforcementTxb, she must use asyncBuildOtherHtlcEnforcementTxb
-        let alicesSpendingTxb = yield alice.asyncBuildHtlcEnforcementTxb(bobsCommitmentTxb.tx)
-        txVerifier = new TxVerifier(alicesSpendingTxb.tx, alicesSpendingTxb.uTxOutMap)
-        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
-        should.exist(alicesSpendingTxb)
-        error.should.equal('input 0 failed script verify')
-
-        // make sure that Alice and Bob are spending different outputs
-//        alicesSpendingTxb.tx.txIns[0].txOutNum.should.not.equal(bobsSpendingTxb.tx.txIns[0].txOutNum)
       }, this)
     })
 
@@ -355,10 +392,10 @@ describe('Agent', function () {
         yield bob.asyncGenerateRevocationSecret()
         bob.funder = true
 
-        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.hidden())
         yield alice.asyncBuildMultisig()
 
-        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
         yield bob.asyncBuildMultisig()
 
         let wallet = Wallet()
@@ -381,16 +418,6 @@ describe('Agent', function () {
           console.log(txVerifier.interp.getDebugString())
         }
         error.should.equal(false)
-
-        // Alice cannot spend using asyncBuildHtlcEnforcementTxb, she must use asyncBuildOtherHtlcEnforcementTxb
-        let alicesSpendingTxb = yield alice.asyncBuildHtlcEnforcementTxb(bobsCommitmentTxb.tx)
-        txVerifier = new TxVerifier(alicesSpendingTxb.tx, alicesSpendingTxb.uTxOutMap)
-        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
-        should.exist(alicesSpendingTxb)
-        error.should.equal('input 0 failed script verify')
-
-        // make sure that Alice and Bob are spending different outputs
-//        alicesSpendingTxb.tx.txIns[0].txOutNum.should.not.equal(bobsSpendingTxb.tx.txIns[0].txOutNum)
       }, this)
     })
   })
@@ -408,10 +435,10 @@ describe('Agent', function () {
         yield bob.asyncGenerateRevocationSecret()
         // bob.funder = true
 
-        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.hidden())
         yield alice.asyncBuildMultisig()
 
-        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
         yield bob.asyncBuildMultisig()
 
         let wallet = Wallet()
@@ -448,10 +475,10 @@ describe('Agent', function () {
         yield bob.asyncGenerateRevocationSecret()
         bob.funder = true
 
-        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.revocationSecret.hidden())
+        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.hidden())
         yield alice.asyncBuildMultisig()
 
-        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.revocationSecret.hidden())
+        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
         yield bob.asyncBuildMultisig()
 
         let wallet = Wallet()
@@ -474,9 +501,6 @@ describe('Agent', function () {
           console.log(txVerifier.interp.getDebugString())
         }
         error.should.equal(false)
-
-        // make sure that Alice and Bob are spending different outputs
-//        alicesSpendingTxb.tx.txIns[0].txOutNum.should.not.equal(bobsSpendingTxb.tx.txIns[0].txOutNum)
       }, this)
     })
   })
