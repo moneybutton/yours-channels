@@ -192,7 +192,7 @@ In case one party fails to spend an output by providing the HTLC secret, the oth
 
 **3. Broadcast spending transaction and the most recent commitment transaction.**
 
-### Broadcasting an old commitment transaction
+### React to other agent broadcasting an old commitment transaction
 
 In that case one party broadcasts an old commitment transaction,
 the other party goes trough the following:
