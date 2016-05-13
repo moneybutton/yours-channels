@@ -184,9 +184,10 @@ describe('Agent', function () {
 
         bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        should.exist(bob.other.revocationSecret)
-        should.exist(bob.other.revocationSecret.hash)
-        should.not.exist(bob.other.revocationSecret.buf)
+        should.exist(bob.other.revocationSecrets)
+        should.exist(bob.other.revocationSecrets[0])
+        should.exist(bob.other.revocationSecrets[0].hash)
+        should.not.exist(bob.other.revocationSecrets[0].buf)
       }, this)
     })
 
@@ -204,6 +205,34 @@ describe('Agent', function () {
         yield bob.asyncInitializeOther(alice.funding.keyPair.pubKey, alice.multisig.pubKey, alice.htlcSecret.hidden())
 
         bob.storeOtherRevocationSecret.bind(alice.revocationSecret).should.throw()
+      }, this)
+    })
+  })
+
+  describe('#storeOtherRevocationSecretSolution', function () {
+    it('storeOtherRevocationSecret store the other users hidden htlc and revocation secret', function () {
+      return asink(function *() {
+        let alice = Agent('Alice')
+        yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        yield alice.asyncGenerateRevocationSecret()
+
+        let bob = Agent('Bob')
+        yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        yield bob.asyncGenerateRevocationSecret()
+
+        yield alice.asyncInitializeOther(bob.funding.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.hidden())
+        yield bob.asyncInitializeOther(alice.funding.keyPair.pubKey, alice.multisig.pubKey, alice.htlcSecret.hidden())
+
+        bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
+        yield bob.storeOtherRevocationSecretSolution(alice.revocationSecret)
+
+        should.exist(bob.other.revocationSecrets)
+        should.exist(bob.other.revocationSecrets[0])
+        should.exist(bob.other.revocationSecrets[0].hash)
+        should.exist(bob.other.revocationSecrets[0].buf)
+
+        let bool = yield bob.other.revocationSecrets[0].asyncCheck()
+        bool.should.equal(true)
       }, this)
     })
   })
@@ -294,8 +323,8 @@ describe('Agent', function () {
 
   /* spending transactions */
 
-  describe('#asyncBuildSpendingTxb', function () {
-    it('asyncBuildSpendingTxb should create a htlc enforcing tx; case where Alice funds channel', function () {
+  describe('#asyncBuildSpendingTx', function () {
+    it('asyncBuildSpendingTx should create a htlc enforcing tx; case where Alice funds channel', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -325,7 +354,7 @@ describe('Agent', function () {
         let txVerifier, error
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
-        let bobsSpendingTxb = yield bob.asyncBuildSpendingTxb(bobsCommitmentTxb.tx)
+        let bobsSpendingTxb = yield bob.asyncBuildSpendingTx(bobsCommitmentTxb.tx)
         txVerifier = new TxVerifier(bobsSpendingTxb.tx, bobsSpendingTxb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         should.exist(bobsSpendingTxb)
@@ -337,8 +366,8 @@ describe('Agent', function () {
     })
   })
 
-  describe('#asyncBuildOtherSpendingTxb', function () {
-    it('asyncBuildOtherSpendingTxb should create a htlc enforcing tx; case where Alice funds channel', function () {
+  describe('#asyncBuildOtherSpendingTx', function () {
+    it('asyncBuildOtherSpendingTx should create a htlc enforcing tx; case where Alice funds channel', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -367,7 +396,7 @@ describe('Agent', function () {
         let txVerifier, error
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
-        let alicesSpendingTxb = yield alice.asyncBuildOtherSpendingTxb(bobsCommitmentTxb.tx)
+        let alicesSpendingTxb = yield alice.asyncBuildOtherSpendingTx(bobsCommitmentTxb.tx)
         txVerifier = new TxVerifier(alicesSpendingTxb.tx, alicesSpendingTxb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         should.exist(alicesSpendingTxb)
@@ -377,7 +406,7 @@ describe('Agent', function () {
         error.should.equal(false)
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
-        let bobsSpendingTxb = yield bob.asyncBuildOtherSpendingTxb(bobsCommitmentTxb.tx)
+        let bobsSpendingTxb = yield bob.asyncBuildOtherSpendingTx(bobsCommitmentTxb.tx)
         txVerifier = new TxVerifier(bobsSpendingTxb.tx, bobsSpendingTxb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         should.exist(bobsSpendingTxb)
@@ -386,10 +415,10 @@ describe('Agent', function () {
     })
   })
 
-  /* enforcement trasnactions */
+  /* revoking an old commitment trasnaction transactions */
 
-  describe('#asyncBuildHtlcEnforcementTxb', function () {
-    it('asyncBuildHtlcEnforcementTxb should create a htlc enforcing tx; case where Alice funds channel', function () {
+  describe('#asyncSpendRevokedCommitmentTx', function () {
+    it('asyncSpendRevokedCommitmentTx should revoke a old commitment trasnaction made by the other party', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -418,48 +447,11 @@ describe('Agent', function () {
         let bobsCommitmentTxb = yield bob.asyncAcceptCommitmentTx(partialCommitmentTxb)
         let txVerifier, error
 
-        // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
-        let bobsSpendingTxb = yield bob.asyncBuildHtlcEnforcementTxb(bobsCommitmentTxb.tx)
-        txVerifier = new TxVerifier(bobsSpendingTxb.tx, bobsSpendingTxb.uTxOutMap)
-        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
-        should.exist(bobsSpendingTxb)
-        if (error) {
-          console.log(txVerifier.interp.getDebugString())
-        }
-        error.should.equal(false)
-      }, this)
-    })
-
-    it('asyncBuildHtlcEnforcementTxb should create a htlc enforcing tx; case where Bob funds channel', function () {
-      return asink(function *() {
-        let alice = Agent('Alice')
-        yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
-        yield alice.asyncGenerateRevocationSecret()
-
-        let bob = Agent('Bob')
-        yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
-        yield bob.asyncGenerateRevocationSecret()
-        bob.funder = true
-
-        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.hidden())
-        yield alice.asyncBuildMultisig()
-
-        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
-        yield bob.asyncBuildMultisig()
-
-        let wallet = Wallet()
-        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
-        yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
-
-        alice.storeOtherRevocationSecret(bob.revocationSecret.hidden())
-        bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
-
-        let partialCommitmentTxb = yield alice.asyncBuildCommitmentTxb(BN(5e7), BN(5e7))
-        let bobsCommitmentTxb = yield bob.asyncAcceptCommitmentTx(partialCommitmentTxb)
-        let txVerifier, error
+        let bool = yield alice.storeOtherRevocationSecretSolution(bob.revocationSecret)
+        bool.should.equal(true)
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
-        let bobsSpendingTxb = yield bob.asyncBuildHtlcEnforcementTxb(bobsCommitmentTxb.tx)
+        let bobsSpendingTxb = yield alice.asyncSpendRevokedCommitmentTx(bobsCommitmentTxb.tx)
         txVerifier = new TxVerifier(bobsSpendingTxb.tx, bobsSpendingTxb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         should.exist(bobsSpendingTxb)
@@ -471,8 +463,10 @@ describe('Agent', function () {
     })
   })
 
-  describe('#asyncBuildOtherHtlcEnforcementTxb', function () {
-    it('asyncBuildOtherHtlcEnforcementTxb should create a htlc enforcing tx; case where Alice funds channel', function () {
+  /* enforcement trasnactions */
+
+  describe('#asyncBuildHtlcEnforcementTx', function () {
+    it('asyncBuildHtlcEnforcementTx should create a htlc enforcing tx; case where Alice funds channel', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -501,11 +495,11 @@ describe('Agent', function () {
         let bobsCommitmentTxb = yield bob.asyncAcceptCommitmentTx(partialCommitmentTxb)
         let txVerifier, error
 
-        // Alice cannot spend using asyncBuildHtlcEnforcementTxb, she must use asyncBuildOtherHtlcEnforcementTxb
-        let alicesSpendingTxb = yield alice.asyncBuildOtherHtlcEnforcementTxb(bobsCommitmentTxb.tx)
-        txVerifier = new TxVerifier(alicesSpendingTxb.tx, alicesSpendingTxb.uTxOutMap)
+        // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
+        let bobsSpendingTxb = yield bob.asyncBuildHtlcEnforcementTx(bobsCommitmentTxb.tx)
+        txVerifier = new TxVerifier(bobsSpendingTxb.tx, bobsSpendingTxb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
-        should.exist(alicesSpendingTxb)
+        should.exist(bobsSpendingTxb)
         if (error) {
           console.log(txVerifier.interp.getDebugString())
         }
@@ -513,7 +507,7 @@ describe('Agent', function () {
       }, this)
     })
 
-    it('asyncBuildOtherHtlcEnforcementTxb should create a htlc enforcing tx; case where Bob funds channel', function () {
+    it('asyncBuildHtlcEnforcementTx should create a htlc enforcing tx; case where Bob funds channel', function () {
       return asink(function *() {
         let alice = Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -541,8 +535,91 @@ describe('Agent', function () {
         let bobsCommitmentTxb = yield bob.asyncAcceptCommitmentTx(partialCommitmentTxb)
         let txVerifier, error
 
-        // Alice cannot spend using asyncBuildHtlcEnforcementTxb, she must use asyncBuildOtherHtlcEnforcementTxb
-        let alicesSpendingTxb = yield alice.asyncBuildOtherHtlcEnforcementTxb(bobsCommitmentTxb.tx)
+        // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
+        let bobsSpendingTxb = yield bob.asyncBuildHtlcEnforcementTx(bobsCommitmentTxb.tx)
+        txVerifier = new TxVerifier(bobsSpendingTxb.tx, bobsSpendingTxb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        should.exist(bobsSpendingTxb)
+        if (error) {
+          console.log(txVerifier.interp.getDebugString())
+        }
+        error.should.equal(false)
+      }, this)
+    })
+  })
+
+  describe('#asyncBuildOtherHtlcEnforcementTx', function () {
+    it('asyncBuildOtherHtlcEnforcementTx should create a htlc enforcing tx; case where Alice funds channel', function () {
+      return asink(function *() {
+        let alice = Agent('Alice')
+        yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        yield alice.asyncGenerateRevocationSecret()
+        alice.funder = true
+
+        let bob = Agent('Bob')
+        yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        yield bob.asyncGenerateRevocationSecret()
+        // bob.funder = true
+
+        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.hidden())
+        yield alice.asyncBuildMultisig()
+
+        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
+        yield bob.asyncBuildMultisig()
+
+        let wallet = Wallet()
+        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
+        yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+
+        alice.storeOtherRevocationSecret(bob.revocationSecret.hidden())
+        bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
+
+        let partialCommitmentTxb = yield alice.asyncBuildCommitmentTxb(BN(5e7), BN(5e7))
+        let bobsCommitmentTxb = yield bob.asyncAcceptCommitmentTx(partialCommitmentTxb)
+        let txVerifier, error
+
+        // Alice cannot spend using asyncBuildHtlcEnforcementTx, she must use asyncBuildOtherHtlcEnforcementTx
+        let alicesSpendingTxb = yield alice.asyncBuildOtherHtlcEnforcementTx(bobsCommitmentTxb.tx)
+        txVerifier = new TxVerifier(alicesSpendingTxb.tx, alicesSpendingTxb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        should.exist(alicesSpendingTxb)
+        if (error) {
+          console.log(txVerifier.interp.getDebugString())
+        }
+        error.should.equal(false)
+      }, this)
+    })
+
+    it('asyncBuildOtherHtlcEnforcementTx should create a htlc enforcing tx; case where Bob funds channel', function () {
+      return asink(function *() {
+        let alice = Agent('Alice')
+        yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        yield alice.asyncGenerateRevocationSecret()
+
+        let bob = Agent('Bob')
+        yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        yield bob.asyncGenerateRevocationSecret()
+        bob.funder = true
+
+        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.hidden())
+        yield alice.asyncBuildMultisig()
+
+        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
+        yield bob.asyncBuildMultisig()
+
+        let wallet = Wallet()
+        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
+        yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+
+        alice.storeOtherRevocationSecret(bob.revocationSecret.hidden())
+        bob.storeOtherRevocationSecret(alice.revocationSecret.hidden())
+
+        let partialCommitmentTxb = yield alice.asyncBuildCommitmentTxb(BN(5e7), BN(5e7))
+        let bobsCommitmentTxb = yield bob.asyncAcceptCommitmentTx(partialCommitmentTxb)
+        let txVerifier, error
+
+        // Alice cannot spend using asyncBuildHtlcEnforcementTx, she must use asyncBuildOtherHtlcEnforcementTx
+        let alicesSpendingTxb = yield alice.asyncBuildOtherHtlcEnforcementTx(bobsCommitmentTxb.tx)
         txVerifier = new TxVerifier(alicesSpendingTxb.tx, alicesSpendingTxb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         should.exist(alicesSpendingTxb)
@@ -628,15 +705,15 @@ describe('Agent', function () {
         new TxVerifier(alice.commitmentTxb.tx, alice.commitmentTxb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
         // after the initialization phase of the protocol, both should have secrest
-        should.exist(alice.other.revocationSecret)
-        should.exist(bob.other.revocationSecret)
+        should.exist(alice.other.revocationSecrets)
+        should.exist(bob.other.revocationSecrets)
         should.exist(alice.other.htlcSecret)
         should.exist(bob.other.htlcSecret)
 
         should.exist(alice.commitmentTxb)
         should.exist(bob.commitmentTxb)
 
-        alice.other.revocationSecrets.length.should.equal(1)
+        alice.other.revocationSecrets.length.should.equal(2)
         // alice.revocationSecret.should
       }, this)
     })
