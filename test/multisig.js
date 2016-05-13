@@ -13,18 +13,17 @@ describe('Multisig', function () {
   it('should exist', function () {
     should.exist(Multisig)
     should.exist(new Multisig())
-    should.exist(Multisig())
   })
 
   describe('#asyncInitialize', function () {
     it('asyncInitialize should exist', function () {
-      let multisig = Multisig()
+      let multisig = new Multisig()
       should.exist(multisig.asyncInitialize)
     })
 
     it('asyncInitialize should set a multisig script and address', function () {
       return asink(function *() {
-        let multisig = Multisig(privKey)
+        let multisig = new Multisig(privKey)
         yield multisig.asyncInitialize(pubKey)
         should.exist(multisig.privKey)
         should.exist(multisig.pubKeys)
