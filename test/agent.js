@@ -129,7 +129,7 @@ describe('Agent', function () {
         // build output to be spent in funding transaction
         let inputAmountBN = BN(1e10)
         let fundingAmount = BN(1e8)
-        let wallet = Wallet()
+        let wallet = new Wallet()
         let output = wallet.getUnspentOutput(inputAmountBN, alice.funding.keyPair.pubKey)
         let txb = yield alice.asyncBuildFundingTx(fundingAmount, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
@@ -255,7 +255,7 @@ describe('Agent', function () {
         yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
         yield bob.asyncBuildMultisig()
 
-        let wallet = Wallet()
+        let wallet = new Wallet()
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
         yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
@@ -297,7 +297,7 @@ describe('Agent', function () {
         yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
         yield bob.asyncBuildMultisig()
 
-        let wallet = Wallet()
+        let wallet = new Wallet()
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
         yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
@@ -341,7 +341,7 @@ describe('Agent', function () {
         yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
         yield bob.asyncBuildMultisig()
 
-        let wallet = Wallet()
+        let wallet = new Wallet()
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
         yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
@@ -383,7 +383,7 @@ describe('Agent', function () {
         yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
         yield bob.asyncBuildMultisig()
 
-        let wallet = Wallet()
+        let wallet = new Wallet()
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
         yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
@@ -435,7 +435,7 @@ describe('Agent', function () {
         yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
         yield bob.asyncBuildMultisig()
 
-        let wallet = Wallet()
+        let wallet = new Wallet()
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
         yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
@@ -483,7 +483,7 @@ describe('Agent', function () {
         yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
         yield bob.asyncBuildMultisig()
 
-        let wallet = Wallet()
+        let wallet = new Wallet()
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
         yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
@@ -523,7 +523,7 @@ describe('Agent', function () {
         yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
         yield bob.asyncBuildMultisig()
 
-        let wallet = Wallet()
+        let wallet = new Wallet()
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
         yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
@@ -566,7 +566,7 @@ describe('Agent', function () {
         yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
         yield bob.asyncBuildMultisig()
 
-        let wallet = Wallet()
+        let wallet = new Wallet()
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
         yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
@@ -606,7 +606,7 @@ describe('Agent', function () {
         yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
         yield bob.asyncBuildMultisig()
 
-        let wallet = Wallet()
+        let wallet = new Wallet()
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
         yield alice.asyncBuildFundingTx(BN(1e8), output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 

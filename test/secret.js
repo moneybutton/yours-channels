@@ -3,19 +3,17 @@
 let should = require('should')
 let asink = require('asink')
 let Secret = require('../lib/secret.js')
-// let Hash = require('fullnode/lib/hash')
 
 describe('Secret', function () {
   it('should exist', function () {
     should.exist(Secret)
     should.exist(new Secret())
-    should.exist(Secret())
   })
 
   describe('#generateBuf', function () {
     it('generateBuf should generate a buffer', function () {
       return asink(function *() {
-        let secret = Secret()
+        let secret = new Secret()
         secret.generateBuf()
         should.exist(secret.buf)
       }, this)
@@ -25,7 +23,7 @@ describe('Secret', function () {
   describe('#asyncGenerateHash', function () {
     it('asyncGenerateHash should generate a hash', function () {
       return asink(function *() {
-        let secret = Secret()
+        let secret = new Secret()
         secret.generateBuf()
         should.exist(secret.buf)
         yield secret.asyncGenerateHash()
@@ -37,7 +35,7 @@ describe('Secret', function () {
   describe('#asyncCheck', function () {
     it('asyncCheck should check if buf hashes to hash', function () {
       return asink(function *() {
-        let secret = Secret()
+        let secret = new Secret()
         secret.generateBuf()
         should.exist(secret.buf)
         yield secret.asyncGenerateHash()
@@ -51,7 +49,7 @@ describe('Secret', function () {
   describe('#hidden', function () {
     it('hidden should remove the buf from a secret', function () {
       return asink(function *() {
-        let secret = Secret()
+        let secret = new Secret()
         secret.generateBuf()
         should.exist(secret.buf)
         yield secret.asyncGenerateHash()

@@ -16,13 +16,12 @@ describe('Wallet', function () {
   it('should exist', function () {
     should.exist(Wallet)
     should.exist(new Wallet())
-    should.exist(Wallet())
   })
 
   describe('#getUnspentOutput', function () {
     it('getUnspentOutput should return an unspent output', function () {
       return asink(function *() {
-        let wallet = Wallet()
+        let wallet = new Wallet()
         let output = wallet.getUnspentOutput(Bn(1e8), address)
 
         should.exist(output.txhashbuf)

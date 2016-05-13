@@ -9,6 +9,5 @@ describe('Scripts', function () {
   it('should exist', function () {
     should.exist(Scripts)
     should.exist(new Scripts())
-    should.exist(Scripts())
   })
 })
