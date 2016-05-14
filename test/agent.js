@@ -240,6 +240,7 @@ describe('Agent', function () {
   describe('#asyncOpenChannel', function () {
     it('asyncOpenChannel should store the other agents addeses and build a multisig address', function () {
       return asink(function *() {
+        // each party initializes itself locally
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         let bob = new Agent('Bob')
@@ -258,6 +259,9 @@ describe('Agent', function () {
         yield bob.asyncOpenChannel(BN(1e6), alice.funding.keyPair.pubKey, alice.multisig.pubKey, alice.htlcSecret.hidden())
 
         should.exist(alice.multisig)
+        should.exist(alice.revocationSecret)
+        should.exist(alice.revocationSecret.buf)
+        should.exist(alice.revocationSecret.hash)
         should.exist(alice.funding.txb.tx)
         should.exist(alice.other)
         should.exist(alice.other.htlcSecret)
@@ -265,7 +269,6 @@ describe('Agent', function () {
         should.not.exist(alice.other.htlcSecret.buf)
 
         should.exist(bob.multisig)
-        // should.not.exist(bob.funding.txb)
         should.exist(bob.other)
         should.exist(bob.other.htlcSecret)
         should.exist(bob.other.htlcSecret.hash)
@@ -282,8 +285,6 @@ describe('Agent', function () {
         let bob = new Agent('Bob')
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
 
-        // right now Alice and Bob communicate by storing a reference to one another
-        // eventually this will be replaced by some form of remote proceedure calls
         alice.remoteAgent = bob
         bob.remoteAgent = alice
 
@@ -293,8 +294,8 @@ describe('Agent', function () {
         yield bob.asyncOpenChannel(BN(1e6), alice.funding.keyPair.pubKey, alice.multisig.pubKey, alice.htlcSecret.hidden())
 
         // Alice and Bob generate new secrets for upcoming payment
-        yield alice.asyncInitializeRevocationSecret()
-        yield bob.asyncInitializeRevocationSecret()
+//        yield alice.asyncInitializeRevocationSecret()
+//        yield bob.asyncInitializeRevocationSecret()
 
         // they also should not have a funding trasnaction
         should.exists(alice.funding.txb.tx)
