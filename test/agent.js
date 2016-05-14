@@ -103,6 +103,7 @@ describe('Agent', function () {
         alice.multisig.initialized.should.equal(true)
         bob.multisig.initialized.should.equal(true)
 
+        // check that both parties have the same multisig address
         ;(alice.multisig.address.toString()).should.equal(bob.multisig.address.toString())
         ;(alice.multisig.otherPubKey.toString()).should.equal(bob.multisig.pubKey.toString())
         ;(bob.multisig.otherPubKey.toString()).should.equal(alice.multisig.pubKey.toString())
@@ -192,6 +193,36 @@ describe('Agent', function () {
     })
   })
 
+  describe('#asyncSetFundingTx', function () {
+    it('asyncSetFundingTx store the other users hidden htlc and revocation secret', function () {
+      return asink(function *() {
+        let alice = new Agent('Alice')
+        yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        yield alice.asyncInitializeRevocationSecret()
+        alice.funder = true
+
+        let bob = new Agent('Bob')
+        yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        yield bob.asyncInitializeRevocationSecret()
+
+        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.hidden())
+        yield alice.asyncInitializeMultisig()
+
+        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.hidden())
+        yield bob.asyncInitializeMultisig()
+
+        let wallet = new Wallet()
+        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
+        let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        yield alice.asyncSetFundingTx(tx, BN(1e8))
+        bob.setFundingTxHash(BN(1e8), alice.funding.txb.tx.hashbuf, alice.funding.txb.tx.txOuts)
+
+        bob.funding.txb.tx.hashbuf.toString().should.equal(alice.funding.txb.tx.hash().toString())
+        bob.funding.txb.tx.txOuts.toString('hex').should.deepEqual(alice.funding.txb.tx.txOuts.toString('hex'))
+      }, this)
+    })
+  })
+
   describe('#asyncSetOtherCommitmentTxb', function () {
     it('asyncSetOtherCommitmentTxb should create a htlc tx, case where Alice funds and Bob accepts', function () {
       return asink(function *() {
@@ -214,12 +245,12 @@ describe('Agent', function () {
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
         let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
         yield alice.asyncSetFundingTx(tx, BN(1e8))
-        bob.setFundingTxHash(BN(1e8), output.txhashbuf, output.txout)
+        bob.setFundingTxHash(BN(1e8), alice.funding.txb.tx.hashbuf, alice.funding.txb.tx.txOuts)
 
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        alice.setCommitmentTxb(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb)
 
         let txVerifier = new TxVerifier(bob.commitmentTxb.tx, bob.commitmentTxb.uTxOutMap)
@@ -273,6 +304,15 @@ describe('Agent', function () {
         should.exist(bob.other.htlcSecret)
         should.exist(bob.other.htlcSecret.hash)
         should.not.exist(bob.other.htlcSecret.buf)
+
+        // check that both parties have the same multisig address
+        ;(alice.multisig.address.toString()).should.equal(bob.multisig.address.toString())
+        ;(alice.multisig.otherPubKey.toString()).should.equal(bob.multisig.pubKey.toString())
+        ;(bob.multisig.otherPubKey.toString()).should.equal(alice.multisig.pubKey.toString())
+
+        // check that both parties have the same funding transaction (hash)
+        bob.funding.txb.tx.hashbuf.toString().should.equal(alice.funding.txb.tx.hash().toString())
+        bob.funding.txb.tx.txOuts.toString('hex').should.deepEqual(alice.funding.txb.tx.txOuts.toString('hex'))
       }, this)
     })
   })
@@ -280,28 +320,37 @@ describe('Agent', function () {
   describe('#asyncSend', function () {
     it('asyncSend should store the other agents addeses and build a multisig address', function () {
       return asink(function *() {
+        // each party initializes itself locally
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         let bob = new Agent('Bob')
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
 
+        // right now Alice and Bob communicate by storing a reference to one another
+        // eventually this will be replaced by some form of remote proceedure calls
         alice.remoteAgent = bob
         bob.remoteAgent = alice
 
+        should.not.exist(alice.funding.txb)
+        should.not.exist(bob.funding.txb)
+
         // Alice opens a channel to bob
         alice.funder = true
-        alice.sender = true
+        bob.funder = false
         yield bob.asyncOpenChannel(BN(1e6), alice.funding.keyPair.pubKey, alice.multisig.pubKey, alice.htlcSecret.hidden())
 
-        // Alice and Bob generate new secrets for upcoming payment
-//        yield alice.asyncInitializeRevocationSecret()
-//        yield bob.asyncInitializeRevocationSecret()
+        // check that both parties have the same multisig address
+        ;(alice.multisig.address.toString()).should.equal(bob.multisig.address.toString())
+        ;(alice.multisig.otherPubKey.toString()).should.equal(bob.multisig.pubKey.toString())
+        ;(bob.multisig.otherPubKey.toString()).should.equal(alice.multisig.pubKey.toString())
 
-        // they also should not have a funding trasnaction
-        should.exists(alice.funding.txb.tx)
-        should.exists(alice.funding.txb.tx.hashbuf)
-        // should.not.exists(bob.funding.txb)
-        should.exists(bob.funding.txb.tx.hashbuf)
+        // check that both parties have the same funding transaction (hash)
+        bob.funding.txb.tx.hashbuf.toString().should.equal(alice.funding.txb.tx.hash().toString())
+        bob.funding.txb.tx.txOuts.toString('hex').should.deepEqual(alice.funding.txb.tx.txOuts.toString('hex'))
+
+        // alice sends some funds to bob
+        alice.sender = true
+        bob.sender = false
         yield bob.asyncSend(BN(4e5), BN(6e5), alice.revocationSecret.hidden())
 
         new TxVerifier(bob.commitmentTxb.tx, bob.commitmentTxb.uTxOutMap).verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid

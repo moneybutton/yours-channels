@@ -122,13 +122,13 @@ describe('CnlTxBuilder', function () {
 
         let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
         yield alice.asyncSetFundingTx(tx, BN(1e8))
-        bob.setFundingTxHash(BN(1e8), output.txhashbuf, output.txout)
+        bob.setFundingTxHash(BN(1e8), alice.funding.txb.tx.hashbuf, alice.funding.txb.tx.txOuts)
 
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
         let commitmentObj = yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder)
-        alice.setCommitmentTxb(commitmentObj)
+        alice.setCommitmentTxo(commitmentObj)
         yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb)
 
         let txVerifier, error
@@ -168,12 +168,12 @@ describe('CnlTxBuilder', function () {
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
         let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
         yield alice.asyncSetFundingTx(tx, BN(1e8))
-        bob.setFundingTxHash(BN(1e8), output.txhashbuf, output.txout)
+        bob.setFundingTxHash(BN(1e8), alice.funding.txb.tx.hashbuf, alice.funding.txb.tx.txOuts)
 
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        alice.setCommitmentTxb(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb)
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
@@ -220,12 +220,12 @@ describe('CnlTxBuilder', function () {
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
         let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
         yield alice.asyncSetFundingTx(tx, BN(1e8))
-        bob.setFundingTxHash(BN(1e8), output.txhashbuf, output.txout)
+        bob.setFundingTxHash(BN(1e8), alice.funding.txb.tx.hashbuf, alice.funding.txb.tx.txOuts)
 
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        alice.setCommitmentTxb(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb)
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
@@ -262,12 +262,12 @@ describe('CnlTxBuilder', function () {
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
         let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
         yield alice.asyncSetFundingTx(tx, BN(1e8))
-        bob.setFundingTxHash(BN(1e8), output.txhashbuf, output.txout)
+        bob.setFundingTxHash(BN(1e8), alice.funding.txb.tx.hashbuf, alice.funding.txb.tx.txOuts)
 
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        alice.setCommitmentTxb(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb)
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
@@ -308,12 +308,12 @@ describe('CnlTxBuilder', function () {
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
         let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
         yield alice.asyncSetFundingTx(tx, BN(1e8))
-        bob.setFundingTxHash(BN(1e8), output.txhashbuf, output.txout)
+        bob.setFundingTxHash(BN(1e8), alice.funding.txb.tx.hashbuf, alice.funding.txb.tx.txOuts)
 
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        alice.setCommitmentTxb(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb)
 
         // Alice cannot spend using asyncBuildHtlcEnforcementTx, she must use asyncBuildOtherHtlcEnforcementTx
@@ -351,12 +351,12 @@ describe('CnlTxBuilder', function () {
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
         let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
         yield alice.asyncSetFundingTx(tx, BN(1e8))
-        bob.setFundingTxHash(BN(1e8), output.txhashbuf, output.txout)
+        bob.setFundingTxHash(BN(1e8), alice.funding.txb.tx.hashbuf, alice.funding.txb.tx.txOuts)
 
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        alice.setCommitmentTxb(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb)
         let txVerifier, error
 
@@ -397,17 +397,16 @@ describe('CnlTxBuilder', function () {
         let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
         let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
         yield alice.asyncSetFundingTx(tx, BN(1e8))
-        bob.setFundingTxHash(BN(1e8), output.txhashbuf, output.txout)
+        bob.setFundingTxHash(BN(1e8), alice.funding.txb.tx.hashbuf, alice.funding.txb.tx.txOuts)
 
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        alice.setCommitmentTxb(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb)
         let txVerifier, error
 
-        let bool = yield alice.setOtherRevocationSecretSolution(bob.revocationSecret)
-        bool.should.equal(true)
+        yield alice.setOtherRevocationSecretSolution(bob.revocationSecret)
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
         let bobsSpendingTxb = yield CnlTxBuilder.asyncSpendRevokedCommitmentTx(bob.commitmentTxb.tx, alice.other, alice.spending, alice.revocationSecret, alice.rhtlcOutNum)
