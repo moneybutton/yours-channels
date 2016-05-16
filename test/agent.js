@@ -250,7 +250,7 @@ describe('Agent', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb)
 
         let txVerifier = new TxVerifier(bob.commitmentTxb.tx, bob.commitmentTxb.uTxOutMap)

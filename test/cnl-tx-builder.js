@@ -56,8 +56,8 @@ describe('CnlTxBuilder', function () {
     })
   })
 
-  describe('#asyncBuildCommitmentTxb', function () {
-    it('asyncBuildCommitmentTxb should create a partial payment tx', function () {
+  describe('#asyncBuildCommitmentTxo', function () {
+    it('asyncBuildCommitmentTxo should create a partial payment tx', function () {
       return asink(function *() {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -81,7 +81,7 @@ describe('CnlTxBuilder', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        let {txb, htlcOutNum, rhtlcOutNum} = yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder)
+        let {txb, htlcOutNum, rhtlcOutNum} = yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder)
 
         let txVerifier = new TxVerifier(txb.tx, txb.uTxOutMap)
         let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
@@ -127,14 +127,20 @@ describe('CnlTxBuilder', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        let commitmentObj = yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder)
+        let commitmentObj = yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder)
         alice.setCommitmentTxo(commitmentObj)
-        yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb)
+        yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb, alice.other.htlcRedeemScript, alice.other.rhtlcRedeemScript)
 
         let txVerifier, error
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
-        let bobsSpendingTxb = yield CnlTxBuilder.asyncBuildSpendingTx(bob.commitmentTxb.tx, bob.spending, bob.htlcSecret, bob.rhtlcOutNum)
+        let bobsSpendingTxb = yield CnlTxBuilder.asyncBuildSpendingTx(
+          bob.commitmentTxb.tx,
+          bob.spending,
+          bob.htlcSecret,
+          bob.rhtlcOutNum,
+          bob.htlcRedeemScript,
+          bob.rhtlcRedeemScript)
         txVerifier = new TxVerifier(bobsSpendingTxb.tx, bobsSpendingTxb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         should.exist(bobsSpendingTxb)
@@ -173,7 +179,7 @@ describe('CnlTxBuilder', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb)
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
@@ -225,7 +231,7 @@ describe('CnlTxBuilder', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb)
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
@@ -267,7 +273,7 @@ describe('CnlTxBuilder', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb)
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
@@ -313,7 +319,7 @@ describe('CnlTxBuilder', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb)
 
         // Alice cannot spend using asyncBuildHtlcEnforcementTx, she must use asyncBuildOtherHtlcEnforcementTx
@@ -356,7 +362,7 @@ describe('CnlTxBuilder', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb)
         let txVerifier, error
 
@@ -402,7 +408,7 @@ describe('CnlTxBuilder', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.hidden())
         bob.setOtherRevocationSecret(alice.revocationSecret.hidden())
 
-        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxb(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.funding, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncSetOtherCommitmentTx(alice.commitmentTxb)
         let txVerifier, error
 
