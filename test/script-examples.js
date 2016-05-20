@@ -440,7 +440,7 @@ describe('Script Examples', function () {
       }
     }
 
-    function makeFundingTxObj (inputAmountBN, outputAmountBN, msAddress) {
+    function makeFundingTxObj (inputAmountBn, outputAmountBN, msAddress) {
       let inputTxKeypair = Keypair().fromRandom()
       let inputTxAddress = Address().fromPubkey(inputTxKeypair.pubkey)
       let txChangeKeypair = Keypair().fromRandom()
@@ -450,7 +450,7 @@ describe('Script Examples', function () {
       let inputTxHashbuf = new Buffer(32)
       inputTxHashbuf.fill(0) // a fake, non-existent input transaction
       let inputTxoutnum = 0
-      let inputTxout = Txout(inputAmountBN).setScript(scriptPubkey)
+      let inputTxout = Txout(inputAmountBn).setScript(scriptPubkey)
       txb.fromPubkeyhash(inputTxHashbuf, inputTxoutnum, inputTxout, inputTxKeypair.pubkey)
       txb.setChangeAddress(txChangeAddress)
       txb.toAddress(outputAmountBN, msAddress)

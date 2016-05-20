@@ -46,23 +46,49 @@ describe('Secret', function () {
     })
   })
 
-  describe('#hidden', function () {
-    it('hidden should remove the buf from a secret', function () {
+  describe('#toPublic', function () {
+    it('toPublic should remove the buf from a secret', function () {
       return asink(function *() {
         let secret = new Secret()
         secret.generateBuf()
-        should.exist(secret.buf)
         yield secret.asyncGenerateHash()
-        should.exist(secret.hash)
-        let hiddenSecret = secret.hidden()
 
         // secret should not change
         should.exist(secret.buf)
         should.exist(secret.hash)
 
-        // hiddenSecret should not have a buf
-        should.not.exist(hiddenSecret.buf)
-        should.exist(hiddenSecret.hash)
+        let toPublicSecret = secret.toPublic()
+
+        // toPublicSecret should not have a buf
+        should.not.exist(toPublicSecret.buf)
+        should.exist(toPublicSecret.hash)
+      }, this)
+    })
+  })
+
+  describe('#toJson', function () {
+    it('toJson should return a Json file', function () {
+      return asink(function *() {
+        let secret = new Secret()
+        secret.generateBuf()
+        yield secret.asyncGenerateHash()
+        let json = secret.toJson()
+        should.exist(json.buf)
+        should.exist(json.hash)
+      }, this)
+    })
+  })
+
+  describe('#fromJson', function () {
+    it('fromJson should return a Json file', function () {
+      return asink(function *() {
+        let secret = new Secret()
+        yield secret.asyncInitialize()
+
+        let json = secret.toJson()
+        let otherSecret = new Secret().fromJson(json)
+        should.exist(otherSecret.buf)
+        should.exist(otherSecret.hash)
       }, this)
     })
   })
