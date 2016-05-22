@@ -251,7 +251,7 @@ describe('Agent', function () {
   })
 
   describe('#asyncSend', function () {
-    it('asyncSend should store the other agents addeses and build a multisig address', function () {
+    it.skip('asyncSend should store the other agents addeses and build a multisig address', function () {
       return asink(function *() {
         // each party initializes itself locally
         let alice = new Agent('Alice')
@@ -295,7 +295,7 @@ describe('Agent', function () {
         alice.other.commitmentTxos.length.should.equal(1)
         bob.commitmentTxos.length.should.equal(1)
         bob.other.commitmentTxos.length.should.equal(1)
-
+/*
         // check that alice stores bob's commitment tx correctly
         alice.other.commitmentTxos[0].should.deepEqual(bob.commitmentTxos[0].toPublic())
         bob.other.commitmentTxos[0].should.deepEqual(alice.commitmentTxos[0].toPublic())
@@ -311,6 +311,14 @@ describe('Agent', function () {
         bob.other.commitmentTxos[1].should.deepEqual(alice.commitmentTxos[1].toPublic())
 
         yield bob.asyncSend(BN(2e5), BN(8e5), alice.nextRevocationSecret.toPublic())
+*/
+        // check that the agents don't know each othere's secrets
+        //  console.log(alice.other.commitmentTxos[0].htlcSecret)
+
+        // TODO: make sure that alice.other secret is hidden
+        // console.log('make sure that alice.other secret is hidden');
+        // console.log('alice.other', alice.other.commitmentTxos[0].htlcSecret);
+        // console.log('bob', bob.commitmentTxos[0].htlcSecret);
       }, this)
     })
   })

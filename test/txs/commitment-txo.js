@@ -161,16 +161,87 @@ describe('CommitmentTxo', function () {
 
         let json = alice.commitmentTx.toJson()
 
-        let sue = new CommitmentTxo().fromJson(json)
+        let tx = new CommitmentTxo().fromJson(json)
 
-        should.exist(sue)
-        should.exist(sue.txb)
-        should.exist(sue.htlcOutNum)
-        should.exist(sue.rhtlcOutNum)
-        should.exist(sue.htlcRedeemScript)
-        should.exist(sue.rhtlcRedeemScript)
-        should.exist(sue.htlcScriptPubkey)
-        should.exist(sue.rhtlcScriptPubkey)
+        should.exist(tx)
+        should.exist(tx.txb)
+        should.exist(tx.htlcOutNum)
+        should.exist(tx.rhtlcOutNum)
+        should.exist(tx.htlcRedeemScript)
+        should.exist(tx.rhtlcRedeemScript)
+        should.exist(tx.htlcScriptPubkey)
+        should.exist(tx.rhtlcScriptPubkey)
+      }, this)
+    })
+  })
+
+  describe('#toPublic', function () {
+    it('toPublic should create a public CommitmentTxo object', function () {
+      return asink(function *() {
+        let alice = new Agent('Alice')
+        yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        let publicAlice = yield alice.asyncToPublic()
+        alice.funder = true
+
+        let bob = new Agent('Bob')
+        yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        let publicBob = yield bob.asyncToPublic()
+
+        alice.other = publicBob
+        yield alice.asyncInitializeMultisig()
+
+        let inputAmountBn = Bn(1e10)
+        let fundingAmount = Bn(1e8)
+        let wallet = new Wallet()
+        let output = wallet.getUnspentOutput(inputAmountBn, alice.funding.keyPair.pubKey)
+
+        alice.fundingTxo = new FundingTxo()
+        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+
+        let alicesHtlcSecret = new Secret()
+        yield alicesHtlcSecret.asyncInitialize()
+        let bobsHtlcSecret = new Secret()
+        yield bobsHtlcSecret.asyncInitialize()
+        let bobsRevocationSecret = new Secret()
+        yield bobsRevocationSecret.asyncInitialize()
+
+        alice.commitmentTxo = new CommitmentTxo
+        yield alice.commitmentTxo.asyncInitialize(Bn(5e7), Bn(5e7),
+          alice.fundingTxo, alice.multisig,
+          alice.spending, alice.other.spending,
+          alicesHtlcSecret.toPublic(), bobsHtlcSecret.toPublic(),
+          bobsRevocationSecret.toPublic(), alice.funder)
+
+        // set the secrets
+        alice.commitmentTxo.htlcSecret.buf = alicesHtlcSecret.buf
+        alice.commitmentTxo.otherHtlcSecret.buf = bobsHtlcSecret.buf
+        alice.commitmentTxo.revocationSecret.buf = bobsRevocationSecret.buf
+        should.exist(alice.commitmentTxo.htlcSecret.buf)
+        should.exist(alice.commitmentTxo.otherHtlcSecret.buf)
+        should.exist(alice.commitmentTxo.revocationSecret.buf)
+
+        let txo = alice.commitmentTxo.toPublic()
+
+        should.exist(txo)
+        should.exist(txo.txb)
+        should.exist(txo.htlcOutNum)
+        should.exist(txo.rhtlcOutNum)
+        should.exist(txo.htlcRedeemScript)
+        should.exist(txo.rhtlcRedeemScript)
+        should.exist(txo.htlcScriptPubkey)
+        should.exist(txo.rhtlcScriptPubkey)
+
+        // check that secrets are hidden after toPublic
+        should.exist(txo.htlcSecret)
+        should.exist(txo.htlcSecret.hash)
+        should.not.exist(txo.htlcSecret.buf)
+        should.exist(txo.otherHtlcSecret)
+        should.exist(txo.otherHtlcSecret.hash)
+        should.not.exist(txo.otherHtlcSecret.buf)
+        should.exist(txo.revocationSecret)
+        should.exist(txo.revocationSecret.hash)
+        should.not.exist(txo.revocationSecret.buf)
+
       }, this)
     })
   })
