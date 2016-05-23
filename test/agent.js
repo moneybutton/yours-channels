@@ -251,7 +251,7 @@ describe('Agent', function () {
   })
 
   describe('#asyncSend', function () {
-    it.skip('asyncSend should store the other agents addeses and build a multisig address', function () {
+    it('asyncSend should store the other agents addeses and build a multisig address', function () {
       return asink(function *() {
         // each party initializes itself locally
         let alice = new Agent('Alice')
@@ -341,6 +341,76 @@ describe('Agent', function () {
         alice.funder = true
         bob.funder = false
         let publicAlice = yield alice.asyncToPublic()
+        yield bob.asyncOpenChannel(BN(1e6), publicAlice)
+
+        should.exist(bob.name)
+        should.exist(bob.funding)
+        should.exist(bob.multisig)
+        should.exist(bob.spending)
+        should.exist(bob.htlcSecret)
+        should.exist(bob.nextRevocationSecret)
+        should.exist(bob.funder)
+        should.exist(bob.fundingTxo)
+        should.exist(bob.wallet)
+        should.exist(bob.initialized)
+
+        let json = bob.toJson()
+
+        should.exist(json.name)
+        should.exist(json.funding)
+        should.exist(json.multisig)
+        should.exist(json.spending)
+        should.exist(json.htlcSecret)
+        should.exist(json.nextRevocationSecret)
+        should.exist(json.funder)
+        should.exist(json.fundingTxo)
+        should.exist(json.wallet)
+        should.exist(json.initialized)
+
+        // alice sends some funds to bob
+        alice.sender = true
+        bob.sender = false
+        yield bob.asyncSend(BN(4e5), BN(6e5), alice.nextRevocationSecret.toPublic())
+
+        json = bob.toJson()
+
+        should.exist(json.name)
+        should.exist(json.funding)
+        should.exist(json.multisig)
+        should.exist(json.spending)
+        should.exist(json.htlcSecret)
+        should.exist(json.nextRevocationSecret)
+        should.exist(json.funder)
+        should.exist(json.fundingTxo)
+        should.exist(json.commitmentTxos)
+        should.exist(json.wallet)
+        should.exist(json.initialized)
+        should.exist(json.sender)
+      }, this)
+    })
+
+    it('toJson should convert into a json object after toPublic has been called', function () {
+      return asink(function *() {
+        // each party initializes itself locally
+        let alice = new Agent('Alice')
+        yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        let bob = new Agent('Bob')
+        yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+
+        // right now Alice and Bob communicate by storing a reference to one another
+        // eventually this will be replaced by some form of remote proceedure calls
+        alice.remoteAgent = bob
+        bob.remoteAgent = alice
+
+        // Alice opens a channel to bob
+        alice.funder = true
+        bob.funder = false
+
+        let publicAlice = yield alice.asyncToPublic()
+        let publicAliceJson = publicAlice.toJson()
+
+        should.exist(publicAliceJson)
+
         yield bob.asyncOpenChannel(BN(1e6), publicAlice)
 
         let json = bob.toJson()

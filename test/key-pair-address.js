@@ -33,9 +33,18 @@ describe('KeyPairAddress', function () {
         let keyPairAddress = new KeyPairAddress()
         yield keyPairAddress.asyncInitialize(PrivKey.fromRandom())
         let json = keyPairAddress.toJson()
+
         should.exist(json.address)
         should.exist(json.keyPair)
         json.initialized.should.equal(true)
+
+        let publicKeyPairAddress = keyPairAddress.toPublic()
+        let publicJson = publicKeyPairAddress.toJson()
+        should.exist(publicJson.address)
+        should.exist(publicJson.keyPair)
+        should.exist(publicJson.keyPair.pubKey)
+        should.not.exist(publicJson.keyPair.privKey)
+        publicJson.initialized.should.equal(true)
       }, this)
     })
   })

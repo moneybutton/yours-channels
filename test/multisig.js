@@ -33,17 +33,48 @@ describe('Multisig', function () {
   })
 
   describe('#toJson', function () {
-    it('toJson should convert into a json object', function () {
+    it('toJson should convert into a json object after initializePrivKey', function () {
       return asink(function *() {
         let multisig = new Multisig(PrivKey.fromRandom())
+
+        yield multisig.initializePrivKey(PrivKey.fromRandom())
+        let unInitializedJson = multisig.toJson()
+        should.exist(unInitializedJson.privKey)
+        should.exist(unInitializedJson.pubKey)
+      }, this)
+    })
+
+    it('toJson should convert into a json object after asyncInitialize', function () {
+      return asink(function *() {
+        let multisig = new Multisig(PrivKey.fromRandom())
+
+        yield multisig.initializePrivKey(PrivKey.fromRandom())
         yield multisig.asyncInitialize(PubKey.fromPrivKey(PrivKey.fromRandom()))
-        let json = multisig.toJson()
-        should.exist(json.privKey)
-        should.exist(json.pubKeys)
-        should.exist(json.script)
-        should.exist(json.address)
-        should.exist(json.keyPair)
-        json.initialized.should.equal(true)
+        let initializedJson = multisig.toJson()
+        initializedJson.initialized.should.equal(true)
+        should.exist(initializedJson.privKey)
+        should.exist(initializedJson.pubKeys)
+        should.exist(initializedJson.script)
+        should.exist(initializedJson.address)
+        should.exist(initializedJson.keyPair)
+      }, this)
+    })
+
+    it('toJson should convert into a json object after toPublic', function () {
+      return asink(function *() {
+        let multisig = new Multisig(PrivKey.fromRandom())
+
+        yield multisig.initializePrivKey(PrivKey.fromRandom())
+        yield multisig.asyncInitialize(PubKey.fromPrivKey(PrivKey.fromRandom()))
+
+        let publicMultisig = multisig.toPublic()
+        let publicMultisigJson = publicMultisig.toJson()
+        publicMultisigJson.initialized.should.equal(true)
+        should.not.exist(publicMultisigJson.privKey)
+        should.exist(publicMultisigJson.pubKeys)
+        should.exist(publicMultisigJson.script)
+        should.exist(publicMultisigJson.address)
+        should.exist(publicMultisigJson.keyPair)
       }, this)
     })
   })
@@ -55,7 +86,8 @@ describe('Multisig', function () {
         yield multisigObj.asyncInitialize(PubKey.fromPrivKey(PrivKey.fromRandom()))
         let json = multisigObj.toJson()
         let multisig = new Multisig().fromJson(json)
-
+        // TODO this should pass in the future
+        // JSON.stringify(multisig).should.equal(JSON.stringify(multisigObj))
         should.exist(multisig.privKey)
         should.exist(multisig.pubKeys)
         should.exist(multisig.script)
