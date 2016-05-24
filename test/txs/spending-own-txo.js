@@ -78,5 +78,45 @@ describe('SpendingOwnTxo', function () {
         error.should.equal(false)
       }, this)
     })
+
+    it('should not be able to create spending tx from other tx', function () {
+      return asink(function *() {
+        // each party initializes itself locally
+        let alice = new Agent('Alice')
+        yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        let bob = new Agent('Bob')
+        yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+
+        // right now Alice and Bob communicate by storing a reference to one another
+        // eventually this will be replaced by some form of remote proceedure calls
+        alice.remoteAgent = bob
+        bob.remoteAgent = alice
+
+        // Alice opens a channel to bob
+        alice.funder = true
+        bob.funder = false
+        let publicAlice = yield alice.asyncToPublic()
+        yield bob.asyncOpenChannel(Bn(1e6), publicAlice)
+
+        // alice sends some funds to bob
+        alice.sender = true
+        bob.sender = false
+        yield bob.asyncSend(Bn(4e5), Bn(6e5), alice.nextRevocationSecret.toPublic())
+
+        let txVerifier, error, commitmentTxo, txOutMap
+
+        // it is important that bob cannot spend the transactions in the other.commitmentTxos array
+        try {
+          commitmentTxo = bob.other.commitmentTxos[0]
+          let bobsSpendingTxo = new SpendingOwnTxo()
+          yield bobsSpendingTxo.asyncBuild(commitmentTxo, bob.spending)
+
+          // this is to simulate that the above should throw an error
+          true.should.equal(false)
+        } catch (err) {
+          err.message.should.equal("Cannot read property 'length' of undefined")
+        }
+      }, this)
+    })
   })
 })
