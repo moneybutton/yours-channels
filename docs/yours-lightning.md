@@ -99,27 +99,44 @@ Alice may spend it after two days with the following input script:
 
 ## Transactions
 
-Alice (A) and Bob (B) exchange the following transactions.
+For each transaction, Alice (A) and Bob (B) both generate a fresh htcl secret and a fresh revocation secret. They construct the following two transactions:
 
 ![alt text](./img/2-way-rhtlc.png "2-way-rhtlc.png")
 
 Each commitment transaction maintains two HTLCs, one for each direction. Note
 that each party can revoke their own HTLC but not the other party's.
 
+## Data structures
+
+Either party in the channel stores the following data:
+* the source address used to fund the funding transaction
+* the multisig address "between" the funding and commitment tx
+* the destination address that the commitment transactions spend to
+* the funding transaction
+* a list of commitment transaction objects
+* a reference to the other agent public information (including her list of previous commitment transaction objects)
+
+A commitment transaction object contains the following
+
+* a commitment transaction
+* a htlc secret
+* a revocation secret
+
 ## Protocols
 
-### Funding the channel
+We now describe the protocol that the parties use to construct the transactions shown above.
+
+### Opening the channel
 
 As there are inherent malleability problems if two parties fund a payment
-channel, we describe the version where only Alice funds the channel.
+channel. To avoid this problem we use a version where only Alice funds the channel.
 
-**1. Alice and Bob exchange public keys and create a multisig address.** Alice
-sends two public key to Bob - one to build a multisig address and one at which
-she wishes to receive payments at. Symmetrically, Bob sends two corresponding
-public keys to Alice. Both create the same multisig address from the keys.
+**0. Local initialization.** Both agents initialize their local addresses (source, destination) and their initial htlc and revocation secret (asyncInitialize() in agent.js).
 
-**2. Alice builds a funding transaction.** Alice creates a transaction that
-spends to the shared multisig address, but does not broadcast it yet. She then
+**1. Alice and Bob exchange their public projections.** This allows them to build a shared multisig address.
+
+**2. Alice builds a funding transaction.** The party that funds the channel (Alice) creates the funding transaction that
+spends to the shared multisig address. She does not broadcast it yet. She then
 sends the funding amount and funding transaction hash to Bob.
 
 **3. Bob builds and signs a refund transaction, sends it to Alice.** Alice and
