@@ -44,15 +44,15 @@ describe('CnlTxBuilder', function () {
         let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         error.should.equal(false)
 
-        should.exist(txb.tx.toJson())
+        should.exist(txb.tx.toJSON())
 
         // first output should equal amount
         txb.tx.txOuts[0].valueBn.eq(fundingAmount).should.equal(true)
         // there should be one output
-        txb.tx.toJson().txIns.length.should.equal(1)
+        txb.tx.toJSON().txIns.length.should.equal(1)
         // and two inputs
-        txb.tx.toJson().txOuts.length.should.equal(2)
-        ;(txb.tx.toJson().txOuts[0].valueBn).should.equal(fundingAmount.toString())
+        txb.tx.toJSON().txOuts.length.should.equal(2)
+        ;(txb.tx.toJSON().txOuts[0].valueBn).should.equal(fundingAmount.toString())
       }, this)
     })
   })

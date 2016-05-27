@@ -8,7 +8,7 @@ let EnforceOtherHtlcTxo = require('../../lib/txs/enforce-other-htlc-txo.js')
 
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let PubKey = require('yours-bitcoin/lib/pub-key')
-let Bn = require('yours-bitcoin/lib/bn')
+let BN = require('yours-bitcoin/lib/bn')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 let Interp = require('yours-bitcoin/lib/interp')
 
@@ -34,14 +34,14 @@ describe('EnforceOtherHtlcTxo', function () {
 
         // Alice opens a channel to bob
         alice.funder = true
-        bob.funder = false
         let publicAlice = yield alice.asyncToPublic()
-        yield bob.asyncOpenChannel(Bn(1e6), publicAlice)
+        yield bob.asyncOpenChannel(BN(1e6), publicAlice)
 
         // alice sends some funds to bob
         alice.sender = true
         bob.sender = false
-        yield bob.asyncSend(Bn(4e5), Bn(6e5), alice.nextRevocationSecret.toPublic())
+
+        yield bob.asyncSend(BN(4e5), BN(6e5))
 
         let txVerifier, error, commitmentTxo
 

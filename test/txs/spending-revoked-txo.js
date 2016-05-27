@@ -8,7 +8,7 @@ let SpendingRevokedTxo = require('../../lib/txs/spending-revoked-txo.js')
 
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let PubKey = require('yours-bitcoin/lib/pub-key')
-let Bn = require('yours-bitcoin/lib/bn')
+let BN = require('yours-bitcoin/lib/bn')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 let Interp = require('yours-bitcoin/lib/interp')
 let TxOutMap = require('yours-bitcoin/lib/tx-out-map')
@@ -35,18 +35,15 @@ describe('SpendingRevokedTxo', function () {
 
         // Alice opens a channel to bob
         alice.funder = true
-        bob.funder = false
         let publicAlice = yield alice.asyncToPublic()
-        yield bob.asyncOpenChannel(Bn(1e6), publicAlice)
+        yield bob.asyncOpenChannel(BN(1e6), publicAlice)
 
         // alice sends some funds to bob
         alice.sender = true
         bob.sender = false
-        yield bob.asyncSend(Bn(4e5), Bn(6e5), alice.nextRevocationSecret.toPublic())
 
-        // send a secod payment, this revokes the first payment
-        yield bob.asyncSend(Bn(3e5), Bn(7e5), alice.nextRevocationSecret.toPublic())
-
+        yield bob.asyncSend(BN(4e5), BN(6e5))
+        yield bob.asyncSend(BN(3e5), BN(7e5))
 
         let txVerifier, error, commitmentTxo, txOutMap
 

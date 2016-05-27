@@ -108,19 +108,21 @@ that each party can revoke their own HTLC but not the other party's.
 
 ## Data structures
 
-Either party in the channel stores the following data:
+Either agent in the channel stores the following data:
 * the source address used to fund the funding transaction
 * the multisig address "between" the funding and commitment tx
 * the destination address that the commitment transactions spend to
-* the funding transaction
+* the funding transaction (or its hash)
 * a list of commitment transaction objects
 * a reference to the other agent public information (including her list of previous commitment transaction objects)
 
 A commitment transaction object contains the following
 
 * a commitment transaction
-* a htlc secret
-* a revocation secret
+* the agents htlc secret
+* the agents revocation secret
+* the public version of the other agents htlc secret
+* the public version of the other agents revocation secret
 
 ## Protocols
 
@@ -133,9 +135,9 @@ channel. To avoid this problem we use a version where only Alice funds the chann
 
 **0. Local initialization.** Both agents initialize their local addresses (source, destination) and their initial htlc and revocation secret (asyncInitialize() in agent.js).
 
-**1. Alice and Bob exchange their public projections.** This allows them to build a shared multisig address.
+**1. Alice and Bob exchange their public projections.** This allows them to build a shared multisig address and to know the public versions of the other agents htlc and revocation secret.
 
-**2. Alice builds a funding transaction.** The party that funds the channel (Alice) creates the funding transaction that
+**2. The funder (Alice) builds a funding transaction.** The agent that funds the channel creates the funding transaction that
 spends to the shared multisig address. She does not broadcast it yet. She then
 sends the funding amount and funding transaction hash to Bob.
 
@@ -155,34 +157,19 @@ invalidated as described in the section below.
 ### Creating the payment
 
 We describe a payment from Alice to Bob. Note that if this is not the first
-payment, Alice has the following information from the previous payment: her own
-revocation secret, her own HTLC secret, the hash of Bob's last revocation
-secret, the hash of Bob's last HTLC secret. If this is the first payment,
-revoking isn't necessary and those secrets are not needed.
+payment, Alice has the hash of Bob's last revocation
+secret, and the hash of Bob's last HTLC secret. If this is the first payment,
+revoking isn't necessary and these secrets are not needed.
 
-**1. Alice generates a new revocation secret.** She then sends the hash of the
-revocation secret to Bob. She will later use the revocation secret to revoke
-the commitment transaction she is in the process of creating when she wants to
-make another one after that.
+**1. Alice generates new secrets and sends them to Bob.** She locally creates a revocation secret and a htlc secret for use on the next transaction. She then sends the public versions (hashes) of these secrets to Bob.
 
-**2. Bob generates a new revocation secret.** He sends its hash to Alice. As
-above this will allow Bob to revoke this transaction later.
+**2. Bob generates a new secrets and sends them to Alice.** This is symmetric to the case above
 
-**2.5. Bob generates a new HTLC secret.** Alice will need to know this secret
-to prove that she made the payment. Bob sends the HTLC secret's hash to Alice.
+**3. Alice builds a commitment transaction for Bob and sends it to him.** Alice builds the transaction labeled "known only to Bob" above. She uses the public versions of the secrets obtained from Bob in step 2 and her own secrets generated in Step 1. She signs the transaction and sends it to Bob.
 
-**3. Alice builds a commitment transaction.** Alice builds the transaction
-labeled "known only to Bob" above. She uses the hash of the revocation secret
-obtained from Bob in step 2 and the hash of the HTLC secret from step 2.5. She
-signs the transaction and sends it to Bob.
+**4. Bob checks the transaction, builds one for Alice and sends it to her.** Bob checks that the transaction spends from the shared multisig address, spends to his destination address, that the secrets used are the ones he generated in Step 2, and that the spending amounts are as expected. If the test passes, he builds the transaction labelled "known only to Alice" and sends it to her (this is symmetric to case 3.).
 
-**4. Bob builds a commitment transaction.** If Bob wants to accept the payment,
-he will build the transaction labeled "known only to Alice" above. He uses the
-revocation secret obtained from Alice in step 1 and the old HTLC secret from
-the previous round. He then signs the transaction and sends it back to Alice.
-
-**5. Alice revokes.** To revoke the previous payment, Alice sends her
-revocation secret from the last commitment transaction to Bob.
+**5. Alice checks the transaction obtained from Bob, and revokes her last payment if the check passes.** To revoke the previous payment, Alice sends her revocation secret from the last commitment transaction to Bob.
 
 **6. Bob revokes.** Symmetrically, Bob sends Alice his revocation secret from
 the last commitment transaction.
