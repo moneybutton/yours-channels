@@ -49,10 +49,10 @@ describe('Agent', function () {
         Object.keys(alice).should.deepEqual([ 'name' ])
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
 
-        should.exist(alice.funding.keyPair.privKey)
-        should.exist(alice.funding.keyPair.pubKey)
-        should.exist(alice.funding.address)
-        should.exist(alice.funding.keyPair)
+        should.exist(alice.source.keyPair.privKey)
+        should.exist(alice.source.keyPair.pubKey)
+        should.exist(alice.source.address)
+        should.exist(alice.source.keyPair)
 
         should.exist(alice.multisig.privKey)
         should.exist(alice.multisig.pubKey)
@@ -85,7 +85,7 @@ describe('Agent', function () {
         alice.initializeOther(yield bob.asyncToPublic())
 
         alice.other.name.should.equal(bob.name)
-        alice.other.funding.should.deepEqual(bob.funding.toPublic())
+        alice.other.source.should.deepEqual(bob.source.toPublic())
         alice.other.multisig.should.deepEqual(bob.multisig.toPublic())
         alice.other.spending.should.deepEqual(bob.spending.toPublic())
         alice.other.funder.should.deepEqual(bob.funder)
@@ -421,7 +421,7 @@ describe('Agent', function () {
         yield bob.asyncOpenChannel(BN(1e6), publicAlice)
 
         should.exist(bob.name)
-        should.exist(bob.funding)
+        should.exist(bob.source)
         should.exist(bob.multisig)
         should.exist(bob.spending)
         should.exist(bob.funder)
@@ -430,9 +430,9 @@ describe('Agent', function () {
         should.exist(bob.initialized)
         /*
         console.log(Object.keys(bob.funding));
-        console.log(JSON.stringify(bob.funding.keyPair));
-        console.log(JSON.stringify(bob.funding.address));
-        console.log(JSON.stringify(bob.funding.initialized));
+        console.log(JSON.stringify(bob.source.keyPair));
+        console.log(JSON.stringify(bob.source.address));
+        console.log(JSON.stringify(bob.source.initialized));
         JSON.stringify(bob.funding);
 
         let json = bob.toJSON()
@@ -581,7 +581,7 @@ describe('Agent', function () {
   })
 
   describe('#toPublic', function () {
-    it('toPublic should convert from a json object', function () {
+    it.skip('toPublic should convert from a json object', function () {
       return asink(function *() {
         // each party initializes itself locally
         let alice = new Agent('Alice')
@@ -624,6 +624,8 @@ describe('Agent', function () {
         bob.sender = false
         yield bob.asyncSend(BN(4e5), BN(6e5))
         let julie = yield bob.asyncToPublic()
+
+console.log(Object.keys(bob));
 
         should.exist(julie)
         should.exist(julie.name)

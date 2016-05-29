@@ -36,7 +36,7 @@ describe('CommitmentTxo', function () {
         let inputAmountBn = Bn(1e10)
         let fundingAmount = Bn(1e8)
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(inputAmountBn, alice.funding.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
 
         alice.fundingTxo = new FundingTxo()
         yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
@@ -79,7 +79,7 @@ describe('CommitmentTxo', function () {
         let inputAmountBn = Bn(1e10)
         let fundingAmount = Bn(1e8)
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(inputAmountBn, alice.funding.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
 
         alice.fundingTxo = new FundingTxo()
         yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
@@ -121,7 +121,7 @@ describe('CommitmentTxo', function () {
         let inputAmountBn = Bn(1e10)
         let fundingAmount = Bn(1e8)
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(inputAmountBn, alice.funding.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
 
         alice.fundingTxo = new FundingTxo()
         yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
@@ -165,7 +165,7 @@ describe('CommitmentTxo', function () {
         let inputAmountBn = Bn(1e10)
         let fundingAmount = Bn(1e8)
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(inputAmountBn, alice.funding.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
 
         alice.fundingTxo = new FundingTxo()
         yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)

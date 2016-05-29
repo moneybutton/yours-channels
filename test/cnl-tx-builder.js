@@ -36,7 +36,7 @@ describe('CnlTxBuilder', function () {
         let inputAmountBn = BN(1e10)
         let fundingAmount = BN(1e8)
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(inputAmountBn, alice.funding.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
 
         let txb = yield CnlTxBuilder.asyncBuildFundingTx(fundingAmount, alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
@@ -73,7 +73,7 @@ describe('CnlTxBuilder', function () {
         yield bob.asyncInitializeMultisig()
 
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(BN(1e10), alice.source.keyPair.pubKey)
         let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
         yield alice.asyncSetFundingTx(tx, BN(1e8))
 
@@ -115,7 +115,7 @@ describe('CnlTxBuilder', function () {
         yield bob.asyncInitializeMultisig()
 
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(BN(1e10), alice.source.keyPair.pubKey)
 
         let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
         yield alice.asyncSetFundingTx(tx, BN(1e8))
@@ -166,7 +166,7 @@ describe('CnlTxBuilder', function () {
         yield bob.asyncInitializeMultisig()
 
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(BN(1e10), alice.source.keyPair.pubKey)
         let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
         yield alice.asyncSetFundingTx(tx, BN(1e8))
         // bob.setFundingTxHash(BN(1e8), alice.fundingTx.txb.tx.hashbuf, alice.fundingTx.txb.tx.txOuts)
@@ -223,7 +223,7 @@ describe('CnlTxBuilder', function () {
         yield bob.asyncInitializeMultisig()
 
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(BN(1e10), alice.source.keyPair.pubKey)
         let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
         yield alice.asyncSetFundingTx(tx, BN(1e8))
         // bob.setFundingTxHash(BN(1e8), alice.fundingTx.txb.tx.hashbuf, alice.fundingTx.txb.tx.txOuts)
@@ -273,7 +273,7 @@ describe('CnlTxBuilder', function () {
         yield bob.asyncInitializeMultisig()
 
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(BN(1e10), alice.source.keyPair.pubKey)
         let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
         yield alice.asyncSetFundingTx(tx, BN(1e8))
         // bob.setFundingTxHash(BN(1e8), alice.fundingTx.txb.tx.hashbuf, alice.fundingTx.txb.tx.txOuts)
@@ -318,7 +318,7 @@ describe('CnlTxBuilder', function () {
         yield bob.asyncInitializeMultisig()
 
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(BN(1e10), alice.source.keyPair.pubKey)
         let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
         yield alice.asyncSetFundingTx(tx, BN(1e8))
         // bob.setFundingTxHash(BN(1e8), alice.fundingTx.txb.tx.hashbuf, alice.fundingTx.txb.tx.txOuts)
@@ -360,7 +360,7 @@ describe('CnlTxBuilder', function () {
         yield bob.asyncInitializeMultisig()
 
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(BN(1e10), alice.source.keyPair.pubKey)
         let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
         yield alice.asyncSetFundingTx(tx, BN(1e8))
         // bob.setFundingTxHash(BN(1e8), alice.fundingTx.txb.tx.hashbuf, alice.fundingTx.txb.tx.txOuts)
@@ -405,7 +405,7 @@ describe('CnlTxBuilder', function () {
         yield bob.asyncInitializeMultisig()
 
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(BN(1e10), alice.funding.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(BN(1e10), alice.source.keyPair.pubKey)
         let tx = yield CnlTxBuilder.asyncBuildFundingTx(BN(1e8), alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
         yield alice.asyncSetFundingTx(tx, BN(1e8))
         // bob.setFundingTxHash(BN(1e8), alice.fundingTx.txb.tx.hashbuf, alice.fundingTx.txb.tx.txOuts)
