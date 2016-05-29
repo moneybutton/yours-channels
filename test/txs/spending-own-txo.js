@@ -4,7 +4,7 @@ let should = require('should')
 let asink = require('asink')
 let Agent = require('../../lib/agent.js')
 let Wallet = require('../../lib/wallet.js')
-let SpendingOwnTxo = require('../../lib/txs/spending-own-txo.js')
+let DestinationOwnTxo = require('../../lib/txs/spending-own-txo.js')
 
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let PubKey = require('yours-bitcoin/lib/pub-key')
@@ -13,14 +13,14 @@ let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 let TxOutMap = require('yours-bitcoin/lib/tx-out-map')
 let Interp = require('yours-bitcoin/lib/interp')
 
-describe('SpendingOwnTxo', function () {
+describe('DestinationOwnTxo', function () {
   it('should exist', function () {
-    should.exist(SpendingOwnTxo)
-    should.exist(new SpendingOwnTxo())
+    should.exist(DestinationOwnTxo)
+    should.exist(new DestinationOwnTxo())
   })
 
   describe('#asyncBuild', function () {
-    it('should create spending tx', function () {
+    it('should create destination tx', function () {
       return asink(function *() {
         // each party initializes itself locally
         let alice = new Agent('Alice')
@@ -48,8 +48,8 @@ describe('SpendingOwnTxo', function () {
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
         commitmentTxo = bob.commitmentTxos[0]
-        let bobsSpendingTxo = new SpendingOwnTxo()
-        yield bobsSpendingTxo.asyncBuild(commitmentTxo, bob.spending)
+        let bobsSpendingTxo = new DestinationOwnTxo()
+        yield bobsSpendingTxo.asyncBuild(commitmentTxo, bob.destination)
 
         should.exist(bobsSpendingTxo)
 
@@ -64,8 +64,8 @@ describe('SpendingOwnTxo', function () {
 
         // same test for alice
         commitmentTxo = alice.commitmentTxos[0]
-        let alicesSpendingTxo = new SpendingOwnTxo()
-        yield alicesSpendingTxo.asyncBuild(commitmentTxo, alice.spending)
+        let alicesSpendingTxo = new DestinationOwnTxo()
+        yield alicesSpendingTxo.asyncBuild(commitmentTxo, alice.destination)
 
         should.exist(alicesSpendingTxo)
         txOutMap = new TxOutMap()
@@ -79,7 +79,7 @@ describe('SpendingOwnTxo', function () {
       }, this)
     })
 
-    it('should not be able to create spending tx from other tx', function () {
+    it('should not be able to create destination tx from other tx', function () {
       return asink(function *() {
         // each party initializes itself locally
         let alice = new Agent('Alice')
@@ -108,8 +108,8 @@ describe('SpendingOwnTxo', function () {
         // it is important that bob cannot spend the transactions in the other.commitmentTxos array
         try {
           commitmentTxo = bob.other.commitmentTxos[0]
-          let bobsSpendingTxo = new SpendingOwnTxo()
-          yield bobsSpendingTxo.asyncBuild(commitmentTxo, bob.spending)
+          let bobsSpendingTxo = new DestinationOwnTxo()
+          yield bobsSpendingTxo.asyncBuild(commitmentTxo, bob.destination)
 
           // this is to simulate that the above should throw an error
           true.should.equal(false)

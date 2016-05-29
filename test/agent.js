@@ -57,10 +57,10 @@ describe('Agent', function () {
         should.exist(alice.multisig.privKey)
         should.exist(alice.multisig.pubKey)
 
-        should.exist(alice.spending.keyPair.privKey)
-        should.exist(alice.spending.keyPair.pubKey)
-        should.exist(alice.spending.address)
-        should.exist(alice.spending.keyPair)
+        should.exist(alice.destination.keyPair.privKey)
+        should.exist(alice.destination.keyPair.pubKey)
+        should.exist(alice.destination.address)
+        should.exist(alice.destination.keyPair)
 
         should.exist(alice.wallet)
 
@@ -87,7 +87,7 @@ describe('Agent', function () {
         alice.other.name.should.equal(bob.name)
         alice.other.source.should.deepEqual(bob.source.toPublic())
         alice.other.multisig.should.deepEqual(bob.multisig.toPublic())
-        alice.other.spending.should.deepEqual(bob.spending.toPublic())
+        alice.other.destination.should.deepEqual(bob.destination.toPublic())
         alice.other.funder.should.deepEqual(bob.funder)
         alice.other.wallet.should.deepEqual(bob.wallet.toPublic())
       }, this)
@@ -184,7 +184,7 @@ describe('Agent', function () {
         let otherCommitmentTxo = new CommitmentTxo()
         yield otherCommitmentTxo.asyncInitialize(BN(5e5), BN(5e5),
           alice.fundingTxo, alice.multisig,
-          alice.spending, alice.other.spending,
+          alice.destination, alice.other.destination,
           alice.htlcSecret.toPublic(), alice.other.htlcSecret.toPublic(),
           bob.nextRevocationSecret, alice.funder)
 
@@ -423,7 +423,7 @@ describe('Agent', function () {
         should.exist(bob.name)
         should.exist(bob.source)
         should.exist(bob.multisig)
-        should.exist(bob.spending)
+        should.exist(bob.destination)
         should.exist(bob.funder)
         should.exist(bob.fundingTxo)
         should.exist(bob.wallet)
@@ -440,7 +440,7 @@ describe('Agent', function () {
         should.exist(json.name)
         should.exist(json.funding)
         should.exist(json.multisig)
-        should.exist(json.spending)
+        should.exist(json.destination)
         should.exist(json.htlcSecret)
         should.exist(json.nextRevocationSecret)
         should.exist(json.funder)
@@ -458,7 +458,7 @@ describe('Agent', function () {
         should.exist(json.name)
         should.exist(json.funding)
         should.exist(json.multisig)
-        should.exist(json.spending)
+        should.exist(json.destination)
         should.exist(json.htlcSecret)
         should.exist(json.nextRevocationSecret)
         should.exist(json.funder)
@@ -501,7 +501,7 @@ describe('Agent', function () {
         should.exist(json.name)
         should.exist(json.funding)
         should.exist(json.multisig)
-        should.exist(json.spending)
+        should.exist(json.destination)
         should.exist(json.htlcSecret)
         should.exist(json.nextRevocationSecret)
         should.exist(json.funder)
@@ -518,7 +518,7 @@ describe('Agent', function () {
         should.exist(json.name)
         should.exist(json.funding)
         should.exist(json.multisig)
-        should.exist(json.spending)
+        should.exist(json.destination)
         should.exist(json.htlcSecret)
         should.exist(json.nextRevocationSecret)
         should.exist(json.funder)
@@ -567,7 +567,7 @@ describe('Agent', function () {
         should.exist(sue.name)
         should.exist(sue.funding)
         should.exist(sue.multisig)
-        should.exist(sue.spending)
+        should.exist(sue.destination)
         should.exist(sue.htlcSecret)
         should.exist(sue.nextRevocationSecret)
         should.exist(sue.funder)
@@ -594,7 +594,7 @@ describe('Agent', function () {
         should.exist(berta)
         should.exist(berta.name)
         should.exist(berta.funding)
-        should.exist(berta.spending)
+        should.exist(berta.destination)
         should.exist(berta.wallet)
 
         // right now Alice and Bob communicate by storing a reference to one another
@@ -614,7 +614,7 @@ describe('Agent', function () {
         should.exist(sue.name)
         should.exist(sue.funding)
         should.exist(sue.multisig)
-        should.exist(sue.spending)
+        should.exist(sue.destination)
         should.exist(sue.funder)
         should.exist(sue.wallet)
         should.exist(sue.fundingTxo)
@@ -631,7 +631,7 @@ console.log(Object.keys(bob));
         should.exist(julie.name)
         should.exist(julie.funding)
         should.exist(julie.multisig)
-        should.exist(julie.spending)
+        should.exist(julie.destination)
         should.exist(julie.funder)
         should.exist(julie.wallet)
         should.exist(julie.sender)

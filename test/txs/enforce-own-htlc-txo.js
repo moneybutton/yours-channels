@@ -20,7 +20,7 @@ describe('EnforceOwnHtlcTxo', function () {
   })
 
   describe('#asyncBuild', function () {
-    it('should create spending tx', function () {
+    it('should create destination tx', function () {
       return asink(function *() {
         // each party initializes itself locally
         let alice = new Agent('Alice')
@@ -50,7 +50,7 @@ describe('EnforceOwnHtlcTxo', function () {
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
         commitmentTxo = bob.other.commitmentTxos[0]
         let bobsSpendingTxo = new EnforceOwnHtlcTxo()
-        yield bobsSpendingTxo.asyncBuild(commitmentTxo, alice.spending)
+        yield bobsSpendingTxo.asyncBuild(commitmentTxo, alice.destination)
 
         should.exist(bobsSpendingTxo)
         txOutMap = new TxOutMap()
@@ -65,7 +65,7 @@ describe('EnforceOwnHtlcTxo', function () {
         // same test for alice
         commitmentTxo = alice.commitmentTxos[0]
         let alicesSpendingTxo = new EnforceOwnHtlcTxo()
-        yield alicesSpendingTxo.asyncBuild(commitmentTxo, alice.spending)
+        yield alicesSpendingTxo.asyncBuild(commitmentTxo, alice.destination)
 
         should.exist(alicesSpendingTxo)
         txOutMap = new TxOutMap()

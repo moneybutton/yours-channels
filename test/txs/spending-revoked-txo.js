@@ -4,7 +4,7 @@ let should = require('should')
 let asink = require('asink')
 let Agent = require('../../lib/agent.js')
 let Wallet = require('../../lib/wallet.js')
-let SpendingRevokedTxo = require('../../lib/txs/spending-revoked-txo.js')
+let DestinationRevokedTxo = require('../../lib/txs/spending-revoked-txo.js')
 
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let PubKey = require('yours-bitcoin/lib/pub-key')
@@ -13,14 +13,14 @@ let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 let Interp = require('yours-bitcoin/lib/interp')
 let TxOutMap = require('yours-bitcoin/lib/tx-out-map')
 
-describe('SpendingRevokedTxo', function () {
+describe('DestinationRevokedTxo', function () {
   it('should exist', function () {
-    should.exist(SpendingRevokedTxo)
-    should.exist(new SpendingRevokedTxo())
+    should.exist(DestinationRevokedTxo)
+    should.exist(new DestinationRevokedTxo())
   })
 
   describe('#asyncBuild', function () {
-    it('should create spending tx', function () {
+    it('should create destination tx', function () {
       return asink(function *() {
         // each party initializes itself locally
         let alice = new Agent('Alice')
@@ -49,8 +49,8 @@ describe('SpendingRevokedTxo', function () {
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
         commitmentTxo = alice.commitmentTxos[0]
-        let bobsSpendingTxo = new SpendingRevokedTxo()
-        yield bobsSpendingTxo.asyncBuild(commitmentTxo, bob.spending)
+        let bobsSpendingTxo = new DestinationRevokedTxo()
+        yield bobsSpendingTxo.asyncBuild(commitmentTxo, bob.destination)
 
         should.exist(bobsSpendingTxo)
 
@@ -65,8 +65,8 @@ describe('SpendingRevokedTxo', function () {
 
         // same test for alice
         commitmentTxo = alice.commitmentTxos[0]
-        let alicesSpendingTxo = new SpendingRevokedTxo()
-        yield alicesSpendingTxo.asyncBuild(commitmentTxo, alice.spending)
+        let alicesSpendingTxo = new DestinationRevokedTxo()
+        yield alicesSpendingTxo.asyncBuild(commitmentTxo, alice.destination)
 
         should.exist(alicesSpendingTxo)
         txOutMap = new TxOutMap()

@@ -4,7 +4,7 @@ let should = require('should')
 let asink = require('asink')
 let Agent = require('../../lib/agent.js')
 let Wallet = require('../../lib/wallet.js')
-let SpendingOtherTxo = require('../../lib/txs/spending-other-txo.js')
+let DestinationOtherTxo = require('../../lib/txs/spending-other-txo.js')
 
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let PubKey = require('yours-bitcoin/lib/pub-key')
@@ -12,14 +12,14 @@ let BN = require('yours-bitcoin/lib/bn')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 let Interp = require('yours-bitcoin/lib/interp')
 
-describe('SpendingOtherTxo', function () {
+describe('DestinationOtherTxo', function () {
   it('should exist', function () {
-    should.exist(SpendingOtherTxo)
-    should.exist(new SpendingOtherTxo())
+    should.exist(DestinationOtherTxo)
+    should.exist(new DestinationOtherTxo())
   })
 
   describe('#asyncBuild', function () {
-    it('should create spending tx', function () {
+    it('should create destination tx', function () {
       return asink(function *() {
         // each party initializes itself locally
         let alice = new Agent('Alice')
@@ -47,8 +47,8 @@ describe('SpendingOtherTxo', function () {
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
         commitmentTxo = alice.commitmentTxos[0]
-        let bobsSpendingTxo = new SpendingOtherTxo()
-        yield bobsSpendingTxo.asyncBuild(commitmentTxo, bob.spending)
+        let bobsSpendingTxo = new DestinationOtherTxo()
+        yield bobsSpendingTxo.asyncBuild(commitmentTxo, bob.destination)
 
         should.exist(bobsSpendingTxo)
         txVerifier = new TxVerifier(bobsSpendingTxo.txb.tx, bobsSpendingTxo.txb.uTxOutMap)
@@ -60,8 +60,8 @@ describe('SpendingOtherTxo', function () {
 
         // same test for alice
         commitmentTxo = bob.commitmentTxos[0]
-        let alicesSpendingTxo = new SpendingOtherTxo()
-        yield alicesSpendingTxo.asyncBuild(commitmentTxo, alice.spending)
+        let alicesSpendingTxo = new DestinationOtherTxo()
+        yield alicesSpendingTxo.asyncBuild(commitmentTxo, alice.destination)
 
         should.exist(alicesSpendingTxo)
         txVerifier = new TxVerifier(alicesSpendingTxo.txb.tx, alicesSpendingTxo.txb.uTxOutMap)

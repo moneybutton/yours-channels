@@ -39,13 +39,13 @@ describe('CommitmentTxo', function () {
         let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
 
         alice.fundingTxo = new FundingTxo()
-        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
         alice.commitmentTx = new CommitmentTxo
         alice.commitmentTx.initializeOtherSecrets(bob.getCommitmentTxo().htlcSecret, bob.getCommitmentTxo().revocationSecret)
         alice.commitmentTx.initializeSecrets(alice.getCommitmentTxo().htlcSecret, alice.getCommitmentTxo().revocationSecret)
         yield alice.commitmentTx.asyncInitialize(Bn(5e7), Bn(5e7), alice.fundingTxo,
-          alice.multisig, alice.spending, alice.other.spending, alice.funder)
+          alice.multisig, alice.destination, alice.other.destination, alice.funder)
 
         let txVerifier = new TxVerifier(alice.commitmentTx.txb.tx, alice.commitmentTx.txb.uTxOutMap)
         let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
@@ -88,7 +88,7 @@ describe('CommitmentTxo', function () {
         alice.commitmentTx.initializeOtherSecrets(bob.getCommitmentTxo().htlcSecret, bob.getCommitmentTxo().revocationSecret)
         alice.commitmentTx.initializeSecrets(alice.getCommitmentTxo().htlcSecret, alice.getCommitmentTxo().revocationSecret)
         yield alice.commitmentTx.asyncInitialize(Bn(5e7), Bn(5e7), alice.fundingTxo,
-          alice.multisig, alice.spending, alice.other.spending, alice.funder)
+          alice.multisig, alice.destination, alice.other.destination, alice.funder)
 
         let json = alice.commitmentTx.toJSON()
 
@@ -130,7 +130,7 @@ describe('CommitmentTxo', function () {
         alice.commitmentTx.initializeOtherSecrets(bob.getCommitmentTxo().htlcSecret, bob.getCommitmentTxo().revocationSecret)
         alice.commitmentTx.initializeSecrets(alice.getCommitmentTxo().htlcSecret, alice.getCommitmentTxo().revocationSecret)
         yield alice.commitmentTx.asyncInitialize(Bn(5e7), Bn(5e7), alice.fundingTxo,
-          alice.multisig, alice.spending, alice.other.spending, alice.funder)
+          alice.multisig, alice.destination, alice.other.destination, alice.funder)
 
         let json = alice.commitmentTx.toJSON()
 
@@ -168,13 +168,13 @@ describe('CommitmentTxo', function () {
         let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
 
         alice.fundingTxo = new FundingTxo()
-        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
         alice.commitmentTxo = new CommitmentTxo
         alice.commitmentTxo.initializeOtherSecrets(bob.getCommitmentTxo().htlcSecret, bob.getCommitmentTxo().revocationSecret)
         alice.commitmentTxo.initializeSecrets(alice.getCommitmentTxo().htlcSecret, alice.getCommitmentTxo().revocationSecret)
         yield alice.commitmentTxo.asyncInitialize(Bn(5e7), Bn(5e7), alice.fundingTxo,
-          alice.multisig, alice.spending, alice.other.spending, alice.funder)
+          alice.multisig, alice.destination, alice.other.destination, alice.funder)
 
         let txo = alice.commitmentTxo.toPublic()
 

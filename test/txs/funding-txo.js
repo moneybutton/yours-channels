@@ -42,7 +42,7 @@ describe('FundingTxo', function () {
         let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
 
         alice.fundingTxo = new FundingTxo()
-        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
         let txVerifier = new TxVerifier(alice.fundingTxo.txb.tx, alice.fundingTxo.txb.uTxOutMap)
         let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
@@ -153,7 +153,7 @@ describe('FundingTxo', function () {
         let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
 
         bob.fundingTxo = new FundingTxo()
-        yield bob.fundingTxo.asyncInitialize(fundingAmount, alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        yield bob.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
         let publicFundingTxo = yield bob.fundingTxo.asyncToPublic()
 

@@ -254,7 +254,7 @@ describe('Script Examples', function () {
   })
 
   describe('Hash Time Lock (HTL)', function () {
-    it('should enable spending funds when sig and value that hashes correctly is in input', function () {
+    it('should enable destination funds when sig and value that hashes correctly is in input', function () {
       // This example spends to an output that requires both a signature and some
       // secret value secretbuf which correctly hashes to hashbuf
       //
@@ -294,7 +294,7 @@ describe('Script Examples', function () {
       Txverifier.verify(txb.tx, txb.utxoutmap, Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY).should.equal(true)
     })
 
-    it('should enable spending funds when sig and value that hashes correctly is in input with a p2sh transaction', function () {
+    it('should enable destination funds when sig and value that hashes correctly is in input with a p2sh transaction', function () {
       // This example is almost the same as the previous one, except that the
       // funding transaction is p2sh. It spends to an output that requires both
       // a signature and some secret value secretbuf which correctly hashes to
@@ -629,8 +629,8 @@ describe('Script Examples', function () {
       Txverifier(alice.commitmentTxbs[1].tx, alice.commitmentTxbs[1].utxoutmap).verifystr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false) // verifystr returns a string on error, or false if the tx is valid
 
       // Only Alice has her fully signed commitment tx. Alice can revoke the
-      // output spending to herself. Bob also needs a fully signed commitment
-      // tx, where he can revoke the output spending to himself.
+      // output destination to herself. Bob also needs a fully signed commitment
+      // tx, where he can revoke the output destination to himself.
 
       // Bob makes the revokable output script for herself
       bob.RHTLCOutputScripts[1] = makeRHTLCOutputScript(bob.otherPaymentKeys.pubkey, bob.paymentKeys.pubkey, bob.RHTLCSecrets[1].hash, bob.otherHTLCSecrets[1].hash)

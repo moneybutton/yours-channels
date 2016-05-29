@@ -26,10 +26,10 @@ describe('CnlTxBuilder', function () {
         let bob = new Agent('Bob')
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
 
-        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield alice.asyncInitializeOther(bob.destination.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
         yield alice.asyncInitializeMultisig()
 
-        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield bob.asyncInitializeOther(alice.destination.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
         yield bob.asyncInitializeMultisig()
 
         // build output to be spent in funding transaction
@@ -67,9 +67,9 @@ describe('CnlTxBuilder', function () {
         let bob = new Agent('Bob')
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
 
-        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield alice.asyncInitializeOther(bob.destination.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
         yield alice.asyncInitializeMultisig()
-        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield bob.asyncInitializeOther(alice.destination.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
         yield bob.asyncInitializeMultisig()
 
         let wallet = new Wallet()
@@ -80,7 +80,7 @@ describe('CnlTxBuilder', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.toPublic())
         bob.setOtherRevocationSecret(alice.revocationSecret.toPublic())
 
-        let {txb, htlcOutNum, rhtlcOutNum} = yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.fundingTx, alice.multisig, alice.other, alice.htlcSecret, alice.funder)
+        let {txb, htlcOutNum, rhtlcOutNum} = yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.destination, alice.fundingTx, alice.multisig, alice.other, alice.htlcSecret, alice.funder)
 
         let txVerifier = new TxVerifier(txb.tx, txb.uTxOutMap)
         let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
@@ -108,10 +108,10 @@ describe('CnlTxBuilder', function () {
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         // bob.funder = true
 
-        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield alice.asyncInitializeOther(bob.destination.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
         yield alice.asyncInitializeMultisig()
 
-        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield bob.asyncInitializeOther(alice.destination.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
         yield bob.asyncInitializeMultisig()
 
         let wallet = new Wallet()
@@ -125,7 +125,7 @@ describe('CnlTxBuilder', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.toPublic())
         bob.setOtherRevocationSecret(alice.revocationSecret.toPublic())
 
-        let commitmentObj = yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.fundingTx, alice.multisig, alice.other, alice.htlcSecret, alice.funder)
+        let commitmentObj = yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.destination, alice.fundingTx, alice.multisig, alice.other, alice.htlcSecret, alice.funder)
         alice.setOtherCommitmentTxo(commitmentObj)
         yield bob.asyncCheckCommitmentTxo(alice.other.commitmentTxb, alice.other.htlcRedeemScript, alice.other.rhtlcRedeemScript)
 
@@ -135,7 +135,7 @@ describe('CnlTxBuilder', function () {
         let bobsSpendingTxb = yield CnlTxBuilder.asyncBuildSpendingTx(
           bob.commitmentTxb.tx,
           bob.htlcRedeemScript,
-          bob.spending,
+          bob.destination,
           bob.htlcSecret,
           bob.htlcOutNum)
         txVerifier = new TxVerifier(bobsSpendingTxb.tx, bobsSpendingTxb.uTxOutMap)
@@ -159,10 +159,10 @@ describe('CnlTxBuilder', function () {
         let bob = new Agent('Bob')
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
 
-        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield alice.asyncInitializeOther(bob.destination.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
         yield alice.asyncInitializeMultisig()
 
-        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield bob.asyncInitializeOther(alice.destination.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
         yield bob.asyncInitializeMultisig()
 
         let wallet = new Wallet()
@@ -175,11 +175,11 @@ describe('CnlTxBuilder', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.toPublic())
         bob.setOtherRevocationSecret(alice.revocationSecret.toPublic())
 
-        // let aliceCommitmentObj = yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.fundingTx, alice.multisig, alice.other, alice.htlcSecret, alice.funder)
+        // let aliceCommitmentObj = yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.destination, alice.fundingTx, alice.multisig, alice.other, alice.htlcSecret, alice.funder)
         // alice.setOtherCommitmentTxo(aliceCommitmentObj)
         // yield bob.asyncCheckCommitmentTxo(alice.other.commitmentTxb, alice.other.htlcRedeemScript, alice.other.rhtlcRedeemScript)
 
-        let bobCommitmentObj = yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), bob.spending, bob.fundingTx, bob.multisig, bob.other, bob.htlcSecret, bob.funder)
+        let bobCommitmentObj = yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), bob.destination, bob.fundingTx, bob.multisig, bob.other, bob.htlcSecret, bob.funder)
         bob.setOtherCommitmentTxo(bobCommitmentObj)
         yield alice.asyncCheckCommitmentTxo(bob.other.commitmentTxb, bob.other.htlcRedeemScript, bob.other.rhtlcRedeemScript)
 
@@ -190,7 +190,7 @@ describe('CnlTxBuilder', function () {
         let alicesSpendingTxb = yield CnlTxBuilder.asyncBuildOtherSpendingTx(
           bob.commitmentTxb.tx,
           alice.other.rhtlcRedeemScript,
-          alice.spending,
+          alice.destination,
           alice.htlcSecret,
           alice.other.rhtlcOutNum)
 
@@ -216,10 +216,10 @@ describe('CnlTxBuilder', function () {
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         // bob.funder = true
 
-        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield alice.asyncInitializeOther(bob.destination.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
         yield alice.asyncInitializeMultisig()
 
-        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield bob.asyncInitializeOther(alice.destination.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
         yield bob.asyncInitializeMultisig()
 
         let wallet = new Wallet()
@@ -232,11 +232,11 @@ describe('CnlTxBuilder', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.toPublic())
         bob.setOtherRevocationSecret(alice.revocationSecret.toPublic())
 
-        let aliceCommitmentObj = yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.fundingTx, alice.multisig, alice.other, alice.htlcSecret, alice.funder)
+        let aliceCommitmentObj = yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.destination, alice.fundingTx, alice.multisig, alice.other, alice.htlcSecret, alice.funder)
         alice.setOtherCommitmentTxo(aliceCommitmentObj)
         yield bob.asyncCheckCommitmentTxo(alice.other.commitmentTxb, alice.other.htlcRedeemScript, alice.other.rhtlcRedeemScript)
 
-        let bobCommitmentObj = yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), bob.spending, bob.fundingTx, bob.multisig, bob.other, bob.htlcSecret, bob.funder)
+        let bobCommitmentObj = yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), bob.destination, bob.fundingTx, bob.multisig, bob.other, bob.htlcSecret, bob.funder)
         bob.setOtherCommitmentTxo(bobCommitmentObj)
         yield alice.asyncCheckCommitmentTxo(bob.other.commitmentTxb, bob.other.htlcRedeemScript, bob.other.rhtlcRedeemScript)
 
@@ -245,7 +245,7 @@ describe('CnlTxBuilder', function () {
         let bobsSpendingTxb = yield CnlTxBuilder.asyncBuildHtlcEnforcementTx(
           bob.commitmentTxb.tx,
           bob.htlcRedeemScript,
-          bob.spending,
+          bob.destination,
           bob.htlcOutNum)
         txVerifier = new TxVerifier(bobsSpendingTxb.tx, bobsSpendingTxb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
@@ -266,10 +266,10 @@ describe('CnlTxBuilder', function () {
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         bob.funder = true
 
-        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield alice.asyncInitializeOther(bob.destination.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
         yield alice.asyncInitializeMultisig()
 
-        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield bob.asyncInitializeOther(alice.destination.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
         yield bob.asyncInitializeMultisig()
 
         let wallet = new Wallet()
@@ -282,12 +282,12 @@ describe('CnlTxBuilder', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.toPublic())
         bob.setOtherRevocationSecret(alice.revocationSecret.toPublic())
 
-        alice.setOtherCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.fundingTx, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setOtherCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.destination, alice.fundingTx, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncCheckCommitmentTxo(alice.commitmentTxb)
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
         let txVerifier, error
-        let bobsSpendingTxb = yield CnlTxBuilder.asyncBuildHtlcEnforcementTx(bob.commitmentTxb.tx, bob.spending, bob.htlcOutNum)
+        let bobsSpendingTxb = yield CnlTxBuilder.asyncBuildHtlcEnforcementTx(bob.commitmentTxb.tx, bob.destination, bob.htlcOutNum)
 
         txVerifier = new TxVerifier(bobsSpendingTxb.tx, bobsSpendingTxb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
@@ -311,10 +311,10 @@ describe('CnlTxBuilder', function () {
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         // bob.funder = true
 
-        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield alice.asyncInitializeOther(bob.destination.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
         yield alice.asyncInitializeMultisig()
 
-        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield bob.asyncInitializeOther(alice.destination.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
         yield bob.asyncInitializeMultisig()
 
         let wallet = new Wallet()
@@ -327,12 +327,12 @@ describe('CnlTxBuilder', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.toPublic())
         bob.setOtherRevocationSecret(alice.revocationSecret.toPublic())
 
-        alice.setOtherCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.fundingTx, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setOtherCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.destination, alice.fundingTx, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncCheckCommitmentTxo(alice.commitmentTxb)
 
         // Alice cannot spend using asyncBuildHtlcEnforcementTx, she must use asyncBuildOtherHtlcEnforcementTx
         let txVerifier, error
-        let alicesSpendingTxb = yield CnlTxBuilder.asyncBuildHtlcEnforcementTx(bob.commitmentTxb.tx, alice.spending, alice.htlcOutNum)
+        let alicesSpendingTxb = yield CnlTxBuilder.asyncBuildHtlcEnforcementTx(bob.commitmentTxb.tx, alice.destination, alice.htlcOutNum)
 
         txVerifier = new TxVerifier(alicesSpendingTxb.tx, alicesSpendingTxb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
@@ -353,10 +353,10 @@ describe('CnlTxBuilder', function () {
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         bob.funder = true
 
-        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield alice.asyncInitializeOther(bob.destination.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
         yield alice.asyncInitializeMultisig()
 
-        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield bob.asyncInitializeOther(alice.destination.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
         yield bob.asyncInitializeMultisig()
 
         let wallet = new Wallet()
@@ -369,12 +369,12 @@ describe('CnlTxBuilder', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.toPublic())
         bob.setOtherRevocationSecret(alice.revocationSecret.toPublic())
 
-        alice.setOtherCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.fundingTx, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setOtherCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.destination, alice.fundingTx, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncCheckCommitmentTxo(alice.commitmentTxb)
         let txVerifier, error
 
         // Alice cannot spend using asyncBuildHtlcEnforcementTx, she must use asyncBuildOtherHtlcEnforcementTx
-        let alicesSpendingTxb = yield CnlTxBuilder.asyncBuildHtlcEnforcementTx(bob.commitmentTxb.tx, alice.spending, alice.htlcOutNum)
+        let alicesSpendingTxb = yield CnlTxBuilder.asyncBuildHtlcEnforcementTx(bob.commitmentTxb.tx, alice.destination, alice.htlcOutNum)
 
         txVerifier = new TxVerifier(alicesSpendingTxb.tx, alicesSpendingTxb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
@@ -398,10 +398,10 @@ describe('CnlTxBuilder', function () {
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         // bob.funder = true
 
-        yield alice.asyncInitializeOther(bob.spending.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield alice.asyncInitializeOther(bob.destination.keyPair.pubKey, bob.multisig.pubKey, bob.htlcSecret.toPublic())
         yield alice.asyncInitializeMultisig()
 
-        yield bob.asyncInitializeOther(alice.spending.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
+        yield bob.asyncInitializeOther(alice.destination.keyPair.pubKey, alice.multisig.pubKey, bob.htlcSecret.toPublic())
         yield bob.asyncInitializeMultisig()
 
         let wallet = new Wallet()
@@ -414,14 +414,14 @@ describe('CnlTxBuilder', function () {
         alice.setOtherRevocationSecret(bob.revocationSecret.toPublic())
         bob.setOtherRevocationSecret(alice.revocationSecret.toPublic())
 
-        alice.setOtherCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.spending, alice.fundingTx, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
+        alice.setOtherCommitmentTxo(yield CnlTxBuilder.asyncBuildCommitmentTxo(BN(5e7), BN(5e7), alice.destination, alice.fundingTx, alice.multisig, alice.other, alice.htlcSecret, alice.funder))
         yield bob.asyncCheckCommitmentTxo(alice.commitmentTxb)
         let txVerifier, error
 
         yield alice.checkRevocationSecret(bob.revocationSecret)
 
         // once Bob's commitment tranaction is on the blockchain, he can spend his output like this:
-        let bobsSpendingTxb = yield CnlTxBuilder.asyncSpendRevokedCommitmentTx(bob.commitmentTxb.tx, alice.other, alice.spending, alice.revocationSecret, alice.rhtlcOutNum)
+        let bobsSpendingTxb = yield CnlTxBuilder.asyncSpendRevokedCommitmentTx(bob.commitmentTxb.tx, alice.other, alice.destination, alice.revocationSecret, alice.rhtlcOutNum)
         txVerifier = new TxVerifier(bobsSpendingTxb.tx, bobsSpendingTxb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         should.exist(bobsSpendingTxb)
