@@ -2,7 +2,7 @@
 'use strict'
 let should = require('should')
 let asink = require('asink')
-let Secret = require('../lib/secret.js')
+let Secret = require('../../lib/scrts/secret.js')
 
 describe('Secret', function () {
   it('should exist', function () {

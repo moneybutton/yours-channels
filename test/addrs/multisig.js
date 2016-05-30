@@ -2,7 +2,7 @@
 'use strict'
 let should = require('should')
 let asink = require('asink')
-let Multisig = require('../lib/multisig.js')
+let Multisig = require('../../lib/addrs/multisig.js')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let PubKey = require('yours-bitcoin/lib/pub-key')
 
