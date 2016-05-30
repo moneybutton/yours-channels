@@ -3,12 +3,10 @@
 let should = require('should')
 let asink = require('asink')
 let CommitmentTxo = require('../../lib/txs/commitment-txo.js')
-let Secret = require('../../lib/scrts/secret.js')
 let FundingTxo = require('../../lib/txs/funding-txo.js')
 let Agent = require('../../lib/agent.js')
 let Wallet = require('../../lib/wallet.js')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
-let PubKey = require('yours-bitcoin/lib/pub-key')
 let Bn = require('yours-bitcoin/lib/bn')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 let Interp = require('yours-bitcoin/lib/interp')
@@ -41,7 +39,7 @@ describe('CommitmentTxo', function () {
         alice.fundingTxo = new FundingTxo()
         yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
-        alice.commitmentTx = new CommitmentTxo
+        alice.commitmentTx = new CommitmentTxo()
         alice.commitmentTx.initializeOtherSecrets(bob.getCommitmentTxo().htlcSecret, bob.getCommitmentTxo().revocationSecret)
         alice.commitmentTx.initializeSecrets(alice.getCommitmentTxo().htlcSecret, alice.getCommitmentTxo().revocationSecret)
         yield alice.commitmentTx.asyncInitialize(Bn(5e7), Bn(5e7), alice.fundingTxo,
@@ -84,7 +82,7 @@ describe('CommitmentTxo', function () {
         alice.fundingTxo = new FundingTxo()
         yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
-        alice.commitmentTx = new CommitmentTxo
+        alice.commitmentTx = new CommitmentTxo()
         alice.commitmentTx.initializeOtherSecrets(bob.getCommitmentTxo().htlcSecret, bob.getCommitmentTxo().revocationSecret)
         alice.commitmentTx.initializeSecrets(alice.getCommitmentTxo().htlcSecret, alice.getCommitmentTxo().revocationSecret)
         yield alice.commitmentTx.asyncInitialize(Bn(5e7), Bn(5e7), alice.fundingTxo,
@@ -126,7 +124,7 @@ describe('CommitmentTxo', function () {
         alice.fundingTxo = new FundingTxo()
         yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
-        alice.commitmentTx = new CommitmentTxo
+        alice.commitmentTx = new CommitmentTxo()
         alice.commitmentTx.initializeOtherSecrets(bob.getCommitmentTxo().htlcSecret, bob.getCommitmentTxo().revocationSecret)
         alice.commitmentTx.initializeSecrets(alice.getCommitmentTxo().htlcSecret, alice.getCommitmentTxo().revocationSecret)
         yield alice.commitmentTx.asyncInitialize(Bn(5e7), Bn(5e7), alice.fundingTxo,
@@ -169,7 +167,7 @@ describe('CommitmentTxo', function () {
         alice.fundingTxo = new FundingTxo()
         yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
-        alice.commitmentTxo = new CommitmentTxo
+        alice.commitmentTxo = new CommitmentTxo()
         alice.commitmentTxo.initializeOtherSecrets(bob.getCommitmentTxo().htlcSecret, bob.getCommitmentTxo().revocationSecret)
         alice.commitmentTxo.initializeSecrets(alice.getCommitmentTxo().htlcSecret, alice.getCommitmentTxo().revocationSecret)
         yield alice.commitmentTxo.asyncInitialize(Bn(5e7), Bn(5e7), alice.fundingTxo,
@@ -196,7 +194,6 @@ describe('CommitmentTxo', function () {
         should.exist(txo.revocationSecret)
         should.exist(txo.revocationSecret.hash)
         should.not.exist(txo.revocationSecret.buf)
-
       }, this)
     })
   })

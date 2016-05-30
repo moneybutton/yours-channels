@@ -4,8 +4,9 @@
   "description": "Payment channels for fullnode.",
   "main": "index.js",
   "scripts": {
-    "test-format": "./node_modules/.bin/standard lib/*.js test/*.js",
-    "test": "npm run test-format && ./node_modules/.bin/mocha"
+    "test-format": "./node_modules/.bin/standard lib/*.js test/*.js lib/*/*.js test/*/*.js",
+    "test": "npm run test-format && npm run mocha",
+    "mocha": "./node_modules/.bin/mocha test/*.js test/*/*.js"
   },
   "repository": {
     "type": "git",

@@ -3,11 +3,9 @@
 let should = require('should')
 let asink = require('asink')
 let Agent = require('../../lib/agent.js')
-let Wallet = require('../../lib/wallet.js')
 let DestinationOwnTxo = require('../../lib/txs/spending-own-txo.js')
 
 let PrivKey = require('yours-bitcoin/lib/priv-key')
-let PubKey = require('yours-bitcoin/lib/pub-key')
 let BN = require('yours-bitcoin/lib/bn')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 let TxOutMap = require('yours-bitcoin/lib/tx-out-map')
@@ -103,11 +101,9 @@ describe('DestinationOwnTxo', function () {
 
         yield bob.asyncSend(BN(4e5), BN(6e5))
 
-        let txVerifier, error, commitmentTxo, txOutMap
-
         // it is important that bob cannot spend the transactions in the other.commitmentTxos array
         try {
-          commitmentTxo = bob.other.commitmentTxos[0]
+          let commitmentTxo = bob.other.commitmentTxos[0]
           let bobsSpendingTxo = new DestinationOwnTxo()
           yield bobsSpendingTxo.asyncBuild(commitmentTxo, bob.destination)
 

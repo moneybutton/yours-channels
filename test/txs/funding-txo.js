@@ -7,7 +7,6 @@ let Wallet = require('../../lib/wallet.js')
 let FundingTxo = require('../../lib/txs/funding-txo.js')
 
 let PrivKey = require('yours-bitcoin/lib/priv-key')
-let PubKey = require('yours-bitcoin/lib/pub-key')
 let Bn = require('yours-bitcoin/lib/bn')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 let Interp = require('yours-bitcoin/lib/interp')
