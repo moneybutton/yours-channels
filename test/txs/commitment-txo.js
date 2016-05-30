@@ -18,7 +18,7 @@ describe('CommitmentTxo', function () {
   })
 
   describe('#asyncInitialize', function () {
-    it('asyncInitialize should create a partial payment tx', function () {
+    it('should create a partial payment tx', function () {
       return asink(function *() {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -61,7 +61,7 @@ describe('CommitmentTxo', function () {
   })
 
   describe('#toJSON', function () {
-    it('toJSON should create a json object', function () {
+    it('should create a json object', function () {
       return asink(function *() {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -103,7 +103,7 @@ describe('CommitmentTxo', function () {
   })
 
   describe('#fromJSON', function () {
-    it('fromJSON should create CommitmentTxo from a json object', function () {
+    it('should create CommitmentTxo from a json object', function () {
       return asink(function *() {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -146,7 +146,7 @@ describe('CommitmentTxo', function () {
   })
 
   describe('#toPublic', function () {
-    it('toPublic should create a public CommitmentTxo object', function () {
+    it('should create a public CommitmentTxo object', function () {
       return asink(function *() {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())

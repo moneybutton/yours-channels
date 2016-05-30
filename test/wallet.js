@@ -19,7 +19,7 @@ describe('Wallet', function () {
   })
 
   describe('#getUnspentOutput', function () {
-    it('getUnspentOutput should return an unspent output', function () {
+    it('should return an unspent output', function () {
       return asink(function *() {
         let wallet = new Wallet()
         let output = wallet.getUnspentOutput(Bn(1e8), address)

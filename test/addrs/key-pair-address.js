@@ -12,12 +12,12 @@ describe('KeyPairAddress', function () {
   })
 
   describe('#asyncInitialize', function () {
-    it('asyncInitialize should exist', function () {
+    it('should exist', function () {
       let keyPairAddress = new KeyPairAddress()
       should.exist(keyPairAddress.asyncInitialize)
     })
 
-    it('asyncInitialize should set a multisig script and address', function () {
+    it('should set a multisig script and address', function () {
       return asink(function *() {
         let keyPairAddress = new KeyPairAddress()
         yield keyPairAddress.asyncInitialize(PrivKey.fromRandom())
@@ -28,7 +28,7 @@ describe('KeyPairAddress', function () {
   })
 
   describe('#toJSON', function () {
-    it('toJSON should convert into a json object', function () {
+    it('should convert into a json object', function () {
       return asink(function *() {
         let keyPairAddress = new KeyPairAddress()
         yield keyPairAddress.asyncInitialize(PrivKey.fromRandom())
@@ -51,7 +51,7 @@ describe('KeyPairAddress', function () {
   })
 
   describe('#fromJSON', function () {
-    it('fromJSON should convert from a json object', function () {
+    it('should convert from a json object', function () {
       return asink(function *() {
         let keyPairAddressObj = new KeyPairAddress()
         yield keyPairAddressObj.asyncInitialize(PrivKey.fromRandom())

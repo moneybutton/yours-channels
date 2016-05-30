@@ -343,7 +343,7 @@ describe('Agent', function () {
   })
 
   describe('#toJSON', function () {
-    it('toJSON should convert into a json object', function () {
+    it('should convert into a json object', function () {
       return asink(function *() {
         // each party initializes itself locally
         let alice = new Agent('Alice')
@@ -402,7 +402,7 @@ describe('Agent', function () {
       }, this)
     })
 
-    it('toJSON should convert into a json object after toPublic has been called', function () {
+    it('should convert into a json object after toPublic has been called', function () {
       return asink(function *() {
         // each party initializes itself locally
         let alice = new Agent('Alice')
@@ -460,7 +460,7 @@ describe('Agent', function () {
   })
 
   describe('#formJson', function () {
-    it('fromJSON should convert from a json object', function () {
+    it('should convert from a json object', function () {
       return asink(function *() {
         // each party initializes itself locally
         let alice = new Agent('Alice')
@@ -504,7 +504,7 @@ describe('Agent', function () {
   })
 
   describe('#toPublic', function () {
-    it('toPublic should convert from a json object', function () {
+    it('should convert from a json object', function () {
       return asink(function *() {
         // each party initializes itself locally
         let alice = new Agent('Alice')

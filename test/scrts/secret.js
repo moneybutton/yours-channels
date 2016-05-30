@@ -11,7 +11,7 @@ describe('Secret', function () {
   })
 
   describe('#generateBuf', function () {
-    it('generateBuf should generate a buffer', function () {
+    it('should generate a buffer', function () {
       return asink(function *() {
         let secret = new Secret()
         secret.generateBuf()
@@ -21,7 +21,7 @@ describe('Secret', function () {
   })
 
   describe('#asyncGenerateHash', function () {
-    it('asyncGenerateHash should generate a hash', function () {
+    it('should generate a hash', function () {
       return asink(function *() {
         let secret = new Secret()
         secret.generateBuf()
@@ -47,7 +47,7 @@ describe('Secret', function () {
   })
 
   describe('#toPublic', function () {
-    it('toPublic should remove the buf from a secret', function () {
+    it('should remove the buf from a secret', function () {
       return asink(function *() {
         let secret = new Secret()
         secret.generateBuf()
@@ -67,7 +67,7 @@ describe('Secret', function () {
   })
 
   describe('#toJSON', function () {
-    it('toJSON should return a Json file', function () {
+    it('should return a Json file', function () {
       return asink(function *() {
         let secret = new Secret()
         secret.generateBuf()
@@ -80,7 +80,7 @@ describe('Secret', function () {
   })
 
   describe('#fromJSON', function () {
-    it('fromJSON should return a Json file', function () {
+    it('sshould return a Json file', function () {
       return asink(function *() {
         let secret = new Secret()
         yield secret.asyncInitialize()
