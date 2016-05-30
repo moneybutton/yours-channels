@@ -32,15 +32,15 @@ describe('Secret', function () {
     })
   })
 
-  describe('#asyncCheck', function () {
-    it('asyncCheck should check if buf hashes to hash', function () {
+  describe('#asyncSuperCheck', function () {
+    it('should check if buf hashes to hash', function () {
       return asink(function *() {
         let secret = new Secret()
         secret.generateBuf()
         should.exist(secret.buf)
         yield secret.asyncGenerateHash()
         should.exist(secret.hash)
-        let result = yield secret.asyncCheck()
+        let result = yield secret.asyncSuperCheck()
         result.should.equal(true)
       }, this)
     })
