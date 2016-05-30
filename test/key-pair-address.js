@@ -28,7 +28,7 @@ describe('KeyPairAddress', function () {
   })
 
   describe('#toJSON', function () {
-    it.skip('toJSON should convert into a json object', function () {
+    it('toJSON should convert into a json object', function () {
       return asink(function *() {
         let keyPairAddress = new KeyPairAddress()
         yield keyPairAddress.asyncInitialize(PrivKey.fromRandom())
@@ -40,6 +40,7 @@ describe('KeyPairAddress', function () {
 
         let publicKeyPairAddress = keyPairAddress.toPublic()
         let publicJson = publicKeyPairAddress.toJSON()
+
         should.exist(publicJson.address)
         should.exist(publicJson.keyPair)
         should.exist(publicJson.keyPair.pubKey)
@@ -49,13 +50,13 @@ describe('KeyPairAddress', function () {
     })
   })
 
-  describe('#fromJson', function () {
-    it.skip('fromJson should convert from a json object', function () {
+  describe('#fromJSON', function () {
+    it('fromJSON should convert from a json object', function () {
       return asink(function *() {
         let keyPairAddressObj = new KeyPairAddress()
         yield keyPairAddressObj.asyncInitialize(PrivKey.fromRandom())
         let json = keyPairAddressObj.toJSON()
-        let keyPairAddress = new KeyPairAddress().fromJson(json)
+        let keyPairAddress = new KeyPairAddress().fromJSON(json)
 
         should.exist(keyPairAddress.address)
         should.exist(keyPairAddress.keyPair)

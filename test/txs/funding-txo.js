@@ -23,16 +23,14 @@ describe('FundingTxo', function () {
       return asink(function *() {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
-        let publicAlice = yield alice.asyncToPublic()
 
         let bob = new Agent('Bob')
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
-        let publicBob = yield bob.asyncToPublic()
 
-        alice.other = publicBob
+        alice.initializeOther(yield bob.asyncToPublic())
         yield alice.asyncInitializeMultisig()
 
-        bob.other = publicAlice
+        bob.initializeOther(yield alice.asyncToPublic())
         yield bob.asyncInitializeMultisig()
 
         // build output to be spent in funding transaction
@@ -60,20 +58,18 @@ describe('FundingTxo', function () {
   })
 
   describe('#toJSON', function () {
-    it.skip('toJSON should convert into a json object', function () {
+    it('toJSON should convert into a json object', function () {
       return asink(function *() {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
-        let publicAlice = yield alice.asyncToPublic()
 
         let bob = new Agent('Bob')
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
-        let publicBob = yield bob.asyncToPublic()
 
-        alice.other = publicBob
+        alice.initializeOther(yield bob.asyncToPublic())
         yield alice.asyncInitializeMultisig()
 
-        bob.other = publicAlice
+        bob.initializeOther(yield alice.asyncToPublic())
         yield bob.asyncInitializeMultisig()
 
         // build output to be spent in funding transaction
@@ -82,10 +78,10 @@ describe('FundingTxo', function () {
         let wallet = new Wallet()
         let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
 
-        bob.fundingTxo = new FundingTxo()
-        yield bob.fundingTxo.asyncInitialize(fundingAmount, alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        alice.fundingTxo = new FundingTxo()
+        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
-        let json = bob.fundingTxo.toJSON()
+        let json = alice.fundingTxo.toJSON()
 
         should.exist(json.txb)
         should.exist(json.amount)
@@ -93,21 +89,19 @@ describe('FundingTxo', function () {
     })
   })
 
-  describe('#fromJson', function () {
-    it.skip('should convert into a json object', function () {
+  describe('#fromJSON', function () {
+    it('should convert into a json object', function () {
       return asink(function *() {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
-        let publicAlice = yield alice.asyncToPublic()
 
         let bob = new Agent('Bob')
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
-        let publicBob = yield bob.asyncToPublic()
 
-        alice.other = publicBob
+        alice.initializeOther(yield bob.asyncToPublic())
         yield alice.asyncInitializeMultisig()
 
-        bob.other = publicAlice
+        bob.initializeOther(yield alice.asyncToPublic())
         yield bob.asyncInitializeMultisig()
 
         // build output to be spent in funding transaction
@@ -116,12 +110,12 @@ describe('FundingTxo', function () {
         let wallet = new Wallet()
         let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
 
-        bob.fundingTxo = new FundingTxo()
-        yield bob.fundingTxo.asyncInitialize(fundingAmount, alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        alice.fundingTxo = new FundingTxo()
+        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
-        let json = bob.fundingTxo.toJSON()
+        let json = alice.fundingTxo.toJSON()
 
-        let fundingTxo = new FundingTxo().fromJson(json)
+        let fundingTxo = new FundingTxo().fromJSON(json)
 
         should.exist(fundingTxo.txb)
         should.exist(fundingTxo.amount)

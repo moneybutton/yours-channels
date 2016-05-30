@@ -63,7 +63,7 @@ describe('CommitmentTxo', function () {
   })
 
   describe('#toJSON', function () {
-    it.skip('toJSON should create a json object', function () {
+    it('toJSON should create a json object', function () {
       return asink(function *() {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -82,7 +82,7 @@ describe('CommitmentTxo', function () {
         let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
 
         alice.fundingTxo = new FundingTxo()
-        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
         alice.commitmentTx = new CommitmentTxo
         alice.commitmentTx.initializeOtherSecrets(bob.getCommitmentTxo().htlcSecret, bob.getCommitmentTxo().revocationSecret)
@@ -104,8 +104,8 @@ describe('CommitmentTxo', function () {
     })
   })
 
-  describe('#fromJson', function () {
-    it.skip('fromJson should create CommitmentTxo from a json object', function () {
+  describe('#fromJSON', function () {
+    it('fromJSON should create CommitmentTxo from a json object', function () {
       return asink(function *() {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -124,7 +124,7 @@ describe('CommitmentTxo', function () {
         let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
 
         alice.fundingTxo = new FundingTxo()
-        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.funding, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
         alice.commitmentTx = new CommitmentTxo
         alice.commitmentTx.initializeOtherSecrets(bob.getCommitmentTxo().htlcSecret, bob.getCommitmentTxo().revocationSecret)
@@ -133,17 +133,16 @@ describe('CommitmentTxo', function () {
           alice.multisig, alice.destination, alice.other.destination, alice.funder)
 
         let json = alice.commitmentTx.toJSON()
+        let txo = new CommitmentTxo().fromJSON(json)
 
-        let tx = new CommitmentTxo().fromJson(json)
-
-        should.exist(tx)
-        should.exist(tx.txb)
-        should.exist(tx.htlcOutNum)
-        should.exist(tx.rhtlcOutNum)
-        should.exist(tx.htlcRedeemScript)
-        should.exist(tx.rhtlcRedeemScript)
-        should.exist(tx.htlcScriptPubkey)
-        should.exist(tx.rhtlcScriptPubkey)
+        should.exist(txo)
+        should.exist(txo.txb)
+        txo.htlcOutNum.should.equal(1)
+        txo.rhtlcOutNum.should.equal(0)
+        should.exist(txo.htlcRedeemScript)
+        should.exist(txo.rhtlcRedeemScript)
+        should.exist(txo.htlcScriptPubkey)
+        should.exist(txo.rhtlcScriptPubkey)
       }, this)
     })
   })

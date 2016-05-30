@@ -7,7 +7,6 @@ let PrivKey = require('yours-bitcoin/lib/priv-key')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 let Interp = require('yours-bitcoin/lib/interp')
 let BN = require('yours-bitcoin/lib/bn')
-let CommitmentTxo = require('../lib/txs/commitment-txo.js')
 
 let asyncTestSecretChecks = function (secret) {
   return asink(function *() {
@@ -133,63 +132,6 @@ describe('Agent', function () {
         ;(alice.multisig.address.toString()).should.equal(bob.multisig.address.toString())
         ;(alice.multisig.otherPubKey.toString()).should.equal(bob.multisig.pubKey.toString())
         ;(bob.multisig.otherPubKey.toString()).should.equal(alice.multisig.pubKey.toString())
-      }, this)
-    })
-  })
-
-  describe('#checkRevocationSecret', function () {
-    it.skip('checkRevocationSecret stores the other users toPublic htlc and revocation secret', function () {
-      return asink(function *() {
-        let alice = new Agent('Alice')
-        yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
-        let publicAlice = yield alice.asyncToPublic()
-
-        let bob = new Agent('Bob')
-        yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
-        let publicBob = yield bob.asyncToPublic()
-
-        alice.other = publicBob
-        bob.other = publicAlice
-        bob.checkRevocationSecret(alice.nextRevocationSecret.toPublic())
-
-        should.exist(bob.other.nextRevocationSecret)
-        should.not.exist(bob.other.nextRevocationSecret.buf)
-      }, this)
-    })
-  })
-
-  describe('#asyncCheckCommitmentTxo', function () {
-    it.skip('asyncCheckCommitmentTxo should create a htlc tx, case where Alice funds and Bob accepts', function () {
-      return asink(function *() {
-        // each party initializes itself locally
-        let alice = new Agent('Alice')
-        yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
-        let bob = new Agent('Bob')
-        yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
-
-        // right now Alice and Bob communicate by storing a reference to one another
-        // eventually this will be replaced by some form of remote proceedure calls
-        alice.remoteAgent = bob
-        bob.remoteAgent = alice
-
-        // Alice opens a channel to bob
-        alice.funder = true
-        let publicAlice = yield alice.asyncToPublic()
-        yield alice.asyncOpenChannel(BN(1e6), publicAlice)
-
-        // alice sends some funds to bob
-        alice.sender = true
-        bob.sender = false
-
-        let otherCommitmentTxo = new CommitmentTxo()
-        yield otherCommitmentTxo.asyncInitialize(BN(5e5), BN(5e5),
-          alice.fundingTxo, alice.multisig,
-          alice.destination, alice.other.destination,
-          alice.htlcSecret.toPublic(), alice.other.htlcSecret.toPublic(),
-          bob.nextRevocationSecret, alice.funder)
-
-        let bool = yield bob.asyncCheckCommitmentTxo(otherCommitmentTxo)
-        bool.should.equal(true)
       }, this)
     })
   })
@@ -428,25 +370,17 @@ describe('Agent', function () {
         should.exist(bob.fundingTxo)
         should.exist(bob.wallet)
         should.exist(bob.initialized)
-        /*
-        console.log(Object.keys(bob.funding));
-        console.log(JSON.stringify(bob.source.keyPair));
-        console.log(JSON.stringify(bob.source.address));
-        console.log(JSON.stringify(bob.source.initialized));
-        JSON.stringify(bob.funding);
 
         let json = bob.toJSON()
 
         should.exist(json.name)
-        should.exist(json.funding)
+        should.exist(json.source)
         should.exist(json.multisig)
         should.exist(json.destination)
-        should.exist(json.htlcSecret)
-        should.exist(json.nextRevocationSecret)
+        should.exist(json.commitmentTxos)
+        should.exist(json.initialized)
         should.exist(json.funder)
         should.exist(json.fundingTxo)
-        should.exist(json.wallet)
-        should.exist(json.initialized)
 
         // alice sends some funds to bob
         alice.sender = true
@@ -456,23 +390,19 @@ describe('Agent', function () {
         json = bob.toJSON()
 
         should.exist(json.name)
-        should.exist(json.funding)
+        should.exist(json.source)
         should.exist(json.multisig)
         should.exist(json.destination)
-        should.exist(json.htlcSecret)
-        should.exist(json.nextRevocationSecret)
+        should.exist(json.commitmentTxos)
+        should.exist(json.initialized)
         should.exist(json.funder)
         should.exist(json.fundingTxo)
-        should.exist(json.commitmentTxos)
-        should.exist(json.wallet)
-        should.exist(json.initialized)
-        should.exist(json.sender)
-*/
+
       // just a comment to make jslint not complain
       }, this)
     })
 
-    it.skip('toJSON should convert into a json object after toPublic has been called', function () {
+    it('toJSON should convert into a json object after toPublic has been called', function () {
       return asink(function *() {
         // each party initializes itself locally
         let alice = new Agent('Alice')
@@ -499,15 +429,15 @@ describe('Agent', function () {
         let json = bob.toJSON()
 
         should.exist(json.name)
-        should.exist(json.funding)
+        should.exist(json.source)
         should.exist(json.multisig)
         should.exist(json.destination)
-        should.exist(json.htlcSecret)
-        should.exist(json.nextRevocationSecret)
+        should.exist(json.commitmentTxos)
+        should.exist(json.initialized)
         should.exist(json.funder)
         should.exist(json.fundingTxo)
-        should.exist(json.wallet)
-        should.exist(json.initialized)
+        should.not.exist(json.other)
+        should.not.exist(json.remoteAgent)
 
         // alice sends some funds to bob
         alice.sender = true
@@ -516,23 +446,21 @@ describe('Agent', function () {
         json = bob.toJSON()
 
         should.exist(json.name)
-        should.exist(json.funding)
+        should.exist(json.source)
         should.exist(json.multisig)
         should.exist(json.destination)
-        should.exist(json.htlcSecret)
-        should.exist(json.nextRevocationSecret)
+        should.exist(json.commitmentTxos)
+        should.exist(json.initialized)
         should.exist(json.funder)
         should.exist(json.fundingTxo)
-        should.exist(json.commitmentTxos)
-        should.exist(json.wallet)
-        should.exist(json.initialized)
-        should.exist(json.sender)
+        should.not.exist(json.other)
+        should.not.exist(json.remoteAgent)
       }, this)
     })
   })
 
   describe('#formJson', function () {
-    it.skip('fromJson should convert from a json object', function () {
+    it('fromJSON should convert from a json object', function () {
       return asink(function *() {
         // each party initializes itself locally
         let alice = new Agent('Alice')
@@ -548,11 +476,10 @@ describe('Agent', function () {
         // Alice opens a channel to bob
         alice.funder = true
         bob.funder = false
-        let publicAlice = yield alice.asyncToPublic()
-        yield bob.asyncOpenChannel(BN(1e6), publicAlice)
+        yield bob.asyncOpenChannel(BN(1e6), yield alice.asyncToPublic())
 
         let json = bob.toJSON()
-        let joe = new Agent().fromJson(json)
+        let joe = new Agent().fromJSON(json)
 
         should.exist(joe)
 
@@ -562,40 +489,39 @@ describe('Agent', function () {
         yield bob.asyncSend(BN(4e5), BN(6e5))
 
         json = bob.toJSON()
-        let sue = new Agent().fromJson(json)
+        let sue = new Agent().fromJSON(json)
 
         should.exist(sue.name)
-        should.exist(sue.funding)
+        should.exist(sue.source)
         should.exist(sue.multisig)
         should.exist(sue.destination)
-        should.exist(sue.htlcSecret)
-        should.exist(sue.nextRevocationSecret)
+        should.exist(sue.commitmentTxos)
+        should.exist(sue.initialized)
         should.exist(sue.funder)
         should.exist(sue.fundingTxo)
-        should.exist(sue.commitmentTxos)
-        should.exist(sue.wallet)
-        should.exist(sue.initialized)
-        should.exist(sue.sender)
       }, this)
     })
   })
 
   describe('#toPublic', function () {
-    it.skip('toPublic should convert from a json object', function () {
+    it('toPublic should convert from a json object', function () {
       return asink(function *() {
         // each party initializes itself locally
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         let bob = new Agent('Bob')
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        bob.funder = true
 
-        let berta = yield bob.asyncToPublic()
+        let publicBob = yield bob.asyncToPublic()
 
-        should.exist(berta)
-        should.exist(berta.name)
-        should.exist(berta.funding)
-        should.exist(berta.destination)
-        should.exist(berta.wallet)
+        should.exist(publicBob.name)
+        should.exist(publicBob.source)
+        should.exist(publicBob.multisig)
+        should.exist(publicBob.destination)
+        should.exist(publicBob.commitmentTxos)
+        should.exist(publicBob.initialized)
+        should.exist(publicBob.funder)
 
         // right now Alice and Bob communicate by storing a reference to one another
         // eventually this will be replaced by some form of remote proceedure calls
@@ -608,35 +534,39 @@ describe('Agent', function () {
         let publicAlice = yield alice.asyncToPublic()
         yield bob.asyncOpenChannel(BN(1e6), publicAlice)
 
-        let sue = yield bob.asyncToPublic()
+        publicBob = yield bob.asyncToPublic()
 
-        should.exist(sue)
-        should.exist(sue.name)
-        should.exist(sue.funding)
-        should.exist(sue.multisig)
-        should.exist(sue.destination)
-        should.exist(sue.funder)
-        should.exist(sue.wallet)
-        should.exist(sue.fundingTxo)
+        should.exist(publicBob.name)
+        should.exist(publicBob.source)
+        should.exist(publicBob.multisig)
+        should.exist(publicBob.destination)
+        should.exist(publicBob.commitmentTxos)
+        should.exist(publicBob.initialized)
+        publicBob.funder.should.equal(false)
 
         // alice sends some funds to bob
         alice.sender = true
         bob.sender = false
         yield bob.asyncSend(BN(4e5), BN(6e5))
-        let julie = yield bob.asyncToPublic()
+        publicBob = yield bob.asyncToPublic()
 
-console.log(Object.keys(bob));
+        should.exist(publicBob.name)
+        should.exist(publicBob.source)
+        should.exist(publicBob.multisig)
+        should.exist(publicBob.destination)
+        should.exist(publicBob.commitmentTxos)
+        should.exist(publicBob.initialized)
+        should.exist(publicBob.funder)
 
-        should.exist(julie)
-        should.exist(julie.name)
-        should.exist(julie.funding)
-        should.exist(julie.multisig)
-        should.exist(julie.destination)
-        should.exist(julie.funder)
-        should.exist(julie.wallet)
-        should.exist(julie.sender)
-        should.exist(julie.fundingTxo)
-        should.exist(julie.commitmentTxos)
+        should.exist(publicBob.commitmentTxos[0])
+        should.exist(publicBob.commitmentTxos[0].htlcSecret)
+        yield asyncTestSecretIsHidden(publicBob.commitmentTxos[0].htlcSecret)
+
+        should.exist(publicBob.commitmentTxos[0].revocationSecret)
+        yield asyncTestSecretIsHidden(publicBob.commitmentTxos[0].revocationSecret)
+
+        should.not.exist(publicBob.other)
+        should.not.exist(publicBob.remoteAgent)
       }, this)
     })
   })

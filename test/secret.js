@@ -67,7 +67,7 @@ describe('Secret', function () {
   })
 
   describe('#toJSON', function () {
-    it.skip('toJSON should return a Json file', function () {
+    it('toJSON should return a Json file', function () {
       return asink(function *() {
         let secret = new Secret()
         secret.generateBuf()
@@ -79,14 +79,14 @@ describe('Secret', function () {
     })
   })
 
-  describe('#fromJson', function () {
-    it.skip('fromJson should return a Json file', function () {
+  describe('#fromJSON', function () {
+    it('fromJSON should return a Json file', function () {
       return asink(function *() {
         let secret = new Secret()
         yield secret.asyncInitialize()
 
         let json = secret.toJSON()
-        let otherSecret = new Secret().fromJson(json)
+        let otherSecret = new Secret().fromJSON(json)
         should.exist(otherSecret.buf)
         should.exist(otherSecret.hash)
       }, this)
