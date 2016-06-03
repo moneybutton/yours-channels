@@ -2,6 +2,9 @@
 'use strict'
 let should = require('should')
 let Agent = require('../lib/agent.js')
+let CommitmentTxo = require('../lib/txs/commitment-txo.js')
+let HtlcSecret = require('../lib/scrts/htlc-secret.js')
+let RevocationSecret = require('../lib/scrts/revocation-secret.js')
 let asink = require('asink')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
@@ -27,7 +30,35 @@ let asyncTestSecretIsHidden = function (secret) {
 }
 
 let testSecretsMatch = function (secret1, secret2) {
-  secret1.hash.toString().should.equal(secret2.hash.toString())
+  secret1.hash.toString('hex').should.equal(secret2.hash.toString('hex'))
+}
+
+let asyncTestSecrets = function (txNum, alice, bob) {
+  return asink(function *() {
+    should.exist(alice.commitmentTxos[txNum])
+    should.exist(alice.commitmentTxos[txNum].htlcSecret)
+    should.exist(alice.commitmentTxos[txNum].revocationSecret)
+    yield asyncTestSecretChecks(alice.commitmentTxos[txNum].htlcSecret)
+    yield asyncTestSecretChecks(alice.commitmentTxos[txNum].revocationSecret)
+    yield asyncTestSecretIsHidden(alice.other.commitmentTxos[txNum].revocationSecret)
+    yield asyncTestSecretIsHidden(alice.other.commitmentTxos[txNum].htlcSecret)
+    // check that alices stores the public version of bob's secrets
+    testSecretsMatch(alice.commitmentTxos[txNum].htlcSecret, bob.other.commitmentTxos[txNum].htlcSecret)
+    testSecretsMatch(alice.commitmentTxos[txNum].revocationSecret, bob.other.commitmentTxos[txNum].revocationSecret)
+    testSecretsMatch(alice.commitmentTxos[txNum].otherHtlcSecret, bob.other.commitmentTxos[txNum].otherHtlcSecret)
+    testSecretsMatch(alice.commitmentTxos[txNum].otherRevocationSecret, bob.other.commitmentTxos[txNum].otherRevocationSecret)
+
+    // same tests for bob
+    should.exist(bob.commitmentTxos[txNum])
+    yield asyncTestSecretChecks(bob.commitmentTxos[txNum].revocationSecret)
+    yield asyncTestSecretChecks(bob.commitmentTxos[txNum].htlcSecret)
+    yield asyncTestSecretIsHidden(bob.other.commitmentTxos[txNum].revocationSecret)
+    yield asyncTestSecretIsHidden(bob.other.commitmentTxos[txNum].htlcSecret)
+    testSecretsMatch(bob.commitmentTxos[txNum].revocationSecret, alice.other.commitmentTxos[txNum].revocationSecret)
+    testSecretsMatch(bob.commitmentTxos[txNum].htlcSecret, alice.other.commitmentTxos[txNum].htlcSecret)
+    testSecretsMatch(bob.commitmentTxos[txNum].otherHtlcSecret, alice.other.commitmentTxos[txNum].otherHtlcSecret)
+    testSecretsMatch(bob.commitmentTxos[txNum].otherRevocationSecret, alice.other.commitmentTxos[txNum].otherRevocationSecret)
+  }, this)
 }
 
 describe('Agent', function () {
@@ -155,8 +186,8 @@ describe('Agent', function () {
         alice.remoteAgent = bob
         bob.remoteAgent = alice
 
-        alice.commitmentTxos.length.should.equal(1)
-        bob.commitmentTxos.length.should.equal(1)
+        alice.commitmentTxos.length.should.equal(0)
+        bob.commitmentTxos.length.should.equal(0)
         should.not.exist(alice.other)
         should.not.exist(bob.other)
 
@@ -164,26 +195,33 @@ describe('Agent', function () {
         alice.funder = true
         yield bob.asyncOpenChannel(BN(1e6), yield alice.asyncToPublic())
 
-        alice.commitmentTxos.length.should.equal(1)
-        bob.commitmentTxos.length.should.equal(1)
-        alice.other.commitmentTxos.length.should.equal(1)
-        bob.other.commitmentTxos.length.should.equal(1)
+        alice.commitmentTxos.length.should.equal(0)
+        bob.commitmentTxos.length.should.equal(0)
+        alice.other.commitmentTxos.length.should.equal(0)
+        bob.other.commitmentTxos.length.should.equal(0)
 
         should.exist(alice.multisig)
         should.exist(alice.fundingTxo)
         should.exist(alice.fundingTxo.txb)
         should.exist(alice.fundingTxo.txb.tx)
         should.exist(alice.other)
-        asyncTestSecretChecks(alice.commitmentTxos[0].revocationSecret)
-        asyncTestSecretChecks(alice.commitmentTxos[0].htlcSecret)
+        //yield asyncTestSecretChecks(alice.commitmentTxos[0].revocationSecret)
+        //yield asyncTestSecretChecks(alice.commitmentTxos[0].htlcSecret)
 
+        should.exist(alice.other)
+        //should.exist(alice.other.commitmentTxos)
+        //should.exist(alice.other.commitmentTxos[0])
+        //yield asyncTestSecretIsHidden(alice.other.commitmentTxos[0].revocationSecret)
+        //yield asyncTestSecretIsHidden(alice.other.commitmentTxos[0].htlcSecret)
+
+        // same tests for bob
         should.exist(bob.multisig)
         should.exist(bob.fundingTxo)
         should.exist(bob.fundingTxo.txb)
         should.exist(bob.fundingTxo.txb.tx)
         should.exist(bob.other)
-        asyncTestSecretChecks(bob.commitmentTxos[0].revocationSecret)
-        asyncTestSecretChecks(bob.commitmentTxos[0].htlcSecret)
+        //yield asyncTestSecretChecks(bob.commitmentTxos[0].revocationSecret)
+        //yield asyncTestSecretChecks(bob.commitmentTxos[0].htlcSecret)
 
         // check that both parties have the same multisig address
         ;(alice.multisig.address.toString()).should.equal(bob.multisig.address.toString())
@@ -197,7 +235,7 @@ describe('Agent', function () {
   })
 
   describe('#asyncSend', function () {
-    it('should send a new payment', function () {
+    it.only('should send a new payment', function () {
       return asink(function *() {
         // each party initializes itself locally
         let alice = new Agent('Alice')
@@ -219,102 +257,65 @@ describe('Agent', function () {
         alice.sender = true
         bob.sender = false
 
-        alice.commitmentTxos.length.should.equal(1)
-        bob.commitmentTxos.length.should.equal(1)
-        alice.other.commitmentTxos.length.should.equal(1)
-        bob.other.commitmentTxos.length.should.equal(1)
+        alice.commitmentTxos.length.should.equal(0)
+        bob.commitmentTxos.length.should.equal(0)
+        alice.other.commitmentTxos.length.should.equal(0)
+        bob.other.commitmentTxos.length.should.equal(0)
 
-        yield bob.asyncSend(BN(4e5), BN(6e5))
+        console.log();
+        console.log('\tbob.send');
+        let myCommitmentTxo = new CommitmentTxo()
+        let myHtlcSecret = new HtlcSecret()
+        yield myHtlcSecret.asyncInitialize()
+        let myRevocationSecret = new RevocationSecret()
+        yield myRevocationSecret.asyncInitialize()
+        myCommitmentTxo.initializeSecrets(myHtlcSecret, myRevocationSecret)
+        alice.commitmentTxos.push(myCommitmentTxo)
+
+        yield bob.asyncSend(BN(4e5),
+          BN(6e5),
+          alice.getCommitmentTxo(1).htlcSecret.toPublic(),
+          alice.getCommitmentTxo(1).revocationSecret.toPublic())
+
+
+          console.log('ALICE', alice.commitmentTxos);
+          console.log();
+          console.log('BOB', bob.commitmentTxos);
+          return
+
 
         alice.commitmentTxos.length.should.equal(2)
         alice.other.commitmentTxos.length.should.equal(2)
         bob.commitmentTxos.length.should.equal(2)
         bob.other.commitmentTxos.length.should.equal(2)
 
-        // check secrets
-        yield asyncTestSecretChecks(alice.commitmentTxos[0].revocationSecret)
-        yield asyncTestSecretChecks(alice.commitmentTxos[0].htlcSecret)
-        yield asyncTestSecretChecks(bob.commitmentTxos[0].revocationSecret)
-        yield asyncTestSecretChecks(bob.commitmentTxos[0].htlcSecret)
-
-        yield asyncTestSecretIsHidden(alice.other.commitmentTxos[0].revocationSecret)
-        yield asyncTestSecretIsHidden(alice.other.commitmentTxos[0].htlcSecret)
-        yield asyncTestSecretIsHidden(bob.other.commitmentTxos[0].revocationSecret)
-        yield asyncTestSecretIsHidden(bob.other.commitmentTxos[0].htlcSecret)
-
-        testSecretsMatch(alice.commitmentTxos[0].revocationSecret, bob.other.commitmentTxos[0].revocationSecret)
-        testSecretsMatch(alice.commitmentTxos[0].htlcSecret, bob.other.commitmentTxos[0].htlcSecret)
-        testSecretsMatch(bob.commitmentTxos[0].revocationSecret, alice.other.commitmentTxos[0].revocationSecret)
-        testSecretsMatch(bob.commitmentTxos[0].htlcSecret, alice.other.commitmentTxos[0].htlcSecret)
-
         // verify alice's commitmentTx
-        let txVerifier, error
-        txVerifier = new TxVerifier(alice.commitmentTxos[0].txb.tx, alice.commitmentTxos[0].txb.uTxOutMap)
+        let txVerifier, error, txNum
+        txVerifier = new TxVerifier(alice.commitmentTxos[1].txb.tx, alice.commitmentTxos[1].txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
           console.log(error, txVerifier.getDebugString())
         }
         error.should.equal(false)
-
-        should.exist(bob.commitmentTxos[0])
-        should.exist(bob.commitmentTxos[0].txb)
-        should.exist(bob.commitmentTxos[0].txb.tx)
 
         // verify bob's commitmentTx
-        txVerifier = new TxVerifier(bob.commitmentTxos[0].txb.tx, bob.commitmentTxos[0].txb.uTxOutMap)
+        txVerifier = new TxVerifier(bob.commitmentTxos[1].txb.tx, bob.commitmentTxos[1].txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
           console.log(error, txVerifier.getDebugString())
         }
         error.should.equal(false)
 
-        // check that only bob knows his own revocationSecret
-        should.exist(bob.commitmentTxos[0].revocationSecret.buf)
-        should.exist(bob.commitmentTxos[0].revocationSecret.hash)
-        should.not.exist(bob.other.commitmentTxos[0].revocationSecret.buf)
-        should.exist(bob.other.commitmentTxos[0].revocationSecret.hash)
-        alice.other.commitmentTxos[0].revocationSecret.hash.toString('hex').should.equal(bob.commitmentTxos[0].revocationSecret.hash.toString('hex'))
+        // check alice's secrets
+        //yield asyncTestSecrets(0, alice, bob)
+        yield asyncTestSecrets(0, alice, bob)
 
-        // check that only bob knows his own htlcSecret
-        should.exist(bob.commitmentTxos[0].htlcSecret.buf)
-        should.exist(bob.commitmentTxos[0].htlcSecret.hash)
-        should.exist(bob.other.commitmentTxos[0].htlcSecret.hash)
-        should.not.exist(bob.other.commitmentTxos[0].htlcSecret.buf)
-        alice.other.commitmentTxos[0].htlcSecret.hash.toString('hex').should.equal(bob.commitmentTxos[0].htlcSecret.hash.toString('hex'))
+        // check secrets for next payment
 
-        // check that only bob does not know the otherHtlcSecret
-        should.not.exist(bob.commitmentTxos[0].otherHtlcSecret.buf)
-        should.exist(bob.commitmentTxos[0].otherHtlcSecret.hash)
-        should.exist(bob.other.commitmentTxos[0].otherHtlcSecret.hash)
-        should.exist(bob.other.commitmentTxos[0].otherHtlcSecret.buf)
-        alice.other.commitmentTxos[0].otherHtlcSecret.hash.toString('hex').should.equal(bob.commitmentTxos[0].otherHtlcSecret.hash.toString('hex'))
-
-        // same tests for alice
-        should.exist(alice.commitmentTxos[0].revocationSecret.buf)
-        should.exist(alice.commitmentTxos[0].revocationSecret.hash)
-        should.not.exist(alice.other.commitmentTxos[0].revocationSecret.buf)
-        should.exist(alice.other.commitmentTxos[0].revocationSecret.hash)
-
-        should.exist(alice.commitmentTxos[0].htlcSecret.buf)
-        should.exist(alice.commitmentTxos[0].htlcSecret.hash)
-        should.exist(alice.other.commitmentTxos[0].htlcSecret.hash)
-        should.not.exist(alice.other.commitmentTxos[0].htlcSecret.buf)
-
-        should.not.exist(alice.commitmentTxos[0].otherHtlcSecret.buf)
-        should.exist(alice.commitmentTxos[0].otherHtlcSecret.hash)
-        should.exist(alice.other.commitmentTxos[0].otherHtlcSecret.hash)
-        should.exist(alice.other.commitmentTxos[0].otherHtlcSecret.buf)
-
-        // check that we are not setting the same secret to both transactions
-        alice.commitmentTxos[0].revocationSecret.hash.toString('hex').should.not.equal(bob.commitmentTxos[0].revocationSecret.hash.toString('hex'))
-        alice.commitmentTxos[0].htlcSecret.hash.toString('hex').should.not.equal(bob.commitmentTxos[0].htlcSecret.hash.toString('hex'))
-        alice.commitmentTxos[0].otherHtlcSecret.hash.toString('hex').should.not.equal(bob.commitmentTxos[0].otherHtlcSecret.hash.toString('hex'))
-
-        // TODO check that alice stores bob's commitment tx correctly
-        // alice.other.commitmentTxos[0].should.deepEqual(bob.commitmentTxos[0].toPublic())
-        // bob.other.commitmentTxos[0].should.deepEqual(alice.commitmentTxos[0].toPublic())
-
+return
         // send another payment (note that this is alice calling a function at bob)
+        console.log();
+        console.log('\tbob.send');
         yield bob.asyncSend(BN(3e5), BN(7e5))
 
         should.exist(alice.commitmentTxos[1])
@@ -570,4 +571,29 @@ describe('Agent', function () {
       }, this)
     })
   })
+
+  describe('#getCommitmentTxo(1)', function () {
+    it('should return the n-th last commitment txo', function () {
+      return asink(function *() {
+        let alice = new Agent()
+        yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        alice.commitmentTxos.length.should.equal(1)
+
+        let commitmentTxo = alice.getCommitmentTxo(1)(1)
+        should.exist(commitmentTxo.htlcSecret)
+
+        let noCommitmentTxo = alice.getCommitmentTxo(1)(2)
+        noCommitmentTxo.should.equal(false)
+
+        alice.commitmentTxos.push(commitmentTxo)
+
+        let secondCommitmentTxo = alice.getCommitmentTxo(1)(2)
+        should.exist(secondCommitmentTxo.htlcSecret)
+
+        noCommitmentTxo = alice.getCommitmentTxo(1)(5)
+        noCommitmentTxo.should.equal(false)
+      }, this)
+    })
+  })
+
 })
