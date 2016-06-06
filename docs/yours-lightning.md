@@ -1,9 +1,9 @@
-# Yours Payment Channel Hub
+# Yours Payment Channel Network
 
-We describe how a Bitcoin payment channel hub can be built. The basic building
-blocks are 2-way *hash time locked contracts* (HTLCs). Our construction is not
-subject to transaction malleability and uses only CHECKSEQUENCEVERIFY (CSV) and
-opcodes that are active in Bitcoin script today.
+We describe how a Bitcoin payment channel network can be built. The basic
+building blocks are 2-way *hash time locked contracts* (HTLCs). Our
+construction is not subject to transaction malleability and uses only
+CHECKSEQUENCEVERIFY (CSV) and opcodes that are active in Bitcoin script today.
 
 ## Smart contracts
 
