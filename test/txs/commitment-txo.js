@@ -28,18 +28,18 @@ describe('CommitmentTxo', function () {
         let bob = new Agent('Bob')
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
 
-        alice.initializeOther(yield bob.asyncToPublic())
-        bob.initializeOther(yield alice.asyncToPublic())
+        alice.other = yield bob.asyncToPublic()
+        bob.other = yield alice.asyncToPublic()
 
-        yield alice.asyncInitializeMultisig()
+        yield alice.multisigAddress.asyncInitialize(alice.other.multisigAddress.pubKey)
 
         let inputAmountBn = Bn(1e10)
         let fundingAmount = Bn(1e8)
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(inputAmountBn, alice.sourceAddress.keyPair.pubKey)
 
         alice.fundingTxo = new FundingTxo()
-        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
         let htlcSecret = new HtlcSecret()
         yield htlcSecret.asyncInitialize()
@@ -47,39 +47,43 @@ describe('CommitmentTxo', function () {
         yield revocationSecret.asyncInitialize()
 
         let outputList = [{
-          to: alice.id,
+          intermediateDestId: alice.id,
+          finalDestId: 'not used yet',
           amount: Bn(1e7),
           htlcSecret: htlcSecret,
           revocationSecret: revocationSecret
         }]
         let changeOutput = {
-          to: alice.id,
+          intermediateDestId: bob.id,
+          finalDestId: 'not used yet',
           htlcSecret: htlcSecret,
           revocationSecret: revocationSecret
         }
-        let destinations = {}
-        destinations[alice.id] = alice.destination
-        destinations[bob.id] = bob.destination
+        let destinationAddresses = {}
+        destinationAddresses[alice.id] = alice.destinationAddress
+        destinationAddresses[bob.id] = bob.destinationAddress
         let commitmentTxo = new CommitmentTxo()
-        commitmentTxo.initializeAddresses(alice.multisig, alice.destinations)
-        commitmentTxo.initializeFundingTxo(alice.fundingTxo)
+        commitmentTxo.multisigAddress = alice.multisigAddress
+        commitmentTxo.fundingTxo = alice.fundingTxo
+        commitmentTxo.outputList = outputList
+        commitmentTxo.changeOutput = changeOutput
+        commitmentTxo.ownerDesitinationAddress = bob.destinationAddress
+        commitmentTxo.builderDestinationAddress = alice.destinationAddress
+        commitmentTxo.ownerId = bob.id
+        commitmentTxo.builderId = alice.id
 
         yield commitmentTxo.asyncBuild(
           outputList,
           changeOutput,
-          destinations,
           bob.id,
           alice.id
         )
 
-        let txVerifier, error, txNum
+        let txVerifier, error
         txVerifier = new TxVerifier(commitmentTxo.txb.tx, commitmentTxo.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         // we expect an error here as the transaction is not fully signed
         error.should.equal('input 0 failed script verify')
-
-
-
       }, this)
     })
   })
@@ -101,16 +105,16 @@ describe('CommitmentTxo', function () {
         let inputAmountBn = Bn(1e10)
         let fundingAmount = Bn(1e8)
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(inputAmountBn, alice.sourceAddress.keyPair.pubKey)
 
         alice.fundingTxo = new FundingTxo()
-        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
         alice.commitmentTx = new CommitmentTxo()
         alice.commitmentTx.initializeOtherSecrets(bob.getCommitmentTxo(1).htlcSecret, bob.getCommitmentTxo(1).revocationSecret)
         alice.commitmentTx.initializeSecrets(alice.getCommitmentTxo(1).htlcSecret, alice.getCommitmentTxo(1).revocationSecret)
         yield alice.commitmentTx.asyncInitialize(Bn(5e7), Bn(5e7), alice.fundingTxo,
-          alice.multisig, alice.destination, alice.other.destination, alice.funder)
+          alice.multisigAddress, alice.destinationAddress, alice.other.destinationAddress, alice.funder)
 
         let json = alice.commitmentTx.toJSON()
 
@@ -143,16 +147,16 @@ describe('CommitmentTxo', function () {
         let inputAmountBn = Bn(1e10)
         let fundingAmount = Bn(1e8)
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(inputAmountBn, alice.sourceAddress.keyPair.pubKey)
 
         alice.fundingTxo = new FundingTxo()
-        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
         alice.commitmentTx = new CommitmentTxo()
         alice.commitmentTx.initializeOtherSecrets(bob.getCommitmentTxo(1).htlcSecret, bob.getCommitmentTxo(1).revocationSecret)
         alice.commitmentTx.initializeSecrets(alice.getCommitmentTxo(1).htlcSecret, alice.getCommitmentTxo(1).revocationSecret)
         yield alice.commitmentTx.asyncInitialize(Bn(5e7), Bn(5e7), alice.fundingTxo,
-          alice.multisig, alice.destination, alice.other.destination, alice.funder)
+          alice.multisigAddress, alice.destinationAddress, alice.other.destinationAddress, alice.funder)
 
         let json = alice.commitmentTx.toJSON()
         let txo = new CommitmentTxo().fromJSON(json)
@@ -186,16 +190,16 @@ describe('CommitmentTxo', function () {
         let inputAmountBn = Bn(1e10)
         let fundingAmount = Bn(1e8)
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(inputAmountBn, alice.sourceAddress.keyPair.pubKey)
 
         alice.fundingTxo = new FundingTxo()
-        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
         alice.commitmentTxo = new CommitmentTxo()
         alice.commitmentTxo.initializeOtherSecrets(bob.getCommitmentTxo(1).htlcSecret, bob.getCommitmentTxo(1).revocationSecret)
         alice.commitmentTxo.initializeSecrets(alice.getCommitmentTxo(1).htlcSecret, alice.getCommitmentTxo(1).revocationSecret)
         yield alice.commitmentTxo.asyncInitialize(Bn(5e7), Bn(5e7), alice.fundingTxo,
-          alice.multisig, alice.destination, alice.other.destination, alice.funder)
+          alice.multisigAddress, alice.destinationAddress, alice.other.destinationAddress, alice.funder)
 
         let txo = alice.commitmentTxo.toPublic()
 

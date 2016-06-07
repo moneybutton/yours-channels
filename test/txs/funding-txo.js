@@ -5,7 +5,6 @@ let asink = require('asink')
 let Agent = require('../../lib/agent.js')
 let Wallet = require('../../lib/wallet.js')
 let FundingTxo = require('../../lib/txs/funding-txo.js')
-
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let Bn = require('yours-bitcoin/lib/bn')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
@@ -36,10 +35,10 @@ describe('FundingTxo', function () {
         let inputAmountBn = Bn(1e10)
         let fundingAmount = Bn(1e8)
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(inputAmountBn, alice.sourceAddress.keyPair.pubKey)
 
         alice.fundingTxo = new FundingTxo()
-        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
         let txVerifier = new TxVerifier(alice.fundingTxo.txb.tx, alice.fundingTxo.txb.uTxOutMap)
         let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
@@ -75,10 +74,10 @@ describe('FundingTxo', function () {
         let inputAmountBn = Bn(1e10)
         let fundingAmount = Bn(1e8)
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(inputAmountBn, alice.sourceAddress.keyPair.pubKey)
 
         alice.fundingTxo = new FundingTxo()
-        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
         let json = alice.fundingTxo.toJSON()
 
@@ -107,10 +106,10 @@ describe('FundingTxo', function () {
         let inputAmountBn = Bn(1e10)
         let fundingAmount = Bn(1e8)
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(inputAmountBn, alice.sourceAddress.keyPair.pubKey)
 
         alice.fundingTxo = new FundingTxo()
-        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        yield alice.fundingTxo.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
         let json = alice.fundingTxo.toJSON()
 
@@ -143,10 +142,10 @@ describe('FundingTxo', function () {
         let inputAmountBn = Bn(1e10)
         let fundingAmount = Bn(1e8)
         let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
+        let output = wallet.getUnspentOutput(inputAmountBn, alice.sourceAddress.keyPair.pubKey)
 
         bob.fundingTxo = new FundingTxo()
-        yield bob.fundingTxo.asyncInitialize(fundingAmount, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        yield bob.fundingTxo.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
         let publicFundingTxo = yield bob.fundingTxo.asyncToPublic()
 

@@ -2,18 +2,13 @@
 'use strict'
 let should = require('should')
 let Agent = require('../lib/agent.js')
-let CommitmentTxo = require('../lib/txs/commitment-txo.js')
-let FundingTxo = require('../lib/txs/funding-txo.js')
 let HtlcSecret = require('../lib/scrts/htlc-secret.js')
 let RevocationSecret = require('../lib/scrts/revocation-secret.js')
 let asink = require('asink')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
-let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
-let Interp = require('yours-bitcoin/lib/interp')
 let Bn = require('yours-bitcoin/lib/bn')
-let Wallet = require('../lib/wallet.js')
 
-
+/*
 let asyncTestSecretChecks = function (secret) {
   return asink(function *() {
     should.exist(secret)
@@ -63,6 +58,7 @@ let asyncTestSecrets = function (txNum, alice, bob) {
     testSecretsMatch(bob.commitmentTxos[txNum].otherRevocationSecret, alice.other.commitmentTxos[txNum].otherRevocationSecret)
   }, this)
 }
+*/
 
 describe('Agent', function () {
   it('should exist', function () {
@@ -70,57 +66,105 @@ describe('Agent', function () {
     should.exist(new Agent())
   })
 
+  describe('#asyncInitialize', function () {
+    it('should initialize an agent', function () {
+      return asink(function *() {
+        let alice = new Agent('Alice')
+        yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+
+        should.exist(alice.id)
+        should.exist(alice.sourceAddress)
+        should.exist(alice.multisigAddress)
+        should.exist(alice.destinationAddress)
+        should.exist(alice.commitmentTxos)
+        should.exist(alice.wallet)
+        alice.initialized.should.equal(true)
+      }, this)
+    })
+  })
+
+  describe('#asyncOpenChannel', function () {
+    it('should initialize the public projection of the other agent and the multisig address', function () {
+      return asink(function *() {
+        let alice = new Agent('Alice')
+        yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        let bob = new Agent('Bob')
+        yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+
+        alice.remoteAgent = bob
+        bob.remoteAgent = alice
+
+        alice.funder = true
+        yield bob.asyncOpenChannel(Bn(1e8), yield alice.asyncToPublic())
+
+        alice.multisigAddress.initialized.should.equal(true)
+        should.exist(alice.other)
+        should.exist(alice.fundingTxo)
+
+        bob.multisigAddress.initialized.should.equal(true)
+        should.exist(bob.other)
+        should.exist(bob.fundingTxo)
+
+        alice.id.should.equal('Alice')
+        alice.other.id.should.equal('Bob')
+        bob.id.should.equal('Bob')
+        bob.other.id.should.equal('Alice')
+      }, this)
+    })
+  })
+
   describe('#sendOutputList', function () {
     it('should work', function () {
       return asink(function *() {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
-        alice.sender = true
-
         let bob = new Agent('Bob')
-        bob.funder = true
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
 
-        alice.initializeOther(yield bob.asyncToPublic())
         alice.remoteAgent = bob
-        bob.initializeOther(yield alice.asyncToPublic())
         bob.remoteAgent = alice
-
-        yield alice.asyncInitializeMultisig()
-        yield bob.asyncInitializeMultisig()
-
-        let inputAmountBn = Bn(1e10)
-        let fundingAmountBn = Bn(1e8)
-        let wallet = new Wallet()
-        let output = wallet.getUnspentOutput(inputAmountBn, alice.source.keyPair.pubKey)
-
-        alice.fundingTxo = new FundingTxo()
-        yield alice.fundingTxo.asyncInitialize(fundingAmountBn, alice.source, alice.multisig, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
-
         let htlcSecret = new HtlcSecret()
         yield htlcSecret.asyncInitialize()
         let revocationSecret = new RevocationSecret()
         yield revocationSecret.asyncInitialize()
 
         let outputList = [{
-          to: bob.id,
+          intermediateDestId: alice.id,
+          finalDestId: 'not used yet',
           amount: Bn(1e7),
           htlcSecret: htlcSecret,
           revocationSecret: revocationSecret
         }]
         let changeOutput = {
-          to: alice.id,
+          intermediateDestId: bob.id,
+          finalDestId: 'not used yet',
           htlcSecret: htlcSecret,
           revocationSecret: revocationSecret
         }
 
-        yield alice.sendOutputList(outputList, changeOutput)
+        alice.funder = true
+        yield alice.remoteAgent.asyncOpenChannel(Bn(1e8), yield alice.asyncToPublic())
+
+        alice.sender = true
+        yield alice.remoteAgent.asyncSendOutputList(outputList, changeOutput)
 
         alice.commitmentTxos.length.should.equal(1)
         alice.other.commitmentTxos.length.should.equal(1)
+        should.exist(bob.other.commitmentTxos[0].txb)
+
         bob.commitmentTxos.length.should.equal(1)
         bob.other.commitmentTxos.length.should.equal(1)
+        should.exist(bob.other.commitmentTxos[0].txb)
 
+        yield bob.asyncSendOutputList(outputList, changeOutput)
+
+        alice.commitmentTxos.length.should.equal(2)
+        alice.other.commitmentTxos.length.should.equal(2)
+        should.exist(bob.other.commitmentTxos[1].txb)
+
+        bob.commitmentTxos.length.should.equal(2)
+        bob.other.commitmentTxos.length.should.equal(2)
+        should.exist(bob.other.commitmentTxos[1].txb)
       }, this)
     })
   })
