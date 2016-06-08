@@ -3,7 +3,6 @@
 let should = require('should')
 let Agent = require('../lib/agent.js')
 let HtlcSecret = require('../lib/scrts/htlc-secret.js')
-let RevocationSecret = require('../lib/scrts/revocation-secret.js')
 let asink = require('asink')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let Bn = require('yours-bitcoin/lib/bn')
@@ -125,21 +124,17 @@ describe('Agent', function () {
         bob.remoteAgent = alice
         let htlcSecret = new HtlcSecret()
         yield htlcSecret.asyncInitialize()
-        let revocationSecret = new RevocationSecret()
-        yield revocationSecret.asyncInitialize()
 
         let outputList = [{
           intermediateDestId: alice.id,
           finalDestId: 'not used yet',
           amount: Bn(1e7),
-          htlcSecret: htlcSecret,
-          revocationSecret: revocationSecret
+          htlcSecret: htlcSecret
         }]
         let changeOutput = {
           intermediateDestId: bob.id,
           finalDestId: 'not used yet',
-          htlcSecret: htlcSecret,
-          revocationSecret: revocationSecret
+          htlcSecret: htlcSecret
         }
 
         alice.funder = true
@@ -158,13 +153,16 @@ describe('Agent', function () {
 
         yield bob.asyncSendOutputList(outputList, changeOutput)
 
+        // check length of the commitmentTxos list
         alice.commitmentTxos.length.should.equal(2)
         alice.other.commitmentTxos.length.should.equal(2)
         should.exist(bob.other.commitmentTxos[1].txb)
-
         bob.commitmentTxos.length.should.equal(2)
         bob.other.commitmentTxos.length.should.equal(2)
         should.exist(bob.other.commitmentTxos[1].txb)
+
+        // check that the revocationSecret has been added
+        should.exist(bob.commitmentTxos[0].outputList[0].revocationSecret)
       }, this)
     })
   })
