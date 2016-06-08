@@ -17,7 +17,7 @@ describe('FundingTxo', function () {
   })
 
   describe('#asyncInitialize', function () {
-    it('should create a funding tx', function () {
+    it.skip('should create a funding tx', function () {
       return asink(function *() {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -56,7 +56,7 @@ describe('FundingTxo', function () {
   })
 
   describe('#toJSON', function () {
-    it('should convert into a json object', function () {
+    it.skip('should convert into a json object', function () {
       return asink(function *() {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -88,7 +88,7 @@ describe('FundingTxo', function () {
   })
 
   describe('#fromJSON', function () {
-    it('should convert into a json object', function () {
+    it.skip('should convert into a json object', function () {
       return asink(function *() {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -122,7 +122,7 @@ describe('FundingTxo', function () {
   })
 
   describe('#toPublic', function () {
-    it('should convert into a json object', function () {
+    it.skip('should convert into a json object', function () {
       return asink(function *() {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
