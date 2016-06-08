@@ -1,6 +1,13 @@
 Yours Lightning Protocol
 ========================
 
+Notes
+-----
+- Payments can go both ways on a channel, so the agent who ultimately receives
+  a payment is the one who generates the secret.
+- "Dave" is the ultimate recipient on the close end of the payment channel, and
+  "Carol" is the ultimate recipient on the far end of the channel.
+
 Definitions
 -----------
 - Bob (B) opens a payment channel with Carol (C). Alice (A) wishes to make a
