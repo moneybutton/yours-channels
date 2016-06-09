@@ -2,6 +2,7 @@
 'use strict'
 let should = require('should')
 let asink = require('asink')
+let OutputDescription = require('../../lib/output-description')
 let CommitmentTxObj = require('../../lib/txs/commitment-tx-obj')
 let FundingTxObj = require('../../lib/txs/funding-tx-obj')
 let HtlcSecret = require('../../lib/scrts/htlc-secret')
@@ -46,19 +47,12 @@ describe('CommitmentTxObj', function () {
         let revocationSecret = new RevocationSecret()
         yield revocationSecret.asyncInitialize()
 
-        let outputList = [{
-          intermediateDestId: alice.id,
-          finalDestId: 'not used yet',
-          amount: Bn(1e7),
-          htlcSecret: htlcSecret,
-          revocationSecret: revocationSecret
-        }]
-        let changeOutput = {
-          intermediateDestId: bob.id,
-          finalDestId: 'not used yet',
-          htlcSecret: htlcSecret,
-          revocationSecret: revocationSecret
-        }
+        let outputList = [new OutputDescription(
+          alice.id, 'finalDestId', htlcSecret, revocationSecret, Bn(1e7)
+        )]
+        let changeOutput = new OutputDescription(
+          bob.id, 'finalDestId', htlcSecret, revocationSecret
+        )
         let destinationAddresses = {}
         destinationAddresses[alice.id] = alice.destinationAddress
         destinationAddresses[bob.id] = bob.destinationAddress
