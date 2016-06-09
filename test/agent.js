@@ -9,7 +9,7 @@ let Bn = require('yours-bitcoin/lib/bn')
 
 /*
 let asyncTestSecretChecks = function (secret) {
-  return asink(function *() {
+  return asink(function * () {
     should.exist(secret)
     should.exist(secret.buf)
     should.exist(secret.hash)
@@ -19,7 +19,7 @@ let asyncTestSecretChecks = function (secret) {
 }
 
 let asyncTestSecretIsHidden = function (secret) {
-  return asink(function *() {
+  return asink(function * () {
     should.exist(secret)
     should.not.exist(secret.buf)
     should.exist(secret.hash)
@@ -31,7 +31,7 @@ let testSecretsMatch = function (secret1, secret2) {
 }
 
 let asyncTestSecrets = function (txNum, alice, bob) {
-  return asink(function *() {
+  return asink(function * () {
     should.exist(alice.commitmentTxObjs[txNum])
     should.exist(alice.commitmentTxObjs[txNum].htlcSecret)
     should.exist(alice.commitmentTxObjs[txNum].revocationSecret)
@@ -67,7 +67,7 @@ describe('Agent', function () {
 
   describe('#asyncInitialize', function () {
     it('should initialize an agent', function () {
-      return asink(function *() {
+      return asink(function * () {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
 
@@ -84,7 +84,7 @@ describe('Agent', function () {
 
   describe('#asyncOpenChannel', function () {
     it('should initialize the public projection of the other agent and the multisig address', function () {
-      return asink(function *() {
+      return asink(function * () {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         let bob = new Agent('Bob')
@@ -114,7 +114,7 @@ describe('Agent', function () {
 
   describe('#sendOutputList', function () {
     it('should work', function () {
-      return asink(function *() {
+      return asink(function * () {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
         let bob = new Agent('Bob')

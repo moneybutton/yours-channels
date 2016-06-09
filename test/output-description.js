@@ -3,7 +3,7 @@
 let should = require('should')
 let asink = require('asink')
 let Bn = require('yours-bitcoin/lib/bn')
-let OutputDescription = require('../lib/Output-description')
+let OutputDescription = require('../lib/output-description')
 let HltcSecret = require('../lib/scrts/htlc-secret')
 let RevocationSecret = require('../lib/scrts/revocation-secret')
 
@@ -15,7 +15,7 @@ describe('OutputDescription', function () {
 
   describe('#toJSON', function () {
     it('should create a json object', function () {
-      return asink(function *() {
+      return asink(function * () {
         let outputDescription = new OutputDescription('Alice')
         outputDescription.intermediateDestId = 'BobId'
         outputDescription.finalDestId = 'CarolId'
@@ -40,7 +40,7 @@ describe('OutputDescription', function () {
 
   describe('#toPublic', function () {
     it('should create a public OutputDescription object', function () {
-      return asink(function *() {
+      return asink(function * () {
         let outputDescription = new OutputDescription('Alice')
         outputDescription.intermediateDestId = 'BobId'
         outputDescription.finalDestId = 'CarolId'

@@ -19,7 +19,7 @@ describe('Multisig', function () {
     })
 
     it('should set a multisig script and address', function () {
-      return asink(function *() {
+      return asink(function * () {
         let multisig = new Multisig(PrivKey.fromRandom())
         yield multisig.asyncInitialize(PubKey.fromPrivKey(PrivKey.fromRandom()))
         should.exist(multisig.privKey)
@@ -34,7 +34,7 @@ describe('Multisig', function () {
 
   describe('#toJSON', function () {
     it('should convert into a json object after creation', function () {
-      return asink(function *() {
+      return asink(function * () {
         let multisig = new Multisig(PrivKey.fromRandom())
         yield multisig.initializePrivKey(PrivKey.fromRandom())
         let unInitializedJson = multisig.toJSON()
@@ -44,7 +44,7 @@ describe('Multisig', function () {
     })
 
     it('should convert into a json object after initializePrivKey', function () {
-      return asink(function *() {
+      return asink(function * () {
         let multisig = new Multisig(PrivKey.fromRandom())
         yield multisig.initializePrivKey(PrivKey.fromRandom())
         let unInitializedJson = multisig.toJSON()
@@ -54,7 +54,7 @@ describe('Multisig', function () {
     })
 
     it('should convert into a json object after asyncInitialize', function () {
-      return asink(function *() {
+      return asink(function * () {
         let multisig = new Multisig(PrivKey.fromRandom())
 
         yield multisig.initializePrivKey(PrivKey.fromRandom())
@@ -70,7 +70,7 @@ describe('Multisig', function () {
     })
 
     it('should convert into a json object after toPublic', function () {
-      return asink(function *() {
+      return asink(function * () {
         let multisig = new Multisig(PrivKey.fromRandom())
 
         yield multisig.initializePrivKey(PrivKey.fromRandom())
@@ -93,7 +93,7 @@ describe('Multisig', function () {
 
   describe('#fromJSON', function () {
     it('should convert from a json object', function () {
-      return asink(function *() {
+      return asink(function * () {
         let multisigObj = new Multisig(PrivKey.fromRandom())
         yield multisigObj.asyncInitialize(PubKey.fromPrivKey(PrivKey.fromRandom()))
         let json = multisigObj.toJSON()
@@ -112,7 +112,7 @@ describe('Multisig', function () {
 
   describe('#toPublic', function () {
     it('should convert to a public object', function () {
-      return asink(function *() {
+      return asink(function * () {
         let multisig = new Multisig(PrivKey.fromRandom())
         yield multisig.asyncInitialize(PubKey.fromPrivKey(PrivKey.fromRandom()))
 
