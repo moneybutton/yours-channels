@@ -20,7 +20,7 @@
   "homepage": "https://github.com/yoursnetwork/yours-channels#readme",
   "dependencies": {
     "asink": "1.0.4",
-    "yours-bitcoin": "0.14.12"
+    "yours-bitcoin": "0.14.13"
   },
   "devDependencies": {
     "mocha": "2.4.5",
