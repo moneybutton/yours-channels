@@ -1,10 +1,11 @@
+/* global describe,it */
 'use strict'
 let Address = require('yours-bitcoin/lib/address')
 let Bip32 = require('yours-bitcoin/lib/bip-32')
 let Hash = require('yours-bitcoin/lib/hash')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let PubKey = require('yours-bitcoin/lib/pub-key')
-let should = require('should')
+require('should')
 
 describe('Example: Bip32 deterministic keys', function () {
   it('deterministic private keys, public keys, addresses', function () {
