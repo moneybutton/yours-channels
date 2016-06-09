@@ -1,7 +1,7 @@
 {
   "name": "yours-channels",
   "version": "1.0.0",
-  "description": "Payment channels for fullnode.",
+  "description": "Payment channels for Yours.",
   "main": "index.js",
   "scripts": {
     "test-format": "./node_modules/.bin/standard lib/*.js test/*.js lib/*/*.js test/*/*.js",
