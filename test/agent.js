@@ -1,8 +1,8 @@
 /* global describe,it */
 'use strict'
 let should = require('should')
-let Agent = require('../lib/agent.js')
-let HtlcSecret = require('../lib/scrts/htlc-secret.js')
+let Agent = require('../lib/agent')
+let HtlcSecret = require('../lib/scrts/htlc-secret')
 let asink = require('asink')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let Bn = require('yours-bitcoin/lib/bn')

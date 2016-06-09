@@ -2,7 +2,7 @@
 'use strict'
 let should = require('should')
 let asink = require('asink')
-let KeyPairAddress = require('../../lib/addrs/key-pair-address.js')
+let KeyPairAddress = require('../../lib/addrs/key-pair-address')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 
 describe('KeyPairAddress', function () {

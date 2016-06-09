@@ -3,9 +3,9 @@
 let should = require('should')
 let asink = require('asink')
 let Bn = require('yours-bitcoin/lib/bn')
-let OutputDescription = require('../lib/Output-description.js')
-let HltcSecret = require('../lib/scrts/htlc-secret.js')
-let RevocationSecret = require('../lib/scrts/revocation-secret.js')
+let OutputDescription = require('../lib/Output-description')
+let HltcSecret = require('../lib/scrts/htlc-secret')
+let RevocationSecret = require('../lib/scrts/revocation-secret')
 
 describe('OutputDescription', function () {
   it('should exist', function () {

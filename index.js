@@ -5,4 +5,4 @@
  *
  * let Agent = require('yours-channels').Agent
  */
-module.exports.agent = require('lib/agent.js')
+module.exports.agent = require('lib/agent')

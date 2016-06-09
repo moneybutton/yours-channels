@@ -2,9 +2,9 @@
 'use strict'
 let should = require('should')
 let asink = require('asink')
-let Agent = require('../../lib/agent.js')
-let Wallet = require('../../lib/wallet.js')
-let FundingTxObj = require('../../lib/txs/funding-tx-obj.js')
+let Agent = require('../../lib/agent')
+let Wallet = require('../../lib/wallet')
+let FundingTxObj = require('../../lib/txs/funding-tx-obj')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let Bn = require('yours-bitcoin/lib/bn')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')

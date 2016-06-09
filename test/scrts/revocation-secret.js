@@ -1,7 +1,7 @@
 /* global describe,it */
 'use strict'
 let should = require('should')
-let RevocationSecret = require('../../lib/scrts/revocation-secret.js')
+let RevocationSecret = require('../../lib/scrts/revocation-secret')
 
 describe('RevocationSecret', function () {
   it('should exist', function () {
