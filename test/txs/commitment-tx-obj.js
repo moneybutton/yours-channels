@@ -13,6 +13,7 @@ let PrivKey = require('yours-bitcoin/lib/priv-key')
 let Bn = require('yours-bitcoin/lib/bn')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 let Interp = require('yours-bitcoin/lib/interp')
+let SecretHelper = require('../test-helpers/secret-helper')
 
 describe('CommitmentTxObj', function () {
   it('should exist', function () {
@@ -20,7 +21,7 @@ describe('CommitmentTxObj', function () {
     should.exist(new CommitmentTxObj())
   })
 
-  describe('#asyncInitialize', function () {
+  describe('#asyncBuild', function () {
     it('should create a partial payment tx', function () {
       return asink(function * () {
         let alice = new Agent('Alice')
@@ -65,25 +66,34 @@ describe('CommitmentTxObj', function () {
         commitmentTxObj.builderDestinationAddress = alice.destinationAddress
         commitmentTxObj.ownerId = bob.id
         commitmentTxObj.builderId = alice.id
-
-        yield commitmentTxObj.asyncBuild(
-          outputList,
-          changeOutput,
-          bob.id,
-          alice.id
-        )
+        yield commitmentTxObj.asyncBuild()
 
         let txVerifier, error
         txVerifier = new TxVerifier(commitmentTxObj.txb.tx, commitmentTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         // we expect an error here as the transaction is not fully signed
         error.should.equal('input 0 failed script verify')
+
+        should.exist(commitmentTxObj)
+        should.exist(commitmentTxObj.multisigAddress)
+        should.exist(commitmentTxObj.ownerDesitinationAddress)
+        should.exist(commitmentTxObj.builderDestinationAddress)
+        should.exist(commitmentTxObj.outputList)
+        should.exist(commitmentTxObj.changeOutput)
+        should.exist(commitmentTxObj.ownerId)
+        should.exist(commitmentTxObj.builderId)
+        should.exist(commitmentTxObj.txb)
+
+        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[0].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[0].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitmentTxObj.changeOutput.htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitmentTxObj.changeOutput.revocationSecret)
       }, this)
     })
   })
 
   describe('#toJSON', function () {
-    it.skip('should create a json object', function () {
+    it('should create a json object', function () {
       return asink(function * () {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -91,10 +101,10 @@ describe('CommitmentTxObj', function () {
         let bob = new Agent('Bob')
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
 
-        alice.initializeOther(yield bob.asyncToPublic())
-        bob.initializeOther(yield alice.asyncToPublic())
+        alice.other = yield bob.asyncToPublic()
+        bob.other = yield alice.asyncToPublic()
 
-        yield alice.asyncInitializeMultisig()
+        yield alice.multisigAddress.asyncInitialize(alice.other.multisigAddress.pubKey)
 
         let inputAmountBn = Bn(1e10)
         let fundingAmount = Bn(1e8)
@@ -104,28 +114,52 @@ describe('CommitmentTxObj', function () {
         alice.fundingTxObj = new FundingTxObj()
         yield alice.fundingTxObj.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
-        alice.commitmentTx = new CommitmentTxObj()
-        alice.commitmentTx.initializeOtherSecrets(bob.getCommitmentTxObj(1).htlcSecret, bob.getCommitmentTxObj(1).revocationSecret)
-        alice.commitmentTx.initializeSecrets(alice.getCommitmentTxObj(1).htlcSecret, alice.getCommitmentTxObj(1).revocationSecret)
-        yield alice.commitmentTx.asyncInitialize(Bn(5e7), Bn(5e7), alice.fundingTxObj,
-          alice.multisigAddress, alice.destinationAddress, alice.other.destinationAddress, alice.funder)
+        let htlcSecret = new HtlcSecret()
+        yield htlcSecret.asyncInitialize()
+        let revocationSecret = new RevocationSecret()
+        yield revocationSecret.asyncInitialize()
 
-        let json = alice.commitmentTx.toJSON()
+        let outputList = [new OutputDescription(
+          alice.id, 'finalDestId', htlcSecret, revocationSecret, Bn(1e7)
+        )]
+        let changeOutput = new OutputDescription(
+          bob.id, 'finalDestId', htlcSecret, revocationSecret
+        )
+        let destinationAddresses = {}
+        destinationAddresses[alice.id] = alice.destinationAddress
+        destinationAddresses[bob.id] = bob.destinationAddress
+        let commitmentTxObj = new CommitmentTxObj()
+        commitmentTxObj.multisigAddress = alice.multisigAddress
+        commitmentTxObj.fundingTxObj = alice.fundingTxObj
+        commitmentTxObj.outputList = outputList
+        commitmentTxObj.changeOutput = changeOutput
+        commitmentTxObj.ownerDesitinationAddress = bob.destinationAddress
+        commitmentTxObj.builderDestinationAddress = alice.destinationAddress
+        commitmentTxObj.ownerId = bob.id
+        commitmentTxObj.builderId = alice.id
+        yield commitmentTxObj.asyncBuild()
+        let json = commitmentTxObj.toJSON()
 
         should.exist(json)
+        should.exist(json.multisigAddress)
+        should.exist(json.ownerDesitinationAddress)
+        should.exist(json.builderDestinationAddress)
+        should.exist(json.outputList)
+        should.exist(json.changeOutput)
+        should.exist(json.ownerId)
+        should.exist(json.builderId)
         should.exist(json.txb)
-        should.exist(json.htlcOutNum)
-        should.exist(json.rhtlcOutNum)
-        should.exist(json.htlcRedeemScript)
-        should.exist(json.rhtlcRedeemScript)
-        should.exist(json.htlcScriptPubkey)
-        should.exist(json.rhtlcScriptPubkey)
+
+        SecretHelper.checkSecretNotHidden(json.outputList[0].htlcSecret)
+        SecretHelper.checkSecretNotHidden(json.outputList[0].revocationSecret)
+        SecretHelper.checkSecretNotHidden(json.changeOutput.htlcSecret)
+        SecretHelper.checkSecretNotHidden(json.changeOutput.revocationSecret)
       }, this)
     })
   })
 
   describe('#fromJSON', function () {
-    it.skip('should create CommitmentTxObj from a json object', function () {
+    it('should create CommitmentTxObj from a json object', function () {
       return asink(function * () {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -133,10 +167,10 @@ describe('CommitmentTxObj', function () {
         let bob = new Agent('Bob')
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
 
-        alice.initializeOther(yield bob.asyncToPublic())
-        bob.initializeOther(yield alice.asyncToPublic())
+        alice.other = yield bob.asyncToPublic()
+        bob.other = yield alice.asyncToPublic()
 
-        yield alice.asyncInitializeMultisig()
+        yield alice.multisigAddress.asyncInitialize(alice.other.multisigAddress.pubKey)
 
         let inputAmountBn = Bn(1e10)
         let fundingAmount = Bn(1e8)
@@ -146,29 +180,54 @@ describe('CommitmentTxObj', function () {
         alice.fundingTxObj = new FundingTxObj()
         yield alice.fundingTxObj.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
-        alice.commitmentTx = new CommitmentTxObj()
-        alice.commitmentTx.initializeOtherSecrets(bob.getCommitmentTxObj(1).htlcSecret, bob.getCommitmentTxObj(1).revocationSecret)
-        alice.commitmentTx.initializeSecrets(alice.getCommitmentTxObj(1).htlcSecret, alice.getCommitmentTxObj(1).revocationSecret)
-        yield alice.commitmentTx.asyncInitialize(Bn(5e7), Bn(5e7), alice.fundingTxObj,
-          alice.multisigAddress, alice.destinationAddress, alice.other.destinationAddress, alice.funder)
+        let htlcSecret = new HtlcSecret()
+        yield htlcSecret.asyncInitialize()
+        let revocationSecret = new RevocationSecret()
+        yield revocationSecret.asyncInitialize()
 
-        let json = alice.commitmentTx.toJSON()
+        let outputList = [new OutputDescription(
+          alice.id, 'finalDestId', htlcSecret, revocationSecret, Bn(1e7)
+        )]
+        let changeOutput = new OutputDescription(
+          bob.id, 'finalDestId', htlcSecret, revocationSecret
+        )
+        let destinationAddresses = {}
+        destinationAddresses[alice.id] = alice.destinationAddress
+        destinationAddresses[bob.id] = bob.destinationAddress
+        let commitmentTxObj = new CommitmentTxObj()
+        commitmentTxObj.multisigAddress = alice.multisigAddress
+        commitmentTxObj.fundingTxObj = alice.fundingTxObj
+        commitmentTxObj.outputList = outputList
+        commitmentTxObj.changeOutput = changeOutput
+        commitmentTxObj.ownerDesitinationAddress = bob.destinationAddress
+        commitmentTxObj.builderDestinationAddress = alice.destinationAddress
+        commitmentTxObj.ownerId = bob.id
+        commitmentTxObj.builderId = alice.id
+        yield commitmentTxObj.asyncBuild()
+
+        let json = commitmentTxObj.toJSON()
         let txo = new CommitmentTxObj().fromJSON(json)
 
         should.exist(txo)
+        should.exist(txo.multisigAddress)
+        should.exist(txo.ownerDesitinationAddress)
+        should.exist(txo.builderDestinationAddress)
+        should.exist(txo.outputList)
+        should.exist(txo.changeOutput)
+        should.exist(txo.ownerId)
+        should.exist(txo.builderId)
         should.exist(txo.txb)
-        txo.htlcOutNum.should.equal(1)
-        txo.rhtlcOutNum.should.equal(0)
-        should.exist(txo.htlcRedeemScript)
-        should.exist(txo.rhtlcRedeemScript)
-        should.exist(txo.htlcScriptPubkey)
-        should.exist(txo.rhtlcScriptPubkey)
+
+        SecretHelper.checkSecretNotHidden(txo.outputList[0].htlcSecret)
+        SecretHelper.checkSecretNotHidden(txo.outputList[0].revocationSecret)
+        SecretHelper.checkSecretNotHidden(txo.changeOutput.htlcSecret)
+        SecretHelper.checkSecretNotHidden(txo.changeOutput.revocationSecret)
       }, this)
     })
   })
 
   describe('#toPublic', function () {
-    it.skip('should create a public CommitmentTxObj object', function () {
+    it('should create a public CommitmentTxObj object', function () {
       return asink(function * () {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -176,10 +235,10 @@ describe('CommitmentTxObj', function () {
         let bob = new Agent('Bob')
         yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
 
-        alice.initializeOther(yield bob.asyncToPublic())
-        bob.initializeOther(yield alice.asyncToPublic())
+        alice.other = yield bob.asyncToPublic()
+        bob.other = yield alice.asyncToPublic()
 
-        yield alice.asyncInitializeMultisig()
+        yield alice.multisigAddress.asyncInitialize(alice.other.multisigAddress.pubKey)
 
         let inputAmountBn = Bn(1e10)
         let fundingAmount = Bn(1e8)
@@ -189,33 +248,46 @@ describe('CommitmentTxObj', function () {
         alice.fundingTxObj = new FundingTxObj()
         yield alice.fundingTxObj.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
-        alice.commitmentTxObj = new CommitmentTxObj()
-        alice.commitmentTxObj.initializeOtherSecrets(bob.getCommitmentTxObj(1).htlcSecret, bob.getCommitmentTxObj(1).revocationSecret)
-        alice.commitmentTxObj.initializeSecrets(alice.getCommitmentTxObj(1).htlcSecret, alice.getCommitmentTxObj(1).revocationSecret)
-        yield alice.commitmentTxObj.asyncInitialize(Bn(5e7), Bn(5e7), alice.fundingTxObj,
-          alice.multisigAddress, alice.destinationAddress, alice.other.destinationAddress, alice.funder)
+        let htlcSecret = new HtlcSecret()
+        yield htlcSecret.asyncInitialize()
+        let revocationSecret = new RevocationSecret()
+        yield revocationSecret.asyncInitialize()
 
-        let txo = alice.commitmentTxObj.toPublic()
+        let outputList = [new OutputDescription(
+          alice.id, 'finalDestId', htlcSecret, revocationSecret, Bn(1e7)
+        )]
+        let changeOutput = new OutputDescription(
+          bob.id, 'finalDestId', htlcSecret, revocationSecret
+        )
+        let destinationAddresses = {}
+        destinationAddresses[alice.id] = alice.destinationAddress
+        destinationAddresses[bob.id] = bob.destinationAddress
+        let commitmentTxObj = new CommitmentTxObj()
+        commitmentTxObj.multisigAddress = alice.multisigAddress
+        commitmentTxObj.fundingTxObj = alice.fundingTxObj
+        commitmentTxObj.outputList = outputList
+        commitmentTxObj.changeOutput = changeOutput
+        commitmentTxObj.ownerDesitinationAddress = bob.destinationAddress
+        commitmentTxObj.builderDestinationAddress = alice.destinationAddress
+        commitmentTxObj.ownerId = bob.id
+        commitmentTxObj.builderId = alice.id
+        yield commitmentTxObj.asyncBuild()
+        let txo = commitmentTxObj.toPublic()
 
         should.exist(txo)
+        should.exist(txo.multisigAddress)
+        should.exist(txo.ownerDesitinationAddress)
+        should.exist(txo.builderDestinationAddress)
+        should.exist(txo.outputList)
+        should.exist(txo.changeOutput)
+        should.exist(txo.ownerId)
+        should.exist(txo.builderId)
         should.exist(txo.txb)
-        should.exist(txo.htlcOutNum)
-        should.exist(txo.rhtlcOutNum)
-        should.exist(txo.htlcRedeemScript)
-        should.exist(txo.rhtlcRedeemScript)
-        should.exist(txo.htlcScriptPubkey)
-        should.exist(txo.rhtlcScriptPubkey)
 
-        // check that secrets are hidden after toPublic
-        should.exist(txo.htlcSecret)
-        should.exist(txo.htlcSecret.hash)
-        should.not.exist(txo.htlcSecret.buf)
-        should.exist(txo.otherHtlcSecret)
-        should.exist(txo.otherHtlcSecret.hash)
-        should.not.exist(txo.otherHtlcSecret.buf)
-        should.exist(txo.revocationSecret)
-        should.exist(txo.revocationSecret.hash)
-        should.not.exist(txo.revocationSecret.buf)
+        SecretHelper.checkSecretHidden(txo.outputList[0].htlcSecret)
+        SecretHelper.checkSecretHidden(txo.outputList[0].revocationSecret)
+        SecretHelper.checkSecretHidden(txo.changeOutput.htlcSecret)
+        SecretHelper.checkSecretHidden(txo.changeOutput.revocationSecret)
       }, this)
     })
   })
