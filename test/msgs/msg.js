@@ -30,4 +30,11 @@ describe('Msg', function () {
       msg.args[1].should.equal('arg2')
     })
   })
+
+  describe('#isValid', function () {
+    it('should know this is a valid msg', function () {
+      let msg = new Msg('command-name', ['arg1', 'arg2'])
+      msg.isValid().should.equal(true)
+    })
+  })
 })

@@ -17,8 +17,14 @@ Definitions
 
 Message Data Structures
 -----------------------
-All message types are JSON objects with a command ('cmd') property, and an
-arguments ('args') property. cmd is a string, and args is an object.
+All message types are JSON objects with these properties:
+- cmd: A string, specifying the name of the command to be executed by the
+  remote agent.
+- args: A JSON object (optionally an array) containing the properties the
+  remote agent needs to execute the method.
+- chanId: A 32 character hex string identifying the channel. The chanId is set
+  by the channel initiator and must be the same for every message for that
+  channel.
 
 ### MsgOpen
 - Command: 'open'
