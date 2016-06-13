@@ -42,7 +42,7 @@ arguments ('args') property. cmd is a string, and args is an object.
 ### MsgError
 - Command: 'error'
 - Arguments:
-  - errStr: An error string that explains the nature of the error.
+  - error: An error string that explains the nature of the error.
 - Explanation: When a fatal error occurs, an error message may be sent. Both
   parties should close the channel when an error message is either sent or
   received.
