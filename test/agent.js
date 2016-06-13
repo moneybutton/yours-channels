@@ -6,7 +6,8 @@ let HtlcSecret = require('../lib/scrts/htlc-secret')
 let asink = require('asink')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let Bn = require('yours-bitcoin/lib/bn')
-
+let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
+let Interp = require('yours-bitcoin/lib/interp')
 /*
 let asyncTestSecretChecks = function (secret) {
   return asink(function * () {
@@ -163,6 +164,19 @@ describe('Agent', function () {
 
         // check that the revocationSecret has been added
         should.exist(bob.commitmentTxObjs[0].outputList[0].revocationSecret)
+
+        let txVerifier, error
+        // verify bob's commitmentTx
+        txVerifier = new TxVerifier(bob.commitmentTxObjs[0].txb.tx, bob.commitmentTxObjs[0].txb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        // we expect an error here as the transaction is not fully signed
+        error.should.equal(false)
+
+        // verify bob's commitmentTx
+        txVerifier = new TxVerifier(alice.commitmentTxObjs[0].txb.tx, bob.commitmentTxObjs[0].txb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        // we expect an error here as the transaction is not fully signed
+        error.should.equal(false)
       }, this)
     })
   })
