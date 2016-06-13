@@ -80,15 +80,15 @@ describe('Secret', function () {
   })
 
   describe('#fromJSON', function () {
-    it('sshould return a Json file', function () {
+    it('should return a Json file', function () {
       return asink(function * () {
         let secret = new Secret()
         yield secret.asyncInitialize()
 
         let json = secret.toJSON()
         let otherSecret = new Secret().fromJSON(json)
-        should.exist(otherSecret.buf)
-        should.exist(otherSecret.hash)
+        Buffer.isBuffer(otherSecret.buf).should.equal(true)
+        Buffer.isBuffer(otherSecret.hash).should.equal(true)
       }, this)
     })
   })
