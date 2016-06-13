@@ -2,7 +2,7 @@
 'use strict'
 let should = require('should')
 let asink = require('asink')
-let Secret = require('../../lib/scrts/secret.js')
+let Secret = require('../../lib/scrts/secret')
 
 describe('Secret', function () {
   it('should exist', function () {
@@ -12,7 +12,7 @@ describe('Secret', function () {
 
   describe('#generateBuf', function () {
     it('should generate a buffer', function () {
-      return asink(function *() {
+      return asink(function * () {
         let secret = new Secret()
         secret.generateBuf()
         should.exist(secret.buf)
@@ -22,7 +22,7 @@ describe('Secret', function () {
 
   describe('#asyncGenerateHash', function () {
     it('should generate a hash', function () {
-      return asink(function *() {
+      return asink(function * () {
         let secret = new Secret()
         secret.generateBuf()
         should.exist(secret.buf)
@@ -34,7 +34,7 @@ describe('Secret', function () {
 
   describe('#asyncSuperCheck', function () {
     it('should check if buf hashes to hash', function () {
-      return asink(function *() {
+      return asink(function * () {
         let secret = new Secret()
         secret.generateBuf()
         should.exist(secret.buf)
@@ -48,7 +48,7 @@ describe('Secret', function () {
 
   describe('#toPublic', function () {
     it('should remove the buf from a secret', function () {
-      return asink(function *() {
+      return asink(function * () {
         let secret = new Secret()
         secret.generateBuf()
         yield secret.asyncGenerateHash()
@@ -68,7 +68,7 @@ describe('Secret', function () {
 
   describe('#toJSON', function () {
     it('should return a Json file', function () {
-      return asink(function *() {
+      return asink(function * () {
         let secret = new Secret()
         secret.generateBuf()
         yield secret.asyncGenerateHash()
@@ -81,7 +81,7 @@ describe('Secret', function () {
 
   describe('#fromJSON', function () {
     it('sshould return a Json file', function () {
-      return asink(function *() {
+      return asink(function * () {
         let secret = new Secret()
         yield secret.asyncInitialize()
 

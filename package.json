@@ -1,26 +1,29 @@
 {
   "name": "yours-channels",
   "version": "1.0.0",
-  "description": "Payment channels for fullnode.",
-  "main": "index.js",
+  "description": "Payment channels for Yours.",
+  "main": "index",
   "scripts": {
-    "test-format": "./node_modules/.bin/standard lib/*.js test/*.js lib/*/*.js test/*/*.js",
+    "test-format": "./node_modules/.bin/standard lib/* test/* lib/*/* test/*/*",
     "test": "npm run test-format && npm run mocha",
-    "mocha": "./node_modules/.bin/mocha test/*.js test/*/*.js"
+    "mocha": "./node_modules/.bin/mocha test/*/* test/*"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dattnetwork/fullnode-pc.git"
+    "url": "git+https://github.com/yoursnetwork/yours-channels.git"
   },
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/dattnetwork/fullnode-pc/issues"
+    "url": "https://github.com/yoursnetwork/yours-channels/issues"
   },
-  "homepage": "https://github.com/dattnetwork/fullnode-pc#readme",
+  "homepage": "https://github.com/yoursnetwork/yours-channels#readme",
   "dependencies": {
     "asink": "1.0.4",
-    "yours-bitcoin": "0.14.11"
+    "mocha": "2.5.3",
+    "should": "9.0.1",
+    "standard": "7.1.2",
+    "yours-bitcoin": "0.14.13"
   },
   "devDependencies": {
     "mocha": "2.4.5",

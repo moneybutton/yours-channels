@@ -2,16 +2,16 @@
 'use strict'
 let should = require('should')
 let asink = require('asink')
-let Privkey = require('fullnode/lib/privkey')
-let Pubkey = require('fullnode/lib/pubkey.js')
-let Address = require('fullnode/lib/address.js')
-let Wallet = require('../lib/wallet.js')
-let Bn = require('fullnode/lib/bn')
+let PrivKey = require('yours-bitcoin/lib/priv-key')
+let PubKey = require('yours-bitcoin/lib/pub-key')
+let Address = require('yours-bitcoin/lib/address')
+let Wallet = require('../lib/wallet')
+let Bn = require('yours-bitcoin/lib/bn')
 
 describe('Wallet', function () {
-  let privkey = Privkey().fromRandom()
-  let pubkey = Pubkey().fromPrivkey(privkey)
-  let address = Address().fromPubkey(pubkey)
+  let privKey = PrivKey.fromRandom()
+  let pubKey = PubKey.fromPrivKey(privKey)
+  let address = Address.fromPubKey(pubKey)
 
   it('should exist', function () {
     should.exist(Wallet)
@@ -20,7 +20,7 @@ describe('Wallet', function () {
 
   describe('#getUnspentOutput', function () {
     it('should return an unspent output', function () {
-      return asink(function *() {
+      return asink(function * () {
         let wallet = new Wallet()
         let output = wallet.getUnspentOutput(Bn(1e8), address)
 

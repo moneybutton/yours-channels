@@ -2,7 +2,7 @@
 'use strict'
 let should = require('should')
 let asink = require('asink')
-let KeyPairAddress = require('../../lib/addrs/key-pair-address.js')
+let KeyPairAddress = require('../../lib/addrs/key-pair-address')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 
 describe('KeyPairAddress', function () {
@@ -18,7 +18,7 @@ describe('KeyPairAddress', function () {
     })
 
     it('should set a multisig script and address', function () {
-      return asink(function *() {
+      return asink(function * () {
         let keyPairAddress = new KeyPairAddress()
         yield keyPairAddress.asyncInitialize(PrivKey.fromRandom())
         should.exist(keyPairAddress.keyPair)
@@ -29,7 +29,7 @@ describe('KeyPairAddress', function () {
 
   describe('#toJSON', function () {
     it('should convert into a json object', function () {
-      return asink(function *() {
+      return asink(function * () {
         let keyPairAddress = new KeyPairAddress()
         yield keyPairAddress.asyncInitialize(PrivKey.fromRandom())
         let json = keyPairAddress.toJSON()
@@ -52,7 +52,7 @@ describe('KeyPairAddress', function () {
 
   describe('#fromJSON', function () {
     it('should convert from a json object', function () {
-      return asink(function *() {
+      return asink(function * () {
         let keyPairAddressObj = new KeyPairAddress()
         yield keyPairAddressObj.asyncInitialize(PrivKey.fromRandom())
         let json = keyPairAddressObj.toJSON()
