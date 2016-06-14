@@ -62,7 +62,7 @@ describe('CommitmentTxObj', function () {
         commitmentTxObj.fundingTxObj = alice.fundingTxObj
         commitmentTxObj.outputList = outputList
         commitmentTxObj.changeOutput = changeOutput
-        commitmentTxObj.ownerDesitinationAddress = bob.destinationAddress
+        commitmentTxObj.ownerDestinationAddress = bob.destinationAddress
         commitmentTxObj.builderDestinationAddress = alice.destinationAddress
         commitmentTxObj.ownerId = bob.id
         commitmentTxObj.builderId = alice.id
@@ -76,7 +76,7 @@ describe('CommitmentTxObj', function () {
 
         should.exist(commitmentTxObj)
         should.exist(commitmentTxObj.multisigAddress)
-        should.exist(commitmentTxObj.ownerDesitinationAddress)
+        should.exist(commitmentTxObj.ownerDestinationAddress)
         should.exist(commitmentTxObj.builderDestinationAddress)
         should.exist(commitmentTxObj.outputList)
         should.exist(commitmentTxObj.changeOutput)
@@ -137,7 +137,7 @@ describe('CommitmentTxObj', function () {
         commitmentTxObj.fundingTxObj = alice.fundingTxObj
         commitmentTxObj.outputList = outputList
         commitmentTxObj.changeOutput = changeOutput
-        commitmentTxObj.ownerDesitinationAddress = bob.destinationAddress
+        commitmentTxObj.ownerDestinationAddress = bob.destinationAddress
         commitmentTxObj.builderDestinationAddress = alice.destinationAddress
         commitmentTxObj.ownerId = bob.id
         commitmentTxObj.builderId = alice.id
@@ -146,7 +146,7 @@ describe('CommitmentTxObj', function () {
 
         should.exist(json)
         should.exist(json.multisigAddress)
-        should.exist(json.ownerDesitinationAddress)
+        should.exist(json.ownerDestinationAddress)
         should.exist(json.builderDestinationAddress)
         should.exist(json.outputList)
         should.exist(json.changeOutput)
@@ -203,7 +203,7 @@ describe('CommitmentTxObj', function () {
         commitmentTxObj.fundingTxObj = alice.fundingTxObj
         commitmentTxObj.outputList = outputList
         commitmentTxObj.changeOutput = changeOutput
-        commitmentTxObj.ownerDesitinationAddress = bob.destinationAddress
+        commitmentTxObj.ownerDestinationAddress = bob.destinationAddress
         commitmentTxObj.builderDestinationAddress = alice.destinationAddress
         commitmentTxObj.ownerId = bob.id
         commitmentTxObj.builderId = alice.id
@@ -214,7 +214,7 @@ describe('CommitmentTxObj', function () {
 
         should.exist(txo)
         should.exist(txo.multisigAddress)
-        should.exist(txo.ownerDesitinationAddress)
+        should.exist(txo.ownerDestinationAddress)
         should.exist(txo.builderDestinationAddress)
         should.exist(txo.outputList)
         should.exist(txo.changeOutput)
@@ -271,7 +271,7 @@ describe('CommitmentTxObj', function () {
         commitmentTxObj.fundingTxObj = alice.fundingTxObj
         commitmentTxObj.outputList = outputList
         commitmentTxObj.changeOutput = changeOutput
-        commitmentTxObj.ownerDesitinationAddress = bob.destinationAddress
+        commitmentTxObj.ownerDestinationAddress = bob.destinationAddress
         commitmentTxObj.builderDestinationAddress = alice.destinationAddress
         commitmentTxObj.ownerId = bob.id
         commitmentTxObj.builderId = alice.id
@@ -280,7 +280,7 @@ describe('CommitmentTxObj', function () {
 
         should.exist(txo)
         should.exist(txo.multisigAddress)
-        should.exist(txo.ownerDesitinationAddress)
+        should.exist(txo.ownerDestinationAddress)
         should.exist(txo.builderDestinationAddress)
         should.exist(txo.outputList)
         should.exist(txo.changeOutput)

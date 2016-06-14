@@ -63,7 +63,7 @@ describe('SpendingTxObj', function () {
         commitmentTxObj.fundingTxObj = alice.fundingTxObj
         commitmentTxObj.outputList = outputList
         commitmentTxObj.changeOutput = changeOutput
-        commitmentTxObj.ownerDesitinationAddress = bob.destinationAddress
+        commitmentTxObj.ownerDestinationAddress = bob.destinationAddress
         commitmentTxObj.builderDestinationAddress = alice.destinationAddress
         commitmentTxObj.ownerId = bob.id
         commitmentTxObj.builderId = alice.id
