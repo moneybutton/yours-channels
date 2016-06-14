@@ -4,18 +4,19 @@ let Agent = require('../lib/agent')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 // let PubKey = require('yours-bitcoin/lib/pub-key')
 // let Address = require('yours-bitcoin/lib/address')
+let HtlcSecret = require('../lib/scrts/htlc-secret')
 let Bn = require('yours-bitcoin/lib/bn')
 let asink = require('asink')
-let should = require('should')
+require('should')
 
 describe('Example: Bob opens a channel with Carol', function () {
-  let bobInit = {
+  let bob = {
     sourcePrivKey: PrivKey.fromRandom(),
     multisigPrivKey: PrivKey.fromRandom(),
     destinationPrivKey: PrivKey.fromRandom()
   }
 
-  let carolInit = {
+  let carol = {
     sourcePrivKey: PrivKey.fromRandom(),
     multisigPrivKey: PrivKey.fromRandom(),
     destinationPrivKey: PrivKey.fromRandom()
@@ -23,35 +24,61 @@ describe('Example: Bob opens a channel with Carol', function () {
 
   it('Bob establishes payment channel with Carol funded with 1 bitcoin and micropays her 1000 satoshis', function () {
     return asink(function * () {
-      let bob = new Agent()
-      yield bob.asyncInitialize(bobInit.sourcePrivKey, bobInit.multisigPrivKey, bobInit.destinationPrivKey)
+      bob.agent = new Agent('Bob')
+      yield bob.agent.asyncInitialize(bob.sourcePrivKey, bob.multisigPrivKey, bob.destinationPrivKey)
 
-      let carol = new Agent()
-      yield carol.asyncInitialize(carolInit.sourcePrivKey, carolInit.multisigPrivKey, carolInit.destinationPrivKey)
+      carol.agent = new Agent('Carol')
+      yield carol.agent.asyncInitialize(carol.sourcePrivKey, carol.multisigPrivKey, carol.destinationPrivKey)
 
       // TODO: This should not be necessary. Instead of setting the remote
       // agent, each agent should generate messages which can be sent to the
       // other party via some separate messaging mechanism.
-      bob.remoteAgent = carol
-      carol.remoteAgent = bob
+      bob.agent.remoteAgent = carol.agent
+      carol.agent.remoteAgent = bob.agent
 
       // TODO: This should not be necessary. Instead of setting a variable
       // here, there should just be a "fund" mechanism which lets you insert a
       // transaction spending to the multisig address. If you are the person
       // generating that transaction (the funding transaction), then you are
       // the funder.
-      bob.funder = true
+      bob.agent.funder = true
 
-      // TODO: Replace this with MsgOpenChannel. This should NOT create a
-      // funding transaction. asyncOpenChannel should create the first message
-      // that needs to be sent to the other party (an instance of
-      // MsgOpenChannel).
-      yield bob.asyncOpenChannel(Bn(1e8), yield carol.asyncToPublic())
+      // Bob opens the channel by sending a message to Carol. TODO: Replace
+      // this with MsgOpenChannel. This should NOT create a funding
+      // transaction. asyncOpenChannel should create the first message that
+      // needs to be sent to the other party (an instance of MsgOpenChannel).
+      yield bob.agent.remoteAgent.asyncOpenChannel(Bn(1e8), yield bob.agent.asyncToPublic())
 
-      should.exist(bob.other)
-      should.exist(bob.fundingTxObj)
+      // sanity checks
+      bob.agent.id.should.equal('Bob')
+      bob.agent.other.id.should.equal('Carol')
+      carol.agent.id.should.equal('Carol')
+      carol.agent.other.id.should.equal('Bob')
 
-      // TODO: Not finished.
+      // Carol generates an HTLC secret for receiving the payment.
+      carol.htlcSecrets = [yield new HtlcSecret().asyncInitialize()]
+
+      // Carol sends the HTLC hash to Bob. TODO: This should be sent as a Msg.
+      bob.htlcSecrets = [carol.htlcSecrets[0].toPublic()]
+
+      // Bob builds a new output list containing the payment to Carol
+      let outputList = [{
+        intermediateDestId: carol.agent.id,
+        finalDestId: carol.agent.id,
+        amount: Bn(1e3),
+        htlcSecret: bob.htlcSecrets[0]
+      }]
+      let changeOutput = {
+        intermediateDestId: bob.agent.id,
+        finalDestId: bob.agent.id,
+        htlcSecret: bob.htlcSecrets[0]
+      }
+
+      // Bob sends the output list to Carol.
+      bob.agent.sender = true
+      yield bob.agent.remoteAgent.asyncSendOutputList(outputList, changeOutput)
+
+      // TODO: Also show that spending works.
     }, this)
   })
 })
