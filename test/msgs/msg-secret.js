@@ -1,8 +1,9 @@
 /* global describe,it */
 'use strict'
-let MsgSecret = require('../../lib/msgs/msg-secret')
 let Hash = require('yours-bitcoin/lib/hash')
+let MsgSecret = require('../../lib/msgs/msg-secret')
 let Random = require('yours-bitcoin/lib/random')
+let asink = require('asink')
 let should = require('should')
 
 describe('MsgSecret', function () {
@@ -21,21 +22,20 @@ describe('MsgSecret', function () {
   describe('#setSecret', function () {
     it('should set this secret', function () {
       let secretBuf = Random.getRandomBuffer(32)
-      let secretHashBuf = Hash.sha256Ripemd160(secretBuf)
+      let hashBuf = Hash.sha256Ripemd160(secretBuf)
       let msg = new MsgSecret()
-      msg.setSecret('HTLC', secretBuf, secretHashBuf)
-      should.exist(msg.args.type)
+      msg.setSecret(secretBuf, hashBuf)
       should.exist(msg.args.secret)
-      should.exist(msg.args.secretHash)
+      should.exist(msg.args.hash)
     })
   })
 
   describe('#getSecret', function () {
     it('should return a secret', function () {
       let secretBuf = Random.getRandomBuffer(32)
-      let secretHashBuf = Hash.sha256Ripemd160(secretBuf)
+      let hashBuf = Hash.sha256Ripemd160(secretBuf)
       let msg = new MsgSecret()
-      msg.setSecret('HTLC', secretBuf, secretHashBuf)
+      msg.setSecret(secretBuf, hashBuf)
       let secretBuf2 = msg.getSecret()
       Buffer.compare(secretBuf, secretBuf2).should.equal(0)
     })
@@ -44,22 +44,24 @@ describe('MsgSecret', function () {
   describe('#getSecretHash', function () {
     it('should return a secret', function () {
       let secretBuf = Random.getRandomBuffer(32)
-      let secretHashBuf = Hash.sha256Ripemd160(secretBuf)
+      let hashBuf = Hash.sha256Ripemd160(secretBuf)
       let msg = new MsgSecret()
-      msg.setSecret('HTLC', secretBuf, secretHashBuf)
-      let secretHashBuf2 = msg.getSecretHash()
-      Buffer.compare(secretHashBuf, secretHashBuf2).should.equal(0)
+      msg.setSecret(secretBuf, hashBuf)
+      let hashBuf2 = msg.getSecretHash()
+      Buffer.compare(hashBuf, hashBuf2).should.equal(0)
     })
   })
 
-  describe('#getType', function () {
-    it('should return a secret', function () {
-      let secretBuf = Random.getRandomBuffer(32)
-      let secretHashBuf = Hash.sha256Ripemd160(secretBuf)
-      let msg = new MsgSecret()
-      msg.setSecret('HTLC', secretBuf, secretHashBuf)
-      let type = msg.getType()
-      type.should.equal('HTLC')
+  describe('#asyncIsValid', function () {
+    it('should know this is a valid secret msg', function () {
+      return asink(function * () {
+        let secretBuf = Random.getRandomBuffer(32)
+        let hashBuf = Hash.sha256Ripemd160(secretBuf)
+        let msg = new MsgSecret()
+        msg.setSecret(secretBuf, hashBuf)
+        let isValid = yield msg.asyncIsValid()
+        isValid.should.equal(true)
+      }, this)
     })
   })
 })
