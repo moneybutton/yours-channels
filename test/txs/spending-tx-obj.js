@@ -173,8 +173,8 @@ describe('SpendingTxObj', function () {
 
         yield alice.multisigAddress.asyncInitialize(alice.other.multisigAddress.pubKey)
 
-        let inputAmountBn = Bn(1e10)
-        let fundingAmount = Bn(1e8)
+        let inputAmountBn = Bn(1e12)
+        let fundingAmount = Bn(1e11)
         let wallet = new Wallet()
         let output = wallet.getUnspentOutput(inputAmountBn, alice.sourceAddress.keyPair.pubKey)
 
@@ -187,8 +187,8 @@ describe('SpendingTxObj', function () {
         yield revocationSecret.asyncInitialize()
 
         let outputList = [
-          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(5e6)),
-          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(5e6))
+          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(5e9)),
+          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(5e9))
         ]
         let changeOutput = new OutputDescription(
           bob.id, 'finalDestId2', 'pubKey', htlcSecret, revocationSecret
