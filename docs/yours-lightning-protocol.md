@@ -25,11 +25,11 @@ Definitions
 Low Level vs. High Level
 ------------------------
 There are two protocols in the Yours Lightning Protocol. The low-level protocol
-is for creating, maintaining and closing a payment channel between two agents.
+is for creating, updating, and closing a payment channel between two agents.
 The high-level protocol is a way of using a network of payment channels to send
 payments to and from any number of people.
 
-Low Level Message Data Structures
+Low-Level Message Data Structures
 ---------------------------------
 All message types are JSON objects with these properties:
 - cmd: A string, specifying the name of the command to be executed by the
