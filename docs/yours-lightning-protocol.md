@@ -67,8 +67,8 @@ All message types are JSON objects with these properties:
   message needs to contain the public key of the channel recipient for use in
   the funding multisig transaction.
 
-### MsgPay
-- Command: 'pay'
+### MsgUpdate
+- Command: 'update'
 - Arguments:
   - outputDescriptions: An array of OutputDescription objects specifying what
     types the outputs are (such as HTLC or pubkey) and how much bitcoin is in
@@ -77,15 +77,9 @@ All message types are JSON objects with these properties:
     builder/sender and to be owned by the owner/receiver.
 - Explanation: When you want to make a payment to someone, either to the agent
   on the other side of the channel or to someone else they are connected to,
-  you need to send a MsgPay.
-
-### MsgPayRes
-- Command: 'pay-res'
-- Arguments:
-  - commitmentTxBuilder: A partially signed TxBuilder object created by the
-    builder/sender and to be owned by the owner/receiver.
-- Explanation: This is always sent in response to a MsgPay. If you do not like
-  the MsgPay, then you can close the channel and send a MsgError instead.
+  you need to send a MsgUpdate. When an agent sends a MsgUpdate, they expect
+  the other agent to send a MsgUpdate as well with the complementary commitment
+  transaction.
 
 ### MsgSecret
 - Command: 'secret'
