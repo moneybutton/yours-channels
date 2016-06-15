@@ -1,11 +1,14 @@
-# Yours Payment Channel Network
+Yours Lightning Protocol
+========================
 
 We describe how a Bitcoin payment channel network can be built. The basic
 building blocks are 2-way *hash time locked contracts* (HTLCs). Our
-construction is not subject to transaction malleability and uses only
-CHECKSEQUENCEVERIFY (CSV) and opcodes that are active in Bitcoin script today.
+construction is not subject to transaction malleability except for the funding
+transaction and uses only CHECKSEQUENCEVERIFY (CSV) and opcodes that are active
+in Bitcoin script today.
 
-## Smart contracts
+Smart Contracts
+---------------
 
 We will need two kinds of smart contracts: HTLCs and revokable HTLCs.
 
@@ -42,14 +45,14 @@ Alice can spend it after two days with this input script:
 <A's signature> FALSE
 ```
 
-### Revocable HTLCs (RHTLCs)
+### Revocable HTLCs (RevHTLCs)
 
 In order for channels to remain open an unlimited amount of time, the parties
 must be able to revoke previously made payments. A Revocable Sequence Maturity
 Contract (RSMC) is a technique to achieve just that [1]. We apply this
 technique to HTLCs in order to make them revokable.
 
-A revocable HTLC (RHTLC) between A and B is a smart contract that expresses:
+A revocable HTLC (RevHTLC) between A and B is a smart contract that expresses:
 
 > An output can be spent by B if he knows A's revocation secret, or after one
 > day if B knows the HTLC secret, or by A after 2 days.
@@ -97,94 +100,140 @@ Alice may spend it after two days with the following input script:
 <A's signature> FALSE FALSE
 ```
 
-## Transactions
+Transactions
+------------
 
-For each transaction, Alice (A) and Bob (B) both generate a fresh htcl secret and a fresh revocation secret. They construct the following two transactions:
+For each transaction, Alice (A) and Bob (B) both generate a fresh htcl secret
+and a fresh revocation secret. They construct the following two transactions:
 
 ![alt text](./img/2-way-rhtlc.png "2-way-rhtlc.png")
 
 Each commitment transaction maintains two HTLCs, one for each direction. Note
 that each party can revoke their own HTLC but not the other party's.
 
-## Data structures
+Data Structures
+---------------
 
 Either agent in the channel stores the following data:
-* the source address used to fund the funding transaction
-* the multisig address "between" the funding and commitment tx
-* the destination address that the commitment transactions spend to
-* the funding transaction (or its hash)
-* a list of commitment transaction objects
-* a reference to the other agent public information (including her list of previous commitment transaction objects)
+- the source address used to fund the funding transaction
+- the multisig address "between" the funding and commitment tx
+- the destination address that the commitment transactions spend to
+- the funding transaction (or its hash)
+- a list of commitment transaction objects
+- a reference to the other agent public information (including her list of
+  previous commitment transaction objects)
 
 A commitment transaction object contains the following
 
-* a commitment transaction
-* the agents htlc secret
-* the agents revocation secret
-* the public version of the other agents htlc secret
-* the public version of the other agents revocation secret
+- a commitment transaction
+- the agents htlc secret
+- the agents revocation secret
+- the public version of the other agents htlc secret
+- the public version of the other agents revocation secret
 
-## Protocols
+Protocols
+---------
 
-We now describe the protocol that the parties use to construct the transactions shown above.
+We now describe the protocol that the parties use to construct the transactions
+shown above.
 
 ### Local initialization (asyncInitialize)
 
 **1. Local initialization .** Both agents initialize the following
- * their local addresses (source, destination)
- * a htlc and revocation secret to be used in the first payment
- * the shared multisig object is initialized, but the address has not been generated yet.
+- their local addresses (source, destination)
+- a htlc and revocation secret to be used in the first payment
+- the shared multisig object is initialized, but the address has not been
+  generated yet.
 
 ### Opening the channel (asyncOpenChannel)
 
-As there are inherent malleability problems if two parties fund a payment channel. To avoid this problem we use a version where only Alice funds the channel.
+As there are inherent malleability problems if two parties fund a payment
+channel. To avoid this problem we use a version where only Alice funds the
+channel.
 
-**1. Alice and Bob exchange their public projections (initializeOther).** This allows them to build a shared multisig address and to know the public versions of the other agents htlc and revocation secret. After this step the following is initialized
+**1. Alice and Bob exchange their public projections (initializeOther).** This
+allows them to build a shared multisig address and to know the public versions
+of the other agents htlc and revocation secret. After this step the following
+is initialized
 
-**2. Alice and Bob build the shared multisig (asyncInitializeMultisig).** Now that they have exchanged public keys for the multisig address, they can both build it.
+**2. Alice and Bob build the shared multisig (asyncInitializeMultisig).** Now
+that they have exchanged public keys for the multisig address, they can both
+build it.
 
-**3. The funder (Alice) builds a funding transaction.** The agent that funds the channel creates the funding transaction that spends to the shared multisig address. She does not broadcast it yet. She then
-sends the funding amount and funding transaction hash to Bob.
+**3. The funder (Alice) builds a funding transaction.** The agent that funds
+the channel creates the funding transaction that spends to the shared multisig
+address. She does not broadcast it yet. She then sends the funding amount and
+funding transaction hash to Bob.
 
-**4. Bob builds and signs a refund transaction, sends it to Alice.** Alice and Bob go through the protocol described below for creating a payment, in the case where Bob sends a payment to Alice. The payment spends all funds from the funding transaction to Alice.
+**4. Bob builds and signs a refund transaction, sends it to Alice.** Alice and
+Bob go through the protocol described below for creating a payment, in the case
+where Bob sends a payment to Alice. The payment spends all funds from the
+funding transaction to Alice.
 
-**5. Alice broadcasts the funding transaction.** When the refund transaction is created and distributed between the two parties, Alice broadcasts the funding transaction. The channel is open when the funding transaction is confirmed into the blockchain.
+**5. Alice broadcasts the funding transaction.** When the refund transaction is
+created and distributed between the two parties, Alice broadcasts the funding
+transaction. The channel is open when the funding transaction is confirmed into
+the blockchain.
 
 At the end of the channel opening process, both agents store the following information:
 
-* three addresses (source, destination, multisig)
-* a list of commitment transactions objects. The list has one entry that contains the secrets used for the first payment
-* the public information about the other client; this also contains a list of commitment transaction objects with one entry containing the public projections (hahes) of two secrets.
+- three addresses (source, destination, multisig)
+- a list of commitment transactions objects. The list has one entry that
+  contains the secrets used for the first payment
+- the public information about the other client; this also contains a list of
+  commitment transaction objects with one entry containing the public
+  projections (hahes) of two secrets.
 
 ### Creating the payment (asyncSend)
 
-We describe a payment from Alice to Bob. Note that if this is not the first payment, Alice has the hash of Bob's last revocation
-secret, and the hash of Bob's last HTLC secret. If this is the first payment, revoking isn't necessary and these secrets are not needed.
+We describe a payment from Alice to Bob. Note that if this is not the first
+payment, Alice has the hash of Bob's last revocation secret, and the hash of
+Bob's last HTLC secret. If this is the first payment, revoking isn't necessary
+and these secrets are not needed.
 
-**1. Alice builds a commitment transaction for Bob, stores it, and asks him to do the same (asyncSend).** Alice builds the transaction labeled "known only to Bob" above. She then asks Bob to build one for her.<!--She uses the public versions of the secrets obtained from Bob in step 2 and her own secrets generated in Step 1. She signs the transaction and sends it to Bob.-->
+**1. Alice builds a commitment transaction for Bob, stores it, and asks him to
+do the same (asyncSend).** Alice builds the transaction labeled "known only to
+Bob" above. She then asks Bob to build one for her.<!--She uses the public
+versions of the secrets obtained from Bob in step 2 and her own secrets
+generated in Step 1. She signs the transaction and sends it to Bob.-->
 
-**2. Bob builds a commitment transaction for Alice, stores it, and sends it to Alice (asyncSend).**
+**2. Bob builds a commitment transaction for Alice, stores it, and sends it to
+Alice (asyncSend).**
 
-**3. Alice checks the new commitment transaction, stores it, and sends the transaction built in step 1 to Bob (asyncSendTxb).**
+**3. Alice checks the new commitment transaction, stores it, and sends the
+transaction built in step 1 to Bob (asyncSendTxb).**
 
-**4. Bob checks the new commitment transaction, stores it, and revokes the old commitment transaction (asyncSendTxb).**
+**4. Bob checks the new commitment transaction, stores it, and revokes the old
+commitment transaction (asyncSendTxb).**
 
-**5. Alice checks the revocation secret, stores it, generates new secrets, and revokes the old commitment transaction (asyncPrepareNextPayment).**
+**5. Alice checks the revocation secret, stores it, generates new secrets, and
+revokes the old commitment transaction (asyncPrepareNextPayment).**
 
-**6. Bob checks the revocation secret, stores it, generates new secrets for the next payment.**
+**6. Bob checks the revocation secret, stores it, generates new secrets for the
+next payment.**
 
 <!--
-**4. Alice checks the transaction, builds one for Alice and sends it to her.** Bob checks that the transaction spends from the shared multisig address, spends to his destination address, that the secrets used are the ones he generated in Step 2, and that the spending amounts are as expected. If the test passes, he builds the transaction labelled "known only to Alice" and sends it to her (this is symmetric to case 3.).
+**4. Alice checks the transaction, builds one for Alice and sends it to her.**
+Bob checks that the transaction spends from the shared multisig address, spends
+to his destination address, that the secrets used are the ones he generated in
+Step 2, and that the spending amounts are as expected. If the test passes, he
+builds the transaction labelled "known only to Alice" and sends it to her (this
+is symmetric to case 3.).
 
-**5. Alice checks the transaction obtained from Bob, and revokes her last payment if the check passes.** To revoke the previous payment, Alice sends her revocation secret from the last commitment transaction to Bob.
+**5. Alice checks the transaction obtained from Bob, and revokes her last
+payment if the check passes.** To revoke the previous payment, Alice sends her
+revocation secret from the last commitment transaction to Bob.
 
 **6. Bob revokes.** Symmetrically, Bob sends Alice his revocation secret from
 the last commitment transaction.
 
 
-**1. Alice generates new secrets and sends them to Bob.** She locally creates a revocation secret and a htlc secret for use on the next transaction. She then sends the public versions (hashes) of these secrets to Bob.
+**1. Alice generates new secrets and sends them to Bob.** She locally creates a
+revocation secret and a htlc secret for use on the next transaction. She then
+sends the public versions (hashes) of these secrets to Bob.
 
-**2. Bob generates a new secrets and sends them to Alice.** This is symmetric to the case above
+**2. Bob generates a new secrets and sends them to Alice.** This is symmetric
+to the case above
 -->
 ### Closing the channel
 
@@ -202,7 +251,8 @@ that, the other party can do so as soon as possible.
 
 ### Enforcing the HTLC
 
-In case one party fails to spend an output by providing the HTLC secret, the other party can spend the HTLC output after 2 days.
+In case one party fails to spend an output by providing the HTLC secret, the
+other party can spend the HTLC output after 2 days.
 
 **1. Build spending transaction using spending key.**
 
@@ -292,7 +342,8 @@ consistently. However, there is very little to win (one funding transaction
 worth double digit USD) and very much to loose (the miners in the pool), so we
 do not anticipate this attack being a problem in practice.
 
-## Implementation
+Implementation
+--------------
 
 ### Funding the channel
 
@@ -318,7 +369,109 @@ needs to be signed by the other party.
 **acceptCommitmentTx(txb).** Check if payment should be accepted. If so sign
 and return.
 
-## References
+Notes
+-----
+- Payments can go both ways on a channel, so the agent who ultimately receives
+  a payment is the one who generates the secret.
+- "Dave" is the ultimate recipient on the close end of the payment channel, and
+  "Carol" is the ultimate recipient on the far end of the channel.
+
+Definitions
+-----------
+- Bob (B) opens a payment channel with Carol (C). Alice (A) wishes to make a
+  payment to Dave (D). The channel from Bob to Carol is used for the payment
+  from Alice to Dave (and other channels may be involved as well). Alice and
+  Bob may be the same agent. Carol and Dave may be the same agent.
+- The transaction fee is F.
+- The channel is funded with N satoshis.
+- The payment is M satoshis, and M < N.
+- The change is R = N - M - F, and it must be that R >= 0.
+- The transaction fee for a commitment tx is F satoshis.
+- An HTLC secret is 32 bytes long and its hash is 20 bytes long.
+- A RevHTLC secret is 32 bytes long and its hash is 20 bytes long.
+
+Low Level vs. High Level
+------------------------
+There are two protocols in the Yours Lightning Protocol. The low-level protocol
+is for creating, updating, and closing a payment channel between two agents.
+The high-level protocol is a way of using a network of payment channels to send
+payments to and from any number of people.
+
+Low-Level Message Data Structures
+---------------------------------
+All message types are JSON objects with these properties:
+- cmd: A string, specifying the name of the command to be executed by the
+  remote agent.
+- args: A JSON object (optionally an array) containing the properties the
+  remote agent needs to execute the method.
+- chanId: A 32 character hex string identifying the channel. The chanId is set
+  by the channel initiator and must be the same for every message for that
+  channel.
+
+### MsgError
+- Command: 'error'
+- Arguments:
+  - error: An error string that explains the nature of the error.
+- Explanation: When a fatal error occurs, an error message may be sent. Both
+  parties should close the channel when an error message is either sent or
+  received.
+
+### MsgOpen
+- Command: 'open'
+- Arguments:
+  - amount: A big number specifying the amount of satoshis the channel will be
+    funded with.
+  - pubKey: The channel funder's public key (in hex format) to be used in the
+    funding multisig transaction.
+- Explanation: This message is the first message sent on a channel. When Bob
+  opens a channel with Carol, Bob sends this message first.
+
+### MsgOpenRes
+- Command: 'open-res'
+- Arguments:
+  - pubKey: The public key (in hex format) of the channel recipient.
+- Explanation: If a channel recipient (Carol) has received an 'open' message
+  and agrees to open the channel, they respond with an 'open-res' message. This
+  message needs to contain the public key of the channel recipient for use in
+  the funding multisig transaction.
+
+### MsgUpdate
+- Command: 'update'
+- Arguments:
+  - outputDescriptions: An array of OutputDescription objects specifying what
+    types the outputs are (such as HTLC or pubkey) and how much bitcoin is in
+    that output.
+  - commitmentTxBuilder: A partially signed TxBuilder object created by the
+    builder/sender and to be owned by the owner/receiver.
+- Explanation: When you want to make a payment to someone, either to the agent
+  on the other side of the channel or to someone else they are connected to,
+  you need to send a MsgUpdate. When an agent sends a MsgUpdate, they expect
+  the other agent to send a MsgUpdateRes with the complementary commitment
+  transaction.
+
+### MsgUpdateRes
+- Command: 'update-res'
+- Arguments:
+  - outputDescriptions: An array of OutputDescription objects specifying what
+    types the outputs are (such as HTLC or pubkey) and how much bitcoin is in
+    that output.
+  - commitmentTxBuilder: A partially signed TxBuilder object created by the
+    builder/sender and to be owned by the owner/receiver.
+- Explanation: An agent's response to an 'update' message. Also contains an
+  Output Description list and a commitment transaction, but built by the other
+  agent and with different hashes and signatures.
+
+### MsgSecret
+- Command: 'secret'
+- Arguments:
+  - secret: A hex string specifying secret data.
+  - hash: A hex string specifying the HASH160 (sha256 ripemd160) hash of the
+    secret.
+- Explanation: Sometimes an agent needs to reveal a secret in order to receive
+  a payment.
+
+References
+----------
 
 [1] [The Bitcoin Lightning Network: Scalable Off-Chain Instant
 Payments](http://lightning.network/lightning-network-paper.pdf) by Joseph Poon
