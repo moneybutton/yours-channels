@@ -23,7 +23,7 @@ describe('SpendingTxObj', function () {
   })
 
   describe('#asyncBuild', function () {
-    it.skip('should create a partial payment tx', function () {
+    it.skip('build a spending transaction that spends from pubKey output', function () {
       return asink(function * () {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -50,13 +50,82 @@ describe('SpendingTxObj', function () {
         yield revocationSecret.asyncInitialize()
 
         let outputList = [
-          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7)),
-          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7)),
-          new OutputDescription(bob.id, 'finalDestId1', 'pubKey', htlcSecret, revocationSecret, Bn(1e7))
+          new OutputDescription(alice.id, 'finalDestId1', 'pubKey', htlcSecret, revocationSecret, Bn(1e7))
         ]
         let changeOutput = new OutputDescription(
           bob.id, 'finalDestId2', 'pubKey', htlcSecret, revocationSecret
         )
+
+        let destinationAddresses = {}
+        destinationAddresses[alice.id] = alice.destinationAddress
+        destinationAddresses[bob.id] = bob.destinationAddress
+        let commitmentTxObj = new CommitmentTxObj()
+        commitmentTxObj.multisigAddress = alice.multisigAddress
+        commitmentTxObj.fundingTxObj = alice.fundingTxObj
+        commitmentTxObj.outputList = outputList
+        commitmentTxObj.changeOutput = changeOutput
+        commitmentTxObj.ownerDesitinationAddress = bob.destinationAddress
+        commitmentTxObj.builderDestinationAddress = alice.destinationAddress
+        commitmentTxObj.ownerId = bob.id
+        commitmentTxObj.builderId = alice.id
+        yield commitmentTxObj.asyncBuild()
+        yield commitmentTxObj.txb.asyncSign(0, alice.multisigAddress.keyPair, alice.fundingTxObj.txb.tx.txOuts[0])
+
+        commitmentTxObj.outputList[0].spendingAction = 'spend'
+
+        let txVerifier, error
+/*
+        let aliceSpendingTxObj = new SpendingTxObj()
+        yield aliceSpendingTxObj.asyncBuild(alice.destinationAddress, commitmentTxObj)
+        txVerifier = new TxVerifier(aliceSpendingTxObj.txb.tx, aliceSpendingTxObj.txb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        // we expect an error here as the transaction is not fully signed
+        error.should.equal(false)
+*/
+        let bobSpendingTxObj = new SpendingTxObj()
+        yield bobSpendingTxObj.asyncBuild(bob.destinationAddress, commitmentTxObj)
+        txVerifier = new TxVerifier(bobSpendingTxObj.txb.tx, bobSpendingTxObj.txb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        if (error) {
+          console.log(txVerifier.getDebugString())
+        }
+        error.should.equal(false)
+      }, this)
+    })
+
+    it('build a spending transaction that spends from htlc output', function () {
+      return asink(function * () {
+        let alice = new Agent('Alice')
+        yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+        alice.funder = true
+        let bob = new Agent('Bob')
+        yield bob.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
+
+        alice.other = yield bob.asyncToPublic()
+        bob.other = yield alice.asyncToPublic()
+
+        yield alice.multisigAddress.asyncInitialize(alice.other.multisigAddress.pubKey)
+
+        let inputAmountBn = Bn(1e10)
+        let fundingAmount = Bn(1e8)
+        let wallet = new Wallet()
+        let output = wallet.getUnspentOutput(inputAmountBn, alice.sourceAddress.keyPair.pubKey)
+
+        alice.fundingTxObj = new FundingTxObj()
+        yield alice.fundingTxObj.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+
+        let htlcSecret = new HtlcSecret()
+        yield htlcSecret.asyncInitialize()
+        let revocationSecret = new RevocationSecret()
+        yield revocationSecret.asyncInitialize()
+
+        let outputList = [
+          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7))
+        ]
+        let changeOutput = new OutputDescription(
+          bob.id, 'finalDestId2', 'pubKey', htlcSecret, revocationSecret
+        )
+
         let destinationAddresses = {}
         destinationAddresses[alice.id] = alice.destinationAddress
         destinationAddresses[bob.id] = bob.destinationAddress
@@ -70,17 +139,24 @@ describe('SpendingTxObj', function () {
         commitmentTxObj.ownerId = bob.id
         commitmentTxObj.builderId = alice.id
         yield commitmentTxObj.asyncBuild()
-
-        let txVerifier, error
-        txVerifier = new TxVerifier(commitmentTxObj.txb.tx, commitmentTxObj.txb.uTxOutMap)
-        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
-        // we expect an error here as the transaction is not fully signed
-        error.should.equal('input 0 failed script verify')
+        yield commitmentTxObj.txb.asyncSign(0, alice.multisigAddress.keyPair, alice.fundingTxObj.txb.tx.txOuts[0])
 
         commitmentTxObj.outputList[0].spendingAction = 'spend'
 
-        let spendingTxObj = new SpendingTxObj()
-        yield spendingTxObj.asyncBuild(alice.destinationAddress, commitmentTxObj)
+        let txVerifier, error
+        let aliceSpendingTxObj = new SpendingTxObj()
+        yield aliceSpendingTxObj.asyncBuild(alice.destinationAddress, commitmentTxObj)
+        txVerifier = new TxVerifier(aliceSpendingTxObj.txb.tx, aliceSpendingTxObj.txb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        // we expect an error here as the transaction is not fully signed
+        error.should.equal(false)
+
+        let bobSpendingTxObj = new SpendingTxObj()
+        yield bobSpendingTxObj.asyncBuild(bob.destinationAddress, commitmentTxObj)
+        txVerifier = new TxVerifier(bobSpendingTxObj.txb.tx, bobSpendingTxObj.txb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        // we expect an error here as the transaction is not fully signed
+        error.should.equal(false)
       }, this)
     })
   })
