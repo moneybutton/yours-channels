@@ -3,6 +3,8 @@
 let should = require('should')
 let Agent = require('../lib/agent')
 let HtlcSecret = require('../lib/scrts/htlc-secret')
+let RevocationSecret = require('../lib/scrts/revocation-secret')
+let OutputDescription = require('../lib/output-description')
 let asink = require('asink')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let Bn = require('yours-bitcoin/lib/bn')
@@ -125,18 +127,17 @@ describe('Agent', function () {
         bob.remoteAgent = alice
         let htlcSecret = new HtlcSecret()
         yield htlcSecret.asyncInitialize()
+        let revocationSecret = new RevocationSecret()
+        yield revocationSecret.asyncInitialize()
 
-        let outputList = [{
-          intermediateDestId: alice.id,
-          finalDestId: 'not used yet',
-          amount: Bn(1e7),
-          htlcSecret: htlcSecret
-        }]
-        let changeOutput = {
-          intermediateDestId: bob.id,
-          finalDestId: 'not used yet',
-          htlcSecret: htlcSecret
-        }
+        let outputList = [
+          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7)),
+          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7)),
+          new OutputDescription(bob.id, 'finalDestId1', 'pubKey', htlcSecret, revocationSecret, Bn(1e7))
+        ]
+        let changeOutput = new OutputDescription(
+          bob.id, 'finalDestId2', 'pubKey', htlcSecret, revocationSecret
+        )
 
         alice.funder = true
         yield alice.remoteAgent.asyncOpenChannel(Bn(1e8), yield alice.asyncToPublic())

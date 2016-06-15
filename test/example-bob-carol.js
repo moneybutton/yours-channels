@@ -5,8 +5,10 @@ let PrivKey = require('yours-bitcoin/lib/priv-key')
 // let PubKey = require('yours-bitcoin/lib/pub-key')
 // let Address = require('yours-bitcoin/lib/address')
 let HtlcSecret = require('../lib/scrts/htlc-secret')
+let RevocationSecret = require('../lib/scrts/revocation-secret')
 let Bn = require('yours-bitcoin/lib/bn')
 let asink = require('asink')
+let OutputDescription = require('../lib/output-description')
 require('should')
 
 describe('Example: Bob opens a channel with Carol', function () {
@@ -57,22 +59,17 @@ describe('Example: Bob opens a channel with Carol', function () {
 
       // Carol generates an HTLC secret for receiving the payment.
       carol.htlcSecrets = [yield new HtlcSecret().asyncInitialize()]
+      carol.revocationSecrets = [yield new RevocationSecret().asyncInitialize()]
 
       // Carol sends the HTLC hash to Bob. TODO: This should be sent as a Msg.
       bob.htlcSecrets = [carol.htlcSecrets[0].toPublic()]
+      bob.revocationSecrets = [yield new RevocationSecret().asyncInitialize()]
 
       // Bob builds a new output list containing the payment to Carol
-      let outputList = [{
-        intermediateDestId: carol.agent.id,
-        finalDestId: carol.agent.id,
-        amount: Bn(1e3),
-        htlcSecret: bob.htlcSecrets[0]
-      }]
-      let changeOutput = {
-        intermediateDestId: bob.agent.id,
-        finalDestId: bob.agent.id,
-        htlcSecret: bob.htlcSecrets[0]
-      }
+      let outputList = [
+        new OutputDescription(carol.agent.id, carol.agent.id, 'htlc', bob.htlcSecrets[0], carol.revocationSecrets[0], Bn(1e3))
+      ]
+      let changeOutput = new OutputDescription(bob.agent.id, bob.agent.id, 'pubKey', bob.htlcSecrets[0], bob.revocationSecrets[0])
 
       // Bob sends the output list to Carol.
       bob.agent.sender = true

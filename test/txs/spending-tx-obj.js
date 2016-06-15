@@ -23,7 +23,7 @@ describe('SpendingTxObj', function () {
   })
 
   describe('#asyncBuild', function () {
-    it('should create a partial payment tx', function () {
+    it.skip('should create a partial payment tx', function () {
       return asink(function * () {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -49,11 +49,13 @@ describe('SpendingTxObj', function () {
         let revocationSecret = new RevocationSecret()
         yield revocationSecret.asyncInitialize()
 
-        let outputList = [new OutputDescription(
-          alice.id, 'finalDestId', htlcSecret, revocationSecret, Bn(1e7)
-        )]
+        let outputList = [
+          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7)),
+          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7)),
+          new OutputDescription(bob.id, 'finalDestId1', 'pubKey', htlcSecret, revocationSecret, Bn(1e7))
+        ]
         let changeOutput = new OutputDescription(
-          bob.id, 'finalDestId', htlcSecret, revocationSecret
+          bob.id, 'finalDestId2', 'pubKey', htlcSecret, revocationSecret
         )
         let destinationAddresses = {}
         destinationAddresses[alice.id] = alice.destinationAddress
