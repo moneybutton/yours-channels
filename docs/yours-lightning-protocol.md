@@ -78,8 +78,20 @@ All message types are JSON objects with these properties:
 - Explanation: When you want to make a payment to someone, either to the agent
   on the other side of the channel or to someone else they are connected to,
   you need to send a MsgUpdate. When an agent sends a MsgUpdate, they expect
-  the other agent to send a MsgUpdate as well with the complementary commitment
+  the other agent to send a MsgUpdateRes with the complementary commitment
   transaction.
+
+### MsgUpdateRes
+- Command: 'update-res'
+- Arguments:
+  - outputDescriptions: An array of OutputDescription objects specifying what
+    types the outputs are (such as HTLC or pubkey) and how much bitcoin is in
+    that output.
+  - commitmentTxBuilder: A partially signed TxBuilder object created by the
+    builder/sender and to be owned by the owner/receiver.
+- Explanation: An agent's response to an 'update' message. Also contains an
+  Output Description list and a commitment transaction, but built by the other
+  agent and with different hashes and signatures.
 
 ### MsgSecret
 - Command: 'secret'
