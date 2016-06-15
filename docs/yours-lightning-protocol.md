@@ -22,8 +22,15 @@ Definitions
 - An HTLC secret is 32 bytes long and its hash is 20 bytes long.
 - An RHTLC secret is 32 bytes long and its hash is 20 bytes long.
 
-Message Data Structures
------------------------
+Low Level vs. High Level
+------------------------
+There are two protocols in the Yours Lightning Protocol. The low-level protocol
+is for creating, maintaining and closing a payment channel between two agents.
+The high-level protocol is a way of using a network of payment channels to send
+payments to and from any number of people.
+
+Low Level Message Data Structures
+---------------------------------
 All message types are JSON objects with these properties:
 - cmd: A string, specifying the name of the command to be executed by the
   remote agent.
@@ -32,6 +39,14 @@ All message types are JSON objects with these properties:
 - chanId: A 32 character hex string identifying the channel. The chanId is set
   by the channel initiator and must be the same for every message for that
   channel.
+
+### MsgError
+- Command: 'error'
+- Arguments:
+  - error: An error string that explains the nature of the error.
+- Explanation: When a fatal error occurs, an error message may be sent. Both
+  parties should close the channel when an error message is either sent or
+  received.
 
 ### MsgOpen
 - Command: 'open'
@@ -52,10 +67,31 @@ All message types are JSON objects with these properties:
   message needs to contain the public key of the channel recipient for use in
   the funding multisig transaction.
 
-### MsgError
-- Command: 'error'
+### MsgPay
+- Command: 'pay'
 - Arguments:
-  - error: An error string that explains the nature of the error.
-- Explanation: When a fatal error occurs, an error message may be sent. Both
-  parties should close the channel when an error message is either sent or
-  received.
+  - outputDescriptions: An array of OutputDescription objects specifying what
+    types the outputs are (such as HTLC or pubkey) and how much bitcoin is in
+    that output.
+  - commitmentTxBuilder: A partially signed TxBuilder object created by the
+    builder/sender and to be owned by the owner/receiver.
+- Explanation: When you want to make a payment to someone, either to the agent
+  on the other side of the channel or to someone else they are connected to,
+  you need to send a MsgPay.
+
+### MsgPayRes
+- Command: 'pay-res'
+- Arguments:
+  - commitmentTxBuilder: A partially signed TxBuilder object created by the
+    builder/sender and to be owned by the owner/receiver.
+- Explanation: This is always sent in response to a MsgPay. If you do not like
+  the MsgPay, then you can close the channel and send a MsgError instead.
+
+### MsgSecret
+- Command: 'secret'
+- Arguments:
+  - secret: A hex string specifying secret data.
+  - hash: A hex string specifying the HASH160 (sha256 ripemd160) hash of the
+    secret.
+- Explanation: Sometimes an agent needs to reveal a secret in order to receive
+  a payment.
