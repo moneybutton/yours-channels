@@ -9,6 +9,7 @@ let HtlcSecret = require('../../lib/scrts/htlc-secret')
 let RevocationSecret = require('../../lib/scrts/revocation-secret')
 let Agent = require('../../lib/agent')
 let Wallet = require('../../lib/wallet')
+let KeyPair = require('yours-bitcoin/lib/key-pair')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let Bn = require('yours-bitcoin/lib/bn')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
@@ -23,7 +24,7 @@ describe('SpendingTxObj', function () {
   })
 
   describe('#asyncBuild', function () {
-    it.skip('build a spending transaction that spends from pubKey output', function () {
+    it('build a spending transaction that spends from pubKey output', function () {
       return asink(function * () {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -50,7 +51,7 @@ describe('SpendingTxObj', function () {
         yield revocationSecret.asyncInitialize()
 
         let outputList = [
-          new OutputDescription(alice.id, 'finalDestId1', 'pubKey', htlcSecret, revocationSecret, Bn(1e7))
+          new OutputDescription(bob.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7))
         ]
         let changeOutput = new OutputDescription(
           bob.id, 'finalDestId2', 'pubKey', htlcSecret, revocationSecret
@@ -84,7 +85,7 @@ describe('SpendingTxObj', function () {
         error.should.equal(false)
 */
         let bobSpendingTxObj = new SpendingTxObj()
-        yield bobSpendingTxObj.asyncBuild(bob.destinationAddress, commitmentTxObj)
+        yield bobSpendingTxObj.asyncBuild(bob.destinationAddress, commitmentTxObj, bob.id)
         txVerifier = new TxVerifier(bobSpendingTxObj.txb.tx, bobSpendingTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
@@ -94,7 +95,7 @@ describe('SpendingTxObj', function () {
       }, this)
     })
 
-    it('build a spending transaction that spends from htlc output', function () {
+    it.skip('build a spending transaction that spends from htlc output', function () {
       return asink(function * () {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
@@ -121,10 +122,10 @@ describe('SpendingTxObj', function () {
         yield revocationSecret.asyncInitialize()
 
         let outputList = [
-          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7))
+          new OutputDescription(bob.id, 'finalDestId1', new KeyPair().fromRandom(), 'pubKey', htlcSecret, revocationSecret, Bn(1e7))
         ]
         let changeOutput = new OutputDescription(
-          bob.id, 'finalDestId2', 'pubKey', htlcSecret, revocationSecret
+          bob.id, 'finalDestId2', new KeyPair().fromRandom(), 'pubKey', htlcSecret, revocationSecret
         )
         let destinationAddresses = {}
         destinationAddresses[alice.id] = alice.destinationAddress
@@ -187,11 +188,12 @@ describe('SpendingTxObj', function () {
         yield revocationSecret.asyncInitialize()
 
         let outputList = [
-          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(5e9)),
-          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(5e9))
+          new OutputDescription(alice.id, 'finalDestId1', new KeyPair().fromRandom(), 'htlc', htlcSecret, revocationSecret, Bn(1e7)),
+          new OutputDescription(alice.id, 'finalDestId1', new KeyPair().fromRandom(), 'htlc', htlcSecret, revocationSecret, Bn(1e7)),
+          new OutputDescription(bob.id, 'finalDestId1', new KeyPair().fromRandom(), 'pubKey', htlcSecret, revocationSecret, Bn(1e7))
         ]
         let changeOutput = new OutputDescription(
-          bob.id, 'finalDestId2', 'pubKey', htlcSecret, revocationSecret
+          bob.id, 'finalDestId2', new KeyPair().fromRandom(), 'pubKey', htlcSecret, revocationSecret
         )
         let destinationAddresses = {}
         destinationAddresses[alice.id] = alice.destinationAddress
@@ -209,6 +211,7 @@ describe('SpendingTxObj', function () {
         yield commitmentTxObj.txb.asyncSign(0, alice.multisigAddress.keyPair, alice.fundingTxObj.txb.tx.txOuts[0])
 
         commitmentTxObj.outputList[0].spendingAction = 'spend'
+        commitmentTxObj.outputList[1].spendingAction = 'spend'
         commitmentTxObj.outputList[1].spendingAction = 'spend'
 
         let txVerifier, error

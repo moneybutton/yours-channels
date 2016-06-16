@@ -9,11 +9,11 @@ let HtlcSecret = require('../../lib/scrts/htlc-secret')
 let RevocationSecret = require('../../lib/scrts/revocation-secret')
 let Agent = require('../../lib/agent')
 let Wallet = require('../../lib/wallet')
+let SecretHelper = require('../test-helpers/secret-helper')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let Bn = require('yours-bitcoin/lib/bn')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 let Interp = require('yours-bitcoin/lib/interp')
-let SecretHelper = require('../test-helpers/secret-helper')
 
 describe('CommitmentTxObj', function () {
   it('should exist', function () {
@@ -125,11 +125,13 @@ describe('CommitmentTxObj', function () {
         let revocationSecret = new RevocationSecret()
         yield revocationSecret.asyncInitialize()
 
-        let outputList = [new OutputDescription(
-          alice.id, 'finalDestId', htlcSecret, revocationSecret, Bn(1e7)
-        )]
+        let outputList = [
+          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7)),
+          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7)),
+          new OutputDescription(bob.id, 'finalDestId1', 'pubKey', htlcSecret, revocationSecret, Bn(1e7))
+        ]
         let changeOutput = new OutputDescription(
-          bob.id, 'finalDestId', htlcSecret, revocationSecret
+          bob.id, 'finalDestId2', 'pubKey', htlcSecret, revocationSecret
         )
         let destinationAddresses = {}
         destinationAddresses[alice.id] = alice.destinationAddress
@@ -191,11 +193,13 @@ describe('CommitmentTxObj', function () {
         let revocationSecret = new RevocationSecret()
         yield revocationSecret.asyncInitialize()
 
-        let outputList = [new OutputDescription(
-          alice.id, 'finalDestId', htlcSecret, revocationSecret, Bn(1e7)
-        )]
+        let outputList = [
+          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7)),
+          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7)),
+          new OutputDescription(bob.id, 'finalDestId1', 'pubKey', htlcSecret, revocationSecret, Bn(1e7))
+        ]
         let changeOutput = new OutputDescription(
-          bob.id, 'finalDestId', htlcSecret, revocationSecret
+          bob.id, 'finalDestId2', 'pubKey', htlcSecret, revocationSecret
         )
         let destinationAddresses = {}
         destinationAddresses[alice.id] = alice.destinationAddress

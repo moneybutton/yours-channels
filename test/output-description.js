@@ -21,6 +21,7 @@ describe('OutputDescription', function () {
         outputDescription.finalDestId = 'CarolId'
         outputDescription.amount = new Bn(1e7)
         outputDescription.htlcSecret = new HltcSecret()
+        outputDescription.kind = 'htlc'
         yield outputDescription.htlcSecret.asyncInitialize()
         outputDescription.revocationSecret = new RevocationSecret()
         yield outputDescription.revocationSecret.asyncInitialize()
@@ -29,6 +30,7 @@ describe('OutputDescription', function () {
         should.exist(json)
         should.exist(json.intermediateDestId)
         should.exist(json.finalDestId)
+        should.exist(json.kind)
         should.exist(json.amount)
         should.exist(json.htlcSecret.hash)
         should.exist(json.htlcSecret.buf)
