@@ -1,7 +1,7 @@
 /* global describe,it */
 'use strict'
 let Bn = require('yours-bitcoin/lib/bn')
-let KeyPair = require('yours-bitcoin/lib/key-pair')
+let Bip32 = require('yours-bitcoin/lib/bip-32')
 let MsgOpen = require('../../lib/msgs/msg-open')
 let asink = require('asink')
 let should = require('should')
@@ -19,23 +19,25 @@ describe('MsgOpen', function () {
     })
   })
 
-  describe('#setPubKey', function () {
-    it('should set the pubKey', function () {
-      let pubKey = KeyPair.fromRandom().pubKey
-      let msg = new MsgOpen()
-      msg.setPubKey(pubKey)
-      should.exist(msg.args.pubKey)
+  describe('#asyncSetXPub', function () {
+    it('should set the xPub', function () {
+      return asink(function * () {
+        let bip32 = Bip32.fromRandom()
+        let msg = new MsgOpen()
+        yield msg.asyncSetXPub(bip32)
+        should.exist(msg.args.xPub)
+      }, this)
     })
   })
 
-  describe('#asyncGetPubKey', function () {
-    it('should get the pubKey from this msg', function () {
+  describe('#asyncGetXPub', function () {
+    it('should get the xPub from this msg', function () {
       return asink(function * () {
-        let pubKey = KeyPair.fromRandom().pubKey
+        let bip32 = Bip32.fromRandom()
         let msg = new MsgOpen()
-        msg.setPubKey(pubKey)
-        let pubKey2 = yield msg.asyncGetPubKey()
-        pubKey2.toString().should.equal(pubKey.toString())
+        yield msg.asyncSetXPub(bip32)
+        let bip32b = yield msg.asyncGetXPub()
+        bip32.toPublic().toString().should.equal(bip32b.toString())
       }, this)
     })
   })

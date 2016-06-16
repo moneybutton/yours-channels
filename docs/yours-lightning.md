@@ -639,19 +639,20 @@ All message types are JSON objects with these properties:
 - Arguments:
   - amount: A big number specifying the amount of satoshis the channel will be
     funded with.
-  - pubKey: The channel funder's public key (in hex format) to be used in the
-    funding multisig transaction.
+  - xPub: The channel funder's extended public key (in bip32 string format) to
+    be used in the funding multisig transaction.
 - Explanation: This message is the first message sent on a channel. When Bob
   opens a channel with Carol, Bob sends this message first.
 
 ### MsgOpenRes
 - Command: 'open-res'
 - Arguments:
-  - pubKey: The public key (in hex format) of the channel recipient.
+  - pubKey: The extended public key (in bip32 string format) of the channel
+    recipient.
 - Explanation: If a channel recipient (Carol) has received an 'open' message
   and agrees to open the channel, they respond with an 'open-res' message. This
-  message needs to contain the public key of the channel recipient for use in
-  the funding multisig transaction.
+  message needs to contain the extended public key of the channel recipient for
+  use in the funding multisig transaction and payments.
 
 ### MsgUpdate
 - Command: 'update'
