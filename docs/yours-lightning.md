@@ -7,10 +7,85 @@ construction is not subject to transaction malleability except for the funding
 transaction and uses only CHECKSEQUENCEVERIFY (CSV) and opcodes that are active
 in Bitcoin script today.
 
+We will consider the example case where Bob opens a payment channel with Carol,
+and Alice wants to pay Dave via this payment channel. Alice and Bob may or may
+not be the same agent. Carol and Dave may or may not be the same agent. If
+Alice and Bob are not the same agent, it is implied that Alice has a payment
+channel with Bob. If Carol and Dave are not the same agent, it is implied that
+Carol has a payment channel with Dave.
+
+The protocol has two levels, the low level and the high level. The low level is
+the protocol for establishing a payment channel, establishing updated
+transactions across the channel, and closing the channel. The high level is the
+protocol for sending micropayments across a network of payment channels.
+
+Notes
+-----
+- Payments can go both ways on a channel, so the agent who ultimately receives
+  a payment is the one who generates the secret.
+- In the example case, "Alice" is the ultimate recipient on the close end of
+  the payment channel, and "Dave" is the ultimate recipient on the far end of
+  the channel.
+
+Questions
+---------
+
+- **What is the purpose of revocation secrets?** Because each agent needs to be
+  able to revoke payments made to themselves. After sharing the revocation
+  secret, the other party can spend that full amount, disincentivizing the
+  recipient of that output from spending the commitment transaction ever again,
+  since they would not get any of the money in that output.
+
+- **Why can’t Bob share his commitment transaction with Carol?** Because if he
+  did, Carol would be able to immediately spend the HTLC output by knowing
+  Dave’s HTLC secret, and as soon as Bob shares his revocation secret Carol
+  could also spend the RHTLC output.
+
+- **Why can’t Carol share her commitment transaction with Bob?** Because if she
+  did, Bob would be able to immediately spend the HTLC output by knowing
+  Alice’s HTLC secret, and as soon as Carol shares her revocation secret Bob
+  could also spend the RHTLC output.
+
+- **Why are there two commitment transactions?** Imagine we were to be using a
+  commitment transaction like in the picture below. After a payment is made,
+  both parties exchange their old revocation secret. Now either party can spend
+  both outputs of an old transaction: For example Bob can spend the first
+  branch of the first output because he knows his sig and will be able to
+  obtain A’s HTLC secret. He can also spend the third branch of the second
+  output, because he knows his sig and C’s revocation secret.
+
+
+Definitions
+-----------
+
+- The agents in the analysis are Alice (A), Bob (B), Carol (C), and Dave (D).
+- Bob opens a channel with Carol. Bob funds the channel.
+- The channel is funded with N satoshis.
+- The transaction fee is F satoshis.
+- The amount being paid in the payment is M satoshis. There will be more than
+  one payment; each payment uses M in context.
+- To each HTLC secret there is an HTLC hash.
+- To each revocation secret there is a revocation hash.
+- The multisig address is the address containing one of Bob’s public keys and
+  one of Carol’s public keys.
+- The funding transaction is the transaction Bob creates spending to the
+  multisig address to fund the channel to Carol.
+- An Output Description is an amount, final recipient’s name (“Alice” or
+  “Dave”), an intermediate recipient’s public key (Bob or Carol), an HTLC hash,
+  and a revocation hash.
+- An Output Description list is a list of Output Descriptions. The sum of the
+  amounts of the output list must equal the funding amount minus the fee (F).
+
 Smart Contracts
 ---------------
 
-We will need two kinds of smart contracts: HTLCs and revokable HTLCs.
+### PubKey
+
+TODO
+
+### Revocable PubKey
+
+TODO
 
 ### Hash Time Lock Contracts (HTLCs)
 
@@ -131,8 +206,154 @@ A commitment transaction object contains the following
 - the public version of the other agents htlc secret
 - the public version of the other agents revocation secret
 
-Protocols
----------
+Protocols (high/low-level specification)
+----------------------------------------
+
+### Low Level: Open Channel Protocol
+- Bob and Carol each generate a new keypair and share the public key with each
+  other.
+- Bob and Carol generate a multisig address from the public keys (with public
+  keys sorted lexicographically, guaranteeing they each generate the same
+  multisig address).
+- Bob funds the multisig address with a new funding transaction, but does not
+  yet broadcast the funding transaction.
+- Bob proceeds to follow the Refund Transaction Protocol to send the full
+  amount minus a transaction fee (N - F) back to himself.
+- If the Refund Transaction Protocol succeeded, Bob broadcasts the funding
+  transaction.
+
+### Low Level: Refund Transaction Protocol
+- Carol generates a new revocation secret and shares the hash with Bob.
+- Bob generates a new HTLC secret and a new revocation secret. (TODO: Do we
+  really need an HTLC secret for the refund?)
+- Bob generates an output list containing an output to Bob spending the entire
+  funding amount minus the fee, N - F. Bob shares the output list with Carol,
+  but masking his secrets.
+- Bob creates a new commitment transaction for Carol containing Carol’s view of
+  the outputs in the output list, which are:
+  - An HTLC output of N - F satoshis to Bob (containing Bob’s HTLC hash) routed
+    through Bob (containing Bob’s public key)
+- Bob signs Carol’s commitment transaction and gives it to Carol.
+- Carol signs her commitment transaction and holds it.
+- Carol creates a new commitment transaction for Bob containing Bob’s view of
+  the outputs in the output list, which are:
+  - A RevHTLC output of N - F satoshis to Bob (containing Bob’s HTLC hash and
+    Bob’s revocation hash) routed through Bob (containing Bob’s public key)
+- Carol signs Bob’s commitment transaction and gives it to Bob.
+- Bob signs his commitment transaction and holds it.
+- At this point, Bob could share the HTLC secret, but does not need to.
+
+### Low Level: Bob to Carol Transaction Update Protocol
+- Bob desires to route a payment of M satoshis through Carol.
+- Bob is already in possession of the HTLC hash of the payee and that agent’s
+  id.
+- Bob generates a new revocation secret and shares the hash with Carol.
+- Carol generates a new revocation secret and shares the hash with Bob.
+- Bob adds a new HTLC output to the output list with the output information:
+  The payee’s id, the payee’s HTLC hash, Carol’s public key, and Bob’s
+  revocation hash, and the amount being paid, M satoshis.
+- Bob also updates one of the outputs sending bitcoin back to him to subtract M
+  satoshis. This is because the total amount output from the transaction must
+  be the same amount input to the transaction minus the fee, F.
+- Bob shares the updated output list with Carol.
+- Bob now constructs a new commitment transaction to Carol. The commitment
+  transaction outputs should equal Carol’s view of the output list. This
+  commitment transaction is the same as the previous commitment transaction for
+  Carol, but with one new output, and with one output decreased by M satoshis.
+  In the case where the previous commitment transaction was the refund
+  transaction, the outputs are:
+  - An HTLC output of N - (M + F) satoshis to Bob (containing Bob’s HTLC hash)
+    routed through Bob (containing Bob’s public key)
+  - A RevHTLC output of M satoshis to the payee (containing the payee’s HTLC
+    hash and Carol’s revocation hash) routed through Carol (containing Carol’s
+    public key)
+- Bob signs Carol’s commitment transaction and gives to Carol.
+- Carol signs her commitment transaction and holds it.
+- Carol now constructs a new commitment transaction for Bob. The commitment
+  transaction outputs should equal Bob’s view of the output list. This
+  commitment transaction is the same as the previous commitment transaction for
+  Bob, but with one new output, and with one output decreased by M satoshis. In
+  the case where the previous commitment transaction was the refund
+  transaction, the outputs are:
+  - A RevHTLC output of N - (M + F) satoshis to Bob (containing Bob’s HTLC hash
+    and Bob’s revocation hash) routed through Bob (containing Bob’s public key)
+  - An HTLC output of M satoshis to the payee (containing the payee’s HTLC
+    hash) routed through Carol (containing Carol’s public key)
+- Carol signs Bob’s commitment transaction and gives it to Bob.
+- Bob signs his commitment transaction and holds it.
+- Carol receives the HTLC secret from the payee, and then delivers it to Bob.
+- Bob and Carol now exchange revocation secrets for the previous commitment
+  transactions. (TODO: Can the revocation secret be exchanged before the HTLC
+  secret is shared?)
+
+### Low Level: Carol to Bob Transaction Update Protocol
+TODO
+
+### Low Level: Commitment Transaction Simplification Protocol
+- Shared Secret Simplification:
+- If an HTLC secret has been shared, at any time either party can reduce that
+  output with the counterparty’s public key to a single pubkey output. 
+- If an RHTLC secret has been shared, at any time either party can reduce that
+  output with the counterparty’s public key to a single revocable output.
+- Unshared Secret Simplification: If Carol never gets the secret from Dave, but
+  Carol does get her money from her channel with Dave, then Carol can agree
+  with Bob to remove the output to Dave from her channel with Bob, and add M
+  satoshis in an output to Bob.
+
+### Low Level: Close Channel Protocol
+Either agent (Bob or Carol) can broadcast their latest fully signed commitment
+transaction at any time to close the channel.
+
+### Low Level: Uncooperative Agent Protocols
+- Either party might broadcast an old commitment transaction. Assume that Carol
+  broadcast an old transaction only known to her, and assume that it’s like in
+  the picture at the top of this doc. Then Bob forces Alice to reveal her
+  secret, uses that secret to spend the first output. He will also look up the
+  stored revocation secret for that transaction and use it to spend the second
+  output.
+- Alice does not reveal her HTLC secret used in an HTLC contract. Say that
+  Alice shares her HTLC secret with Bob, but Bob does not pass on the secret to
+  Carol in time. Then Carol broadcasts her commitment transaction. Now Bob
+  could spend the first output of the first branch within two days, thereby
+  revealing Alice’s secret. Otherwise, Carol can spend the second branch of the
+  first output.
+- Dave does not reveal his HTLC secret used in an RHTLC contract.  Say that
+  Dave shares his HTLC secret with Carol, but Carol does not pass on the secret
+  to Bob in time. Then Bob broadcasts his commitment transaction. Now Carol
+  could spend the first output of the first branch within two days, thereby
+  revealing Dave’s secret. Otherwise, Bob can spend the third branch of the
+  second output.
+
+### High Level: Alice pays Dave using the Bob <-> Carol payment channel
+- Alice determines she wishes to pay Dave M satoshis.
+- Dave generates a new HTLC secret and shares the hash with Alice.
+- Alice pays Bob with an HTLC output containing Dave’s HTLC hash and a time
+  lock or 3 days.
+- Bob pays Carol with an HTLC output containing Dave’s HTLC hash and a time
+  lock or 2 days.
+- Carol pays Dave with an HTLC output containing Dave’s HTLC hash and a time
+  lock or 1 day.
+- Dave shares his HTLC secret with Carol within 1 day.
+- Carol shares the HTLC secret with Bob within 2 days (1 day later).
+- Bob shares the HTLC secret with Alice within 3 days (1 day later).
+
+https://github.com/yoursnetwork/yours-channels/blob/master/docs/hash-locked-contracts.md
+
+### High Level: Renegotiation Protocol
+Initiate the Low Level Transaction Update Protocol but where you remove one of
+the outputs instead of add one.
+
+### High Level: Uncooperative Agent Protocol
+- Suppose Bob is paying Dave. If Dave becomes unresponsive, Carol broadcasts
+  her commitment transaction with Dave. If Dave spends his money, he must
+  reveal his HTLC secret meaning Carol can get her money from Bob (Shared
+  Secret Simplication). Otherwise Dave does not ever spend his money, and Carol
+  doesn’t get Dave’s HTLC secret, but Carol does get all of the money from that
+  channel, in which case Bob and Carol agree to renegotiate to remove the
+  output to Dave Unshared Secret Simplification).
+
+Protocols (original)
+--------------------
 
 We now describe the protocol that the parties use to construct the transactions
 shown above.
@@ -175,7 +396,8 @@ created and distributed between the two parties, Alice broadcasts the funding
 transaction. The channel is open when the funding transaction is confirmed into
 the blockchain.
 
-At the end of the channel opening process, both agents store the following information:
+At the end of the channel opening process, both agents store the following
+information:
 
 - three addresses (source, destination, multisig)
 - a list of commitment transactions objects. The list has one entry that
@@ -244,7 +466,8 @@ blockchain. In this case both parties go through the following protocol
 
 **2. Build a spending transaction.**
 
-**3. Broadcast spending transaction and the most recent commitment transaction.**
+**3. Broadcast spending transaction and the most recent commitment
+transaction.**
 
 The party that broadcasts the commitment transaction must wait for a day to do
 that, the other party can do so as soon as possible.
@@ -256,7 +479,8 @@ other party can spend the HTLC output after 2 days.
 
 **1. Build spending transaction using spending key.**
 
-**3. Broadcast spending transaction and the most recent commitment transaction.**
+**3. Broadcast spending transaction and the most recent commitment
+transaction.**
 
 ### React to other agent broadcasting an old commitment transaction
 
@@ -276,7 +500,8 @@ the other party goes trough the following:
 This has to happen within one day, in order to make sure that the revocation
 output can be spent.
 
-## Security Properties
+Security Properties
+-------------------
 
 In the following we assume that both Alice and Bob are malicious but rational.
 That is, they look after their own self interest only and try to steal funds
@@ -368,13 +593,6 @@ needs to be signed by the other party.
 
 **acceptCommitmentTx(txb).** Check if payment should be accepted. If so sign
 and return.
-
-Notes
------
-- Payments can go both ways on a channel, so the agent who ultimately receives
-  a payment is the one who generates the secret.
-- "Dave" is the ultimate recipient on the close end of the payment channel, and
-  "Carol" is the ultimate recipient on the far end of the channel.
 
 Definitions
 -----------
