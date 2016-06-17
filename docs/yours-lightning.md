@@ -312,7 +312,7 @@ TODO
 ### Low Level: Commitment Transaction Simplification Protocol
 - Shared Secret Simplification:
 - If an HTLC secret has been shared, at any time either party can reduce that
-  output with the counterparty’s public key to a single pubkey output. 
+  output with the counterparty’s public key to a single pubkey output.
 - If an RevHTLC secret has been shared, at any time either party can reduce
   that output with the counterparty’s public key to a single revocable output.
 - Unshared Secret Simplification: If Carol never gets the secret from Dave, but
@@ -620,61 +620,65 @@ Implementation (Channel version)
 ### As Bob, how to initiate opening a channel from Bob to Carol:
 
 - create a new Channel object
-- asyncOpenStep1
-- send MsgOpen to Carol
-- receive MsgOpenRes from Carol
+- msgOpen = asyncOpen(bobXPub)
+- send msgOpen to Carol
+- receive msgOpenRes from Carol
   - if receive any other message:
     - go to start and try again
-- asyncHandleMsgOpenRes
+- asyncHandleMsgOpenRes(msgOpenRes)
+  - note: msgOpenRes has Carol's xPub
   - if failure:
     - go to start and try again
 - build funding tx
-- asyncOpenStep2
-- send MsgUpdate to Carol
-- receive MsgUpdateRes from Carol
+- asyncSetFundingTx(fundingTx)
+- outputDescriptions = create a output list sending full amount back to Bob
+- msgUpdate = asyncUpdate(outputDescriptions)
+  - note: msgUpdate contains an output list and Carol's commitment tx
+  - note: msgUpdate contains the hash of the funding tx
+- send msgUpdate to Carol
+- receive msgUpdateRes from Carol
   - if receive any other message:
     - go to start and try again
-- asyncHandleMsgUpdateRes
+- asyncHandleMsgUpdateRes (msgUpdateRes)
+  - note: msgUpdateRes contains an output list and Bob's commitment tx
   - if failure:
     - go to start and try again
-- send MsgAck to Carol
 - broadcast funding tx to blockchain
-- wait for funding tx to be confirmed
-- asyncConfirmFundingTx
-- send MsgFundingTx to Carol
-- receive MsgFundingTx from Carol (confirming she sees tx)
-- send MsgAck to Carol
 - channel is now open
 
 ### As Carol, how to receive a channel initiation from Bob:
 
-- receive MsgOpen from Bob
+- receive msgOpen from Bob
+  - note: msgOpen contains Bob's xPub
   - if chanId already exists:
     - asyncMsgOpen on channel with chanId
 - create new Channel object
-- asyncHandleMsgOpen
+- msgOpenRes = asyncHandleMsgOpen(msgOpen)
+  - note: msgOpenRes contains Carol's xPub
   - if failure:
     - asyncClose
-- send MsgOpenRes to Bob
-- receive MsgUpdate from Bob
-- asyncHandleMsgUpdate
+- send msgOpenRes to Bob
+- receive msgUpdate from Bob
+- msgUpdateRes = asyncHandleMsgUpdate(msgUpdate)
+  - note: msgUpdate contains output list and Carol's commitment tx
+  - note: msgUpdateRes contains output list and Bob's commitment tx
   - if failure:
     - asyncClose
-- send MsgUpdateRes to Bob
-- wait for funding tx to be confirmed
-- asyncConfirmFundingTx
-- receive MsgFundingTx from Bob
-- send MsgAck to Bob
+- send msgUpdateRes to Bob
 - channel is now open
 
 ### As Bob, how to make a payment from Bob to Carol over an open channel:
 
-- asyncUpdate
-- send MsgUpdate to Carol
-- receive MsgUpdateRes from Carol
+- Bob makes sure the funding tx is confirmed
+- Bob generates a new output list
+- msgUpdate = asyncUpdate (outputDescriptions)
+  - note: msgUpdate contains output list and Carol's commitment transaction
+- send msgUpdate to Carol
+- receive msgUpdateRes from Carol
+  - note: msgUpdateRes contains output list and Bob's commitment transaction
   - if receive any other message:
     - asyncClose
-- asyncHandleMsgUpdateRes
+- asyncHandleMsgUpdateRes (msgUpdateRes)
   - if failure:
     - asyncClose
 
@@ -776,6 +780,7 @@ All message types are JSON objects with these properties:
 Future Optimizations
 --------------------
 
+- Use segregated witness to fix transaction malleability of funding transaction.
 - Use bip32 for HTLC secrets to eliminate the need for one message. Rather than
   require direct communication with the person you are paying to request their
   HTLC hash, it would be better if you could generate a new hash to which only
