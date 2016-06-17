@@ -32,12 +32,12 @@ Questions
 - **Why can’t Bob share his commitment transaction with Carol?** Because if he
   did, Carol would be able to immediately spend the HTLC output by knowing
   Dave’s HTLC secret, and as soon as Bob shares his revocation secret Carol
-  could also spend the RHTLC output.
+  could also spend the RevHTLC output.
 
 - **Why can’t Carol share her commitment transaction with Bob?** Because if she
   did, Bob would be able to immediately spend the HTLC output by knowing
   Alice’s HTLC secret, and as soon as Carol shares her revocation secret Bob
-  could also spend the RHTLC output.
+  could also spend the RevHTLC output.
 
 - **Why are there two commitment transactions?** Imagine we were to be using a
   commitment transaction like in the picture below. After a payment is made,
@@ -313,8 +313,8 @@ TODO
 - Shared Secret Simplification:
 - If an HTLC secret has been shared, at any time either party can reduce that
   output with the counterparty’s public key to a single pubkey output. 
-- If an RHTLC secret has been shared, at any time either party can reduce that
-  output with the counterparty’s public key to a single revocable output.
+- If an RevHTLC secret has been shared, at any time either party can reduce
+  that output with the counterparty’s public key to a single revocable output.
 - Unshared Secret Simplification: If Carol never gets the secret from Dave, but
   Carol does get her money from her channel with Dave, then Carol can agree
   with Bob to remove the output to Dave from her channel with Bob, and add M
@@ -337,7 +337,7 @@ transaction at any time to close the channel.
   could spend the first output of the first branch within two days, thereby
   revealing Alice’s secret. Otherwise, Carol can spend the second branch of the
   first output.
-- Dave does not reveal his HTLC secret used in an RHTLC contract.  Say that
+- Dave does not reveal his HTLC secret used in an RevHTLC contract.  Say that
   Dave shares his HTLC secret with Carol, but Carol does not pass on the secret
   to Bob in time. Then Bob broadcasts his commitment transaction. Now Carol
   could spend the first output of the first branch within two days, thereby
