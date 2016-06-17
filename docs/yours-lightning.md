@@ -617,70 +617,53 @@ and return.
 Implementation (Channel version)
 --------------------------------
 
+![alt text](./img/state-machine.jpg "state-machine.jpg")
+
 ### As Bob, how to initiate opening a channel from Bob to Carol:
 
-- create a new Channel object
-- msgOpen = asyncOpen(bobXPub)
-- send msgOpen to Carol
-- receive msgOpenRes from Carol
-  - if receive any other message:
-    - go to start and try again
-- asyncHandleMsgOpenRes(msgOpenRes)
-  - note: msgOpenRes has Carol's xPub
-  - if failure:
-    - go to start and try again
+Assume: Bob has Carol's xPub
+
 - build funding tx
+- create new Channel with Bob'x xPub, Carol's xPub, multiSig paths, and
+  multiSig address
 - asyncSetFundingTx(fundingTx)
-- outputDescriptions = create a output list sending full amount back to Bob
+- outputDescriptions = asyncBuildRefundDescriptions()
 - msgUpdate = asyncUpdate(outputDescriptions)
-  - note: msgUpdate contains an output list and Carol's commitment tx
-  - note: msgUpdate contains the hash of the funding tx
+  - note: msgUpdate contains output list, Carol's commitment tx, funding tx hash
 - send msgUpdate to Carol
 - receive msgUpdateRes from Carol
-  - if receive any other message:
-    - go to start and try again
-- asyncHandleMsgUpdateRes (msgUpdateRes)
+- asyncHandleMsgUpdateRes(msgUpdateRes)
   - note: msgUpdateRes contains an output list and Bob's commitment tx
-  - if failure:
-    - go to start and try again
 - broadcast funding tx to blockchain
+- wait until funding tx is confirmed to blockchain
 - channel is now open
 
 ### As Carol, how to receive a channel initiation from Bob:
 
-- receive msgOpen from Bob
-  - note: msgOpen contains Bob's xPub
-  - if chanId already exists:
-    - asyncMsgOpen on channel with chanId
-- create new Channel object
-- msgOpenRes = asyncHandleMsgOpen(msgOpen)
-  - note: msgOpenRes contains Carol's xPub
-  - if failure:
-    - asyncClose
-- send msgOpenRes to Bob
+Assume: Carol has Bob's xPub
+
 - receive msgUpdate from Bob
+  - note: msgUpdate contains output list, Carol's commitment tx, and both
+    party's multisig address path
+- if the Channel object for this multisig address does not yet exist, create it
 - msgUpdateRes = asyncHandleMsgUpdate(msgUpdate)
-  - note: msgUpdate contains output list and Carol's commitment tx
   - note: msgUpdateRes contains output list and Bob's commitment tx
-  - if failure:
-    - asyncClose
 - send msgUpdateRes to Bob
+- wait until funding tx is confirmed to blockchain
 - channel is now open
 
 ### As Bob, how to make a payment from Bob to Carol over an open channel:
 
-- Bob makes sure the funding tx is confirmed
-- Bob generates a new output list
+- outputDescriptions = Bob generates a new output list
 - msgUpdate = asyncUpdate (outputDescriptions)
   - note: msgUpdate contains output list and Carol's commitment transaction
 - send msgUpdate to Carol
 - receive msgUpdateRes from Carol
   - note: msgUpdateRes contains output list and Bob's commitment transaction
-  - if receive any other message:
-    - asyncClose
-- asyncHandleMsgUpdateRes (msgUpdateRes)
-  - if failure:
-    - asyncClose
+- msgSecret = asyncHandleMsgUpdateRes (msgUpdateRes)
+- send msgSecret to Carol
+  - note: msgSecret contains Bob's revocation secret
+- receive msgSecret from Carol
 
 Definitions
 -----------
@@ -710,9 +693,10 @@ All message types are JSON objects with these properties:
   remote agent.
 - args: A JSON object (optionally an array) containing the properties the
   remote agent needs to execute the method.
-- chanId: A 32 character hex string identifying the channel. The chanId is set
-  by the channel initiator and must be the same for every message for that
-  channel.
+- multiSigAddress: The funding multiSig address, which also uniquely identifies
+  the channel.
+- initiatorPath: The bip32 path to derive initiator's multiSig pubKey/privKey.
+- acceptorPath: The bip32 path to derive acceptor's multiSig pubKey/privKey.
 
 ### MsgError
 - Command: 'error'
@@ -721,26 +705,6 @@ All message types are JSON objects with these properties:
 - Explanation: When a fatal error occurs, an error message may be sent. Both
   parties should close the channel when an error message is either sent or
   received.
-
-### MsgOpen
-- Command: 'open'
-- Arguments:
-  - amount: A big number specifying the amount of satoshis the channel will be
-    funded with.
-  - xPub: The channel funder's extended public key (in bip32 string format) to
-    be used in the funding multisig transaction.
-- Explanation: This message is the first message sent on a channel. When Bob
-  opens a channel with Carol, Bob sends this message first.
-
-### MsgOpenRes
-- Command: 'open-res'
-- Arguments:
-  - pubKey: The extended public key (in bip32 string format) of the channel
-    recipient.
-- Explanation: If a channel recipient (Carol) has received an 'open' message
-  and agrees to open the channel, they respond with an 'open-res' message. This
-  message needs to contain the extended public key of the channel recipient for
-  use in the funding multisig transaction and payments.
 
 ### MsgUpdate
 - Command: 'update'
