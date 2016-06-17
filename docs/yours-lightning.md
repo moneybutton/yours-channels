@@ -642,7 +642,6 @@ Implementation (Channel version)
 - wait for funding tx to be confirmed
 - asyncConfirmFundingTx
 - send MsgFundingTx to Carol
-- receive MsgAck from Carol (confirming she got our message)
 - receive MsgFundingTx from Carol (confirming she sees tx)
 - send MsgAck to Carol
 - channel is now open
@@ -664,7 +663,8 @@ Implementation (Channel version)
 - send MsgUpdateRes to Bob
 - wait for funding tx to be confirmed
 - asyncConfirmFundingTx
-- receive MsgFundingTx from Carol
+- receive MsgFundingTx from Bob
+- send MsgAck to Bob
 - channel is now open
 
 ### As Bob, how to make a payment from Bob to Carol over an open channel:
@@ -676,11 +676,6 @@ Implementation (Channel version)
     - asyncClose
 - asyncHandleMsgUpdateRes
   - if failure:
-    - asyncClose
-- asyncReduce
-- send MsgReduce to Carol
-- receive MsgReduceRes from Carol
-  - if receive any other message:
     - asyncClose
 
 Definitions
