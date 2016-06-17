@@ -7,25 +7,18 @@ construction is not subject to transaction malleability except for the funding
 transaction and uses only CHECKSEQUENCEVERIFY (CSV) and opcodes that are active
 in Bitcoin script today.
 
-We will consider the example case where Bob opens a payment channel with Carol,
-and Alice wants to pay Dave via this payment channel. Alice and Bob may or may
-not be the same agent. Carol and Dave may or may not be the same agent. If
-Alice and Bob are not the same agent, it is implied that Alice has a payment
-channel with Bob. If Carol and Dave are not the same agent, it is implied that
-Carol has a payment channel with Dave.
+To make the network design easier to understand, we will often consider the
+example case where Bob opens a payment channel with Carol, and Alice wants to
+pay Dave via this payment channel. Alice and Bob may or may not be the same
+agent. Carol and Dave may or may not be the same agent. If Alice and Bob are
+not the same agent, it is implied that Alice has a payment channel with Bob. If
+Carol and Dave are not the same agent, it is implied that Carol has a payment
+channel with Dave.
 
 The protocol has two levels, the low level and the high level. The low level is
-the protocol for establishing a payment channel, establishing updated
+the protocol for opening a payment channel, updating the commitment
 transactions across the channel, and closing the channel. The high level is the
 protocol for sending micropayments across a network of payment channels.
-
-Notes
------
-- Payments can go both ways on a channel, so the agent who ultimately receives
-  a payment is the one who generates the secret.
-- In the example case, "Alice" is the ultimate recipient on the close end of
-  the payment channel, and "Dave" is the ultimate recipient on the far end of
-  the channel.
 
 Questions
 ---------
@@ -79,45 +72,67 @@ Definitions
 Smart Contracts
 ---------------
 
+Consider a channel between Bob and Carol. These are the output scripts that
+will be used in the commitment transactions.
+
 ### PubKey
 
-TODO
+Bob can pay to Carol with this output:
+
+```
+<C's pubKey> CHECKSIG
+```
+
+Carol can spend the output with this input:
+
+```
+<C's signature>
+```
 
 ### Revocable PubKey
 
-TODO
+Bob may wish to make a payment to Carol which is revocable:
+
+```
+IF
+  <C's pubkey> CHECKSIGVERIFY
+  HASH160 <Hash160 (B's revocation secret)> EQUAL
+ELSE
+  <C's pubKey> CHECKSIG
+ENDIF
+```
 
 ### Hash Time Lock Contracts (HTLCs)
 
-A HTLC between Alice (A) and Bob (B) expresses the following:
+A HTLC between Bob (B) and Carol (C) expresses the following:
 
-> An output can be spent by B if he can present a secret within two days, or by
-> A after that.
+> An output can be spent by C if she can present a secret within two days, or
+> by B after that.
 
 HTLCs make payments routed through several untrusted third parties secure. They
 can be encoded by the following output script:
 
 ```
 IF
-  <B's pubkey> CHECKSIG
+  <C's pubkey> CHECKSIG
   HASH160 <Hash160 (secret)> EQUAL
 ELSE
-  <A's pubkey> CHECKSIG
+  <B's pubkey> CHECKSIG
   <2 days> CHECKSEQUENCEVERIFY
 ENDIF
 ```
 
-If the transaction is settled, Bob may spend the output with the following
+If the transaction is settled, Carol may spend the output with the following
 input script:
 
 ```
-<secret> <B's signature> TRUE
+<secret> <C's signature> TRUE
 ```
 
-Alice can spend it after two days with this input script:
+Bob can spend it after two days with this input script:
 
 ```
-<A's signature> FALSE
+<B's signature> FALSE
 ```
 
 ### Revocable HTLCs (RevHTLCs)
@@ -127,14 +142,14 @@ must be able to revoke previously made payments. A Revocable Sequence Maturity
 Contract (RSMC) is a technique to achieve just that [1]. We apply this
 technique to HTLCs in order to make them revokable.
 
-A revocable HTLC (RevHTLC) between A and B is a smart contract that expresses:
+A revocable HTLC (RevHTLC) between B and C is a smart contract that expresses:
 
-> An output can be spent by B if he knows A's revocation secret, or after one
-> day if B knows the HTLC secret, or by A after 2 days.
+> An output can be spent by C if she knows B's revocation secret, or after one
+> day if C knows the HTLC secret, or by B after 2 days.
 
-The trick is that if Alice gives Bob her revocation secret, then Bob knows that
-she will never publish the contract. If she did, he could spend from it
-immediately. In this way Alice can effectively revoke the contract. If Bob does
+The trick is that if Bob gives Carol his revocation secret, then Carol knows
+that he will never publish the contract. If he did, she could spend from it
+immediately. In this way Bob can effectively revoke the contract. If Carol does
 not know the revocation secret, the above condition is equivalent to a normal
 HTLC.
 
@@ -142,38 +157,43 @@ In Bitcoin script the condition above can be expressed as follows:
 
 ```
 IF
-  <B's pubkey> CHECKSIGVERIFY
-  HASH160 <Hash160 (A's revocation secret)> EQUAL
+  <C's pubkey> CHECKSIGVERIFY
+  HASH160 <Hash160 (b's revocation secret)> EQUAL
 ELSE
   IF
     <1 day> CHECKSEQUENCEVERIFY DROP
-    <B's pubkey> CHECKSIGVERIFY
+    <C's pubkey> CHECKSIGVERIFY
     HASH160 <Hash160 (HTLC secret)> EQUAL
   ELSE
     <2 days> CHECKSEQUENCEVERIFY DROP
-    <A's pubkey> CHECKSIG
+    <B's pubkey> CHECKSIG
   ENDIF
 ENDIF
 ```
 
-If the transaction is settled, Bob may spend the output immediately with the
+If the transaction is settled, Carol may spend the output immediately with the
 following input script:
 
 ```
-<A's revocation secret> <B's signature> TRUE
+<B's revocation secret> <C's signature> TRUE
 ```
 
-Bob may spend it after one day with the following input script:
+Carol may spend it after one day with the following input script:
 
 ```
-<HTLC secret> <B's signature> TRUE FALSE
+<HTLC secret> <C's signature> TRUE FALSE
 ```
 
-Alice may spend it after two days with the following input script:
+Bob may spend it after two days with the following input script:
 
 ```
-<A's signature> FALSE FALSE
+<B's signature> FALSE FALSE
 ```
+
+### P2SH
+
+In practice, the above scripts are always the redeemScript in a P2SH input, and
+outputs are always P2SH outputs with the hash of the redeemScript.
 
 Transactions
 ------------
