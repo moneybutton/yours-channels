@@ -2,6 +2,8 @@
 'use strict'
 let Hash = require('yours-bitcoin/lib/hash')
 let MsgSecret = require('../../lib/msgs/msg-secret')
+let Address = require('yours-bitcoin/lib/address')
+let Script = require('yours-bitcoin/lib/script')
 let Random = require('yours-bitcoin/lib/random')
 let asink = require('asink')
 let should = require('should')
@@ -58,6 +60,8 @@ describe('MsgSecret', function () {
         let secretBuf = Random.getRandomBuffer(32)
         let hashBuf = Hash.sha256Ripemd160(secretBuf)
         let msg = new MsgSecret()
+        let chanId = Address.fromRedeemScript(Script.fromString('OP_RETURN')).toString()
+        msg.setChanId(chanId)
         msg.setSecret(secretBuf, hashBuf)
         let isValid = yield msg.asyncIsValid()
         isValid.should.equal(true)

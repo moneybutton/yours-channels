@@ -3,6 +3,8 @@
 let Msg = require('../../lib/msgs/msg')
 let Random = require('yours-bitcoin/lib/random')
 let should = require('should')
+let Address = require('yours-bitcoin/lib/address')
+let Script = require('yours-bitcoin/lib/script')
 
 describe('Msg', function () {
   it('should exist', function () {
@@ -70,8 +72,17 @@ describe('Msg', function () {
   })
 
   describe('#isValid', function () {
-    it('should know this is a valid msg', function () {
+    it('should know this is a valid msg with mainnet id', function () {
       let msg = new Msg('command-name', ['arg1', 'arg2'])
+      let chanId = Address.Mainnet.fromRedeemScript(Script.fromString('OP_RETURN')).toString()
+      msg.setChanId(chanId)
+      msg.isValid().should.equal(true)
+    })
+
+    it('should know this is a valid msg with testnet id', function () {
+      let msg = new Msg('command-name', ['arg1', 'arg2'])
+      let chanId = Address.Testnet.fromRedeemScript(Script.fromString('OP_RETURN')).toString()
+      msg.setChanId(chanId)
       msg.isValid().should.equal(true)
     })
   })
