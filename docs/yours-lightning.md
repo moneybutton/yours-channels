@@ -567,8 +567,8 @@ consistently. However, there is very little to win (one funding transaction
 worth double digit USD) and very much to loose (the miners in the pool), so we
 do not anticipate this attack being a problem in practice.
 
-Implementation
---------------
+Implementation (Agent version)
+------------------------------
 
 ### Funding the channel
 
@@ -593,6 +593,75 @@ needs to be signed by the other party.
 
 **acceptCommitmentTx(txb).** Check if payment should be accepted. If so sign
 and return.
+
+Implementation (Channel version)
+--------------------------------
+
+### As Bob, how to initiate opening a channel from Bob to Carol:
+
+- create a new Channel object
+- asyncOpenStep1
+- send MsgOpen to Carol
+- receive MsgOpenRes from Carol
+  - if receive any other message:
+    - go to start and try again
+- asyncHandleMsgOpenRes
+  - if failure:
+    - go to start and try again
+- build funding tx
+- asyncOpenStep2
+- send MsgUpdate to Carol
+- receive MsgUpdateRes from Carol
+  - if receive any other message:
+    - go to start and try again
+- asyncHandleMsgUpdateRes
+  - if failure:
+    - go to start and try again
+- send MsgAck to Carol
+- broadcast funding tx to blockchain
+- wait for funding tx to be confirmed
+- asyncConfirmFundingTx
+- send MsgFundingTx to Carol
+- receive MsgAck from Carol (confirming she got our message)
+- receive MsgFundingTx from Carol (confirming she sees tx)
+- send MsgAck to Carol
+- channel is now open
+
+### As Carol, how to receive a channel initiation from Bob:
+
+- receive MsgOpen from Bob
+  - if chanId already exists:
+    - asyncMsgOpen on channel with chanId
+- create new Channel object
+- asyncHandleMsgOpen
+  - if failure:
+    - asyncClose
+- send MsgOpenRes to Bob
+- receive MsgUpdate from Bob
+- asyncHandleMsgUpdate
+  - if failure:
+    - asyncClose
+- send MsgUpdateRes to Bob
+- wait for funding tx to be confirmed
+- asyncConfirmFundingTx
+- receive MsgFundingTx from Carol
+- channel is now open
+
+### As Bob, how to make a payment from Bob to Carol over an open channel:
+
+- asyncUpdate
+- send MsgUpdate to Carol
+- receive MsgUpdateRes from Carol
+  - if receive any other message:
+    - asyncClose
+- asyncHandleMsgUpdateRes
+  - if failure:
+    - asyncClose
+- asyncReduce
+- send MsgReduce to Carol
+- receive MsgReduceRes from Carol
+  - if receive any other message:
+    - asyncClose
 
 Definitions
 -----------
