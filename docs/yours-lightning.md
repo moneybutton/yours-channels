@@ -773,6 +773,21 @@ All message types are JSON objects with these properties:
 - Explanation: Sometimes an agent needs to reveal a secret in order to receive
   a payment.
 
+Future Optimizations
+--------------------
+
+- Use bip32 for HTLC secrets to eliminate the need for one message. Rather than
+  require direct communication with the person you are paying to request their
+  HTLC hash, it would be better if you could generate a new hash to which only
+  they know the secret. This would be possible of HTLC secrets were replaced
+  with "Public Key Time Lock Contracts" secrets or "PTLC" secrets. In this
+  case, the payee cannot just share their private key, because through the
+  mathematics of bip32, it would then be possible to derive all their other
+  private keys. Instead, they would actually sign the other channel's
+  commitment transaction. Note that each time someone wants to be paid, e.g.
+  they post a comment or pay someone else, they would want to post a bip32
+  extended public key that can be used specifically for deriving new PTLC.
+
 References
 ----------
 
