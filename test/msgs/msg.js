@@ -28,6 +28,24 @@ describe('Msg', function () {
     })
   })
 
+  describe('#setConvId', function () {
+    it('should set the convId', function () {
+      let convId = Random.getRandomBuffer(16).toString('hex')
+      let msg = new Msg()
+      msg.setConvId(convId)
+      msg.convId.should.equal(convId)
+    })
+  })
+
+  describe('#getConvId', function () {
+    it('should get the convId', function () {
+      let convId = Random.getRandomBuffer(16).toString('hex')
+      let msg = new Msg()
+      msg.setConvId(convId)
+      msg.getConvId().should.equal(convId)
+    })
+  })
+
   describe('#toJSON', function () {
     it('should convert this msg into json', function () {
       let msg = new Msg('command-name', ['arg1', 'arg2'])
