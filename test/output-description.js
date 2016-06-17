@@ -1,4 +1,4 @@
-/* global describe,it */
+/* global describe,it,beforeEach */
 'use strict'
 let should = require('should')
 let asink = require('asink')
@@ -7,35 +7,49 @@ let OutputDescription = require('../lib/output-description')
 let HltcSecret = require('../lib/scrts/htlc-secret')
 let RevocationSecret = require('../lib/scrts/revocation-secret')
 
+let outputDescription
+
 describe('OutputDescription', function () {
   it('should exist', function () {
     should.exist(OutputDescription)
     should.exist(new OutputDescription())
   })
 
+  beforeEach(function () {
+    return asink(function * () {
+      outputDescription = new OutputDescription('Alice')
+      outputDescription.channelSourcePath = 'm/1/5'
+      outputDescription.channelDestPath = 'm/3/7'
+      outputDescription.networkSourceId = 'AliceId'
+      outputDescription.channelSourceId = 'BobId'
+      outputDescription.channelDestId = 'CarolId'
+      outputDescription.networkDestId = 'DaveId'
+      outputDescription.kind = 'htlc'
+      outputDescription.htlcSecret = new HltcSecret()
+      yield outputDescription.htlcSecret.asyncInitialize()
+      outputDescription.revocationSecret = new RevocationSecret()
+      yield outputDescription.revocationSecret.asyncInitialize()
+      outputDescription.amount = new Bn(1e7)
+    }, this)
+  })
+
   describe('#toJSON', function () {
     it('should create a json object', function () {
       return asink(function * () {
-        let outputDescription = new OutputDescription('Alice')
-        outputDescription.intermediateDestId = 'BobId'
-        outputDescription.finalDestId = 'CarolId'
-        outputDescription.amount = new Bn(1e7)
-        outputDescription.htlcSecret = new HltcSecret()
-        outputDescription.kind = 'htlc'
-        yield outputDescription.htlcSecret.asyncInitialize()
-        outputDescription.revocationSecret = new RevocationSecret()
-        yield outputDescription.revocationSecret.asyncInitialize()
-
         let json = outputDescription.toJSON()
         should.exist(json)
-        should.exist(json.intermediateDestId)
-        should.exist(json.finalDestId)
+        should.exist(json.channelSourcePath)
+        should.exist(json.channelDestPath)
+        should.exist(json.networkSourceId)
+        should.exist(json.channelSourceId)
+        should.exist(json.channelDestId)
+        should.exist(json.networkDestId)
         should.exist(json.kind)
-        should.exist(json.amount)
         should.exist(json.htlcSecret.hash)
         should.exist(json.htlcSecret.buf)
         should.exist(json.revocationSecret.hash)
         should.exist(json.revocationSecret.buf)
+        should.exist(json.amount)
       }, this)
     })
   })
@@ -43,24 +57,20 @@ describe('OutputDescription', function () {
   describe('#toPublic', function () {
     it('should create a public OutputDescription object', function () {
       return asink(function * () {
-        let outputDescription = new OutputDescription('Alice')
-        outputDescription.intermediateDestId = 'BobId'
-        outputDescription.finalDestId = 'CarolId'
-        outputDescription.amount = new Bn(1e7)
-        outputDescription.htlcSecret = new HltcSecret()
-        yield outputDescription.htlcSecret.asyncInitialize()
-        outputDescription.revocationSecret = new RevocationSecret()
-        yield outputDescription.revocationSecret.asyncInitialize()
-
         let publicOutputDescription = outputDescription.toPublic()
         should.exist(publicOutputDescription)
-        should.exist(publicOutputDescription.intermediateDestId)
-        should.exist(publicOutputDescription.finalDestId)
-        should.exist(publicOutputDescription.amount)
+        should.exist(publicOutputDescription.channelSourcePath)
+        should.exist(publicOutputDescription.channelDestPath)
+        should.exist(publicOutputDescription.networkSourceId)
+        should.exist(publicOutputDescription.channelSourceId)
+        should.exist(publicOutputDescription.channelDestId)
+        should.exist(publicOutputDescription.networkDestId)
+        should.exist(publicOutputDescription.kind)
         should.exist(publicOutputDescription.htlcSecret.hash)
         should.not.exist(publicOutputDescription.htlcSecret.buf)
         should.exist(publicOutputDescription.revocationSecret.hash)
         should.not.exist(publicOutputDescription.revocationSecret.buf)
+        should.exist(publicOutputDescription.amount)
       }, this)
     })
   })

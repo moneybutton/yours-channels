@@ -116,7 +116,7 @@ describe('Agent', function () {
   })
 
   describe('#sendOutputList', function () {
-    it('should work', function () {
+    it.skip('should work', function () {
       return asink(function * () {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())

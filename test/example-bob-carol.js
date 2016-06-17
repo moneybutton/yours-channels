@@ -24,7 +24,7 @@ describe('Example: Bob opens a channel with Carol', function () {
     destinationPrivKey: PrivKey.fromRandom()
   }
 
-  it('Bob establishes payment channel with Carol funded with 1 bitcoin and micropays her 1000 satoshis', function () {
+  it.skip('Bob establishes payment channel with Carol funded with 1 bitcoin and micropays her 1000 satoshis', function () {
     return asink(function * () {
       bob.agent = new Agent('Bob')
       yield bob.agent.asyncInitialize(bob.sourcePrivKey, bob.multisigPrivKey, bob.destinationPrivKey)

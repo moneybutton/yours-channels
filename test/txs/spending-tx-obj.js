@@ -24,7 +24,7 @@ describe('SpendingTxObj', function () {
   })
 
   describe('#asyncBuild', function () {
-    it('build a spending transaction that spends from pubKey output', function () {
+    it.skip('build a spending transaction that spends from pubKey output', function () {
       return asink(function * () {
         let alice = new Agent('Alice')
         yield alice.asyncInitialize(PrivKey.fromRandom(), PrivKey.fromRandom(), PrivKey.fromRandom())
