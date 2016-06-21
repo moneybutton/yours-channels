@@ -171,6 +171,18 @@ describe('SpendingTxObj', function () {
       }, this)
     })
 
+    it('build a spending transaction. Case branch two of revocable htlc', function () {
+      return asink(function * () {
+        yield spendingTxObj.asyncBuild(address, revHtlcCommitmentTxObj, bobBip32, bob.id)
+        txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        if (error) {
+          console.log(txVerifier.getDebugString())
+        }
+        error.should.equal(false)
+      }, this)
+    })
+
     it.skip('build a spending transaction that spends from htlc output', function () {
       return asink(function * () {
         let alice = new Agent('Alice')
