@@ -22,6 +22,8 @@ let bob, carol
 let htlcSecret, revocationSecret
 let bips, bobBip32, carolBip32
 let outputList, commitmentTxObj
+let txVerifier, error
+let spendingTxObj, address
 
 describe('SpendingTxObj', function () {
   it('should exist', function () {
@@ -93,21 +95,29 @@ describe('SpendingTxObj', function () {
         carol.id,
         bips)
       yield commitmentTxObj.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
+
+      spendingTxObj = new SpendingTxObj()
+      address = new Address().fromPrivKey(new PrivKey().fromRandom())
     }, this)
   })
 
   describe('#asyncBuild', function () {
-    it('build a spending transaction. Case htlc', function () {
+    it('build a spending transaction. Case spend htlc', function () {
       return asink(function * () {
-        commitmentTxObj.outputList[0].spendingAction = 'spend'
-        commitmentTxObj.outputList[1].spendingAction = 'spend'
+        yield spendingTxObj.asyncBuild(address, commitmentTxObj, carolBip32, carol.id)
+        txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        if (error) {
+          console.log(txVerifier.getDebugString())
+        }
+        error.should.equal(false)
+      }, this)
+    })
 
-        let txVerifier, error
-
-        let bobSpendingTxObj = new SpendingTxObj()
-        let address = new Address().fromPrivKey(new PrivKey().fromRandom())
-        yield bobSpendingTxObj.asyncBuild(address, commitmentTxObj, carolBip32, carol.id)
-        txVerifier = new TxVerifier(bobSpendingTxObj.txb.tx, bobSpendingTxObj.txb.uTxOutMap)
+    it('build a spending transaction. Case enforce htlc', function () {
+      return asink(function * () {
+        yield spendingTxObj.asyncBuild(address, commitmentTxObj, bobBip32, bob.id)
+        txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
           console.log(txVerifier.getDebugString())
