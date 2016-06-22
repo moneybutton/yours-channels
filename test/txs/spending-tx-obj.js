@@ -10,12 +10,17 @@ let RevocationSecret = require('../../lib/scrts/revocation-secret')
 let Agent = require('../../lib/agent')
 let Wallet = require('../../lib/wallet')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
+let KeyPair = require('yours-bitcoin/lib/key-pair')
 let Address = require('yours-bitcoin/lib/address')
+let TxIn = require('yours-bitcoin/lib/tx-in')
 let Bn = require('yours-bitcoin/lib/bn')
+let Script = require('yours-bitcoin/lib/script')
+let OpCode = require('yours-bitcoin/lib/op-code')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 let Interp = require('yours-bitcoin/lib/interp')
 let Bip32 = require('yours-bitcoin/lib/bip-32')
 let SpendingTxObj = require('../../lib/txs/spending-tx-obj')
+let TxHelper = require('../test-helpers/tx-helper')
 
 let bob, carol
 let htlcSecret, revocationSecret
@@ -198,7 +203,7 @@ describe('SpendingTxObj', function () {
   })
 
   describe('#asyncBuild', function () {
-    it.skip('build a spending transaction. Case pubKey', function () {
+    it('build a spending transaction. Case pubKey', function () {
       return asink(function * () {
         let pubKeyCommitmentTxObj = yield buildPubKeyCommitmentTxObj()
         yield spendingTxObj.asyncBuild(address, pubKeyCommitmentTxObj, carolBip32, carol.id)
@@ -292,6 +297,58 @@ describe('SpendingTxObj', function () {
     it.skip('build a spending transaction. Case branch three of revocable htlc', function () {
       return asink(function * () {
         // TODO
+      }, this)
+    })
+  })
+
+  describe('#pubKeyInputScript', function () {
+    it('concatenation of pubKeyRedeemScript and pubKeyInputScript should evaluate to true', function () {
+      return asink(function * () {
+        let keyPair = new KeyPair().fromRandom()
+        let commitmentTxObj = new CommitmentTxObj()
+        let scriptPubKey = commitmentTxObj.pubKeyRedeemScript(keyPair.pubKey)
+
+        let outputObject = {
+          channelDestId: 'aliceId'
+        }
+        let builderId = 'aliceId'
+        let spendingScriptObj = spendingTxObj.pubKeyInputScript(outputObject, builderId)
+        let scriptSig = spendingScriptObj.partialScriptSig
+        let sigPos = spendingScriptObj.sigPos
+
+        let {verified, debugString} = TxHelper.interpCheckSig(scriptSig, scriptPubKey, keyPair.privKey, sigPos, TxIn.SEQUENCE_FINAL)
+
+        if (!verified) {
+          console.log(debugString)
+        }
+        verified.should.equal(true)
+      }, this)
+    })
+
+    it('concatenation of pubKeyRedeemScript and pubKeyInputScript should evaluate to true, p2sh version', function () {
+      return asink(function * () {
+        let keyPair = new KeyPair().fromRandom()
+        let redeemScript = new Script()
+          .writeBuffer(keyPair.pubKey.toBuffer())
+          .writeOpCode(OpCode.OP_CHECKSIG)
+        let scriptPubKey = Address.fromRedeemScript(redeemScript).toScript()
+
+        let partialScriptSig = new Script()
+          .writeOpCode(OpCode.OP_FALSE)   // signature will go here
+        let sigPos = 0
+        // let scriptSig = commitmentTxObj.toP2shInput(partialScriptSig, redeemScript)
+        let scriptSig = Script.fromBuffer(partialScriptSig.toBuffer()).writeBuffer(redeemScript.toBuffer())
+
+        let {verified, debugString} = TxHelper.interpCheckSig(scriptSig, scriptPubKey, keyPair.privKey, sigPos, TxIn.SEQUENCE_FINAL, redeemScript)
+
+        if (!verified) {
+          console.log('pubKey:', keyPair.pubKey.toString())
+          console.log('pre-scriptSig:', scriptSig.toString())
+          console.log('scriptPubKey:', scriptPubKey.toString())
+          console.log('redeemScript:', redeemScript.toString())
+          console.log(debugString)
+        }
+        verified.should.equal(true)
       }, this)
     })
   })
