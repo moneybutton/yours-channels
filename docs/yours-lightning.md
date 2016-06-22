@@ -114,10 +114,10 @@ can be encoded by the following output script:
 
 ```
 IF
-  <C's pubkey> CHECKSIG
+  <C's pubkey> CHECKSIGVERIFY
   HASH160 <Hash160 (secret)> EQUAL
 ELSE
-  <B's pubkey> CHECKSIG
+  <B's pubkey> CHECKSIGVERIFY
   <2 days> CHECKSEQUENCEVERIFY
 ENDIF
 ```
