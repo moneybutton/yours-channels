@@ -38,14 +38,15 @@ describe('CommitmentTxObj', function () {
       carol.other = yield bob.asyncToPublic()
 
       yield bob.multisigAddress.asyncInitialize(bob.other.multisigAddress.pubKey)
+      yield carol.multisigAddress.asyncInitialize(carol.other.multisigAddress.pubKey)
 
       let inputAmountBn = Bn(1e10)
       let fundingAmount = Bn(1e8)
       let wallet = new Wallet()
       let output = wallet.getUnspentOutput(inputAmountBn, bob.sourceAddress.keyPair.pubKey)
 
-      bob.fundingTxObj = new FundingTxObj()
-      yield bob.fundingTxObj.asyncInitialize(
+      let fundingTxObj = new FundingTxObj()
+      yield fundingTxObj.asyncInitialize(
         fundingAmount,
         bob.sourceAddress,
         bob.multisigAddress,
@@ -54,6 +55,8 @@ describe('CommitmentTxObj', function () {
         output.txout,
         output.pubKey,
         output.inputTxout)
+
+      bob.fundingTxObj = carol.fundingTxObj = fundingTxObj
 
       htlcSecret = new HtlcSecret()
       yield htlcSecret.asyncInitialize()
@@ -86,10 +89,29 @@ describe('CommitmentTxObj', function () {
     }, this)
   })
 
+  it('build without signing', function () {
+    return asink(function * () {
+      let commitmentTxObj = new CommitmentTxObj()
+      commitmentTxObj.outputList = outputList
+      yield commitmentTxObj.asyncBuild(
+        bob.fundingTxObj.txb,
+        bob.multisigAddress,
+        carol.id,
+        bips)
+
+      let txVerifier, error
+      txVerifier = new TxVerifier(commitmentTxObj.txb.tx, commitmentTxObj.txb.uTxOutMap)
+      error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+      // we expect an error here as the transaction is not fully signed
+      error.should.equal('input 0 failed script verify')
+    }, this)
+  })
+
   describe('#asyncBuild', function () {
     it('case with only a change output', function () {
       return asink(function * () {
-        outputList = [
+        let commitmentTxObj = new CommitmentTxObj()
+        commitmentTxObj.outputList = [
           new OutputDescription(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
@@ -97,20 +119,17 @@ describe('CommitmentTxObj', function () {
             htlcSecret, revocationSecret,
             Bn(1e7))
         ]
-
-        let commitmentTxObj = new CommitmentTxObj()
-        commitmentTxObj.outputList = outputList
         yield commitmentTxObj.asyncBuild(
-          bob.fundingTxObj.txb,
-          bob.multisigAddress,
+          carol.fundingTxObj.txb,
+          carol.multisigAddress,
           carol.id,
           bips)
+        yield commitmentTxObj.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
 
         let txVerifier, error
         txVerifier = new TxVerifier(commitmentTxObj.txb.tx, commitmentTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
-        // we expect an error here as the transaction is not fully signed
-        error.should.equal('input 0 failed script verify')
+        error.should.equal(false)
 
         should.exist(commitmentTxObj)
         should.exist(commitmentTxObj.txb)
@@ -127,7 +146,8 @@ describe('CommitmentTxObj', function () {
 
     it('case with one pubKey output and a change output', function () {
       return asink(function * () {
-        outputList = [
+        let commitmentTxObj = new CommitmentTxObj()
+        commitmentTxObj.outputList = [
           new OutputDescription(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
@@ -141,20 +161,18 @@ describe('CommitmentTxObj', function () {
             htlcSecret, revocationSecret,
             Bn(1e7))
         ]
-
-        let commitmentTxObj = new CommitmentTxObj()
-        commitmentTxObj.outputList = outputList
         yield commitmentTxObj.asyncBuild(
-          bob.fundingTxObj.txb,
-          bob.multisigAddress,
+          carol.fundingTxObj.txb,
+          carol.multisigAddress,
           carol.id,
           bips)
+        yield commitmentTxObj.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
 
         let txVerifier, error
         txVerifier = new TxVerifier(commitmentTxObj.txb.tx, commitmentTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         // we expect an error here as the transaction is not fully signed
-        error.should.equal('input 0 failed script verify')
+        error.should.equal(false)
 
         should.exist(commitmentTxObj)
         should.exist(commitmentTxObj.txb)
@@ -177,7 +195,8 @@ describe('CommitmentTxObj', function () {
 
     it('case with one revocable pubKey output and a change output', function () {
       return asink(function * () {
-        outputList = [
+        let commitmentTxObj = new CommitmentTxObj()
+        commitmentTxObj.outputList = [
           new OutputDescription(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
@@ -191,20 +210,18 @@ describe('CommitmentTxObj', function () {
             htlcSecret, revocationSecret,
             Bn(1e7))
         ]
-
-        let commitmentTxObj = new CommitmentTxObj()
-        commitmentTxObj.outputList = outputList
         yield commitmentTxObj.asyncBuild(
           bob.fundingTxObj.txb,
           bob.multisigAddress,
           bob.id,
           bips)
+        yield commitmentTxObj.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
 
         let txVerifier, error
         txVerifier = new TxVerifier(commitmentTxObj.txb.tx, commitmentTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         // we expect an error here as the transaction is not fully signed
-        error.should.equal('input 0 failed script verify')
+        error.should.equal(false)
 
         should.exist(commitmentTxObj)
         should.exist(commitmentTxObj.txb)
@@ -227,7 +244,8 @@ describe('CommitmentTxObj', function () {
 
     it('case with one htlc output and a change output', function () {
       return asink(function * () {
-        outputList = [
+        let commitmentTxObj = new CommitmentTxObj()
+        commitmentTxObj.outputList = [
           new OutputDescription(
             'htlc',
             'alice', 'bob', 'carol', 'dave',
@@ -241,20 +259,18 @@ describe('CommitmentTxObj', function () {
             htlcSecret, revocationSecret,
             Bn(1e7))
         ]
-
-        let commitmentTxObj = new CommitmentTxObj()
-        commitmentTxObj.outputList = outputList
         yield commitmentTxObj.asyncBuild(
-          bob.fundingTxObj.txb,
-          bob.multisigAddress,
+          carol.fundingTxObj.txb,
+          carol.multisigAddress,
           carol.id,
           bips)
+        yield commitmentTxObj.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
 
         let txVerifier, error
         txVerifier = new TxVerifier(commitmentTxObj.txb.tx, commitmentTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         // we expect an error here as the transaction is not fully signed
-        error.should.equal('input 0 failed script verify')
+        error.should.equal(false)
 
         should.exist(commitmentTxObj)
         should.exist(commitmentTxObj.txb)
@@ -277,7 +293,8 @@ describe('CommitmentTxObj', function () {
 
     it('case with one revocable htlc output and a change output', function () {
       return asink(function * () {
-        outputList = [
+        let commitmentTxObj = new CommitmentTxObj()
+        commitmentTxObj.outputList = [
           new OutputDescription(
             'htlc',
             'alice', 'bob', 'carol', 'dave',
@@ -291,20 +308,18 @@ describe('CommitmentTxObj', function () {
             htlcSecret, revocationSecret,
             Bn(1e7))
         ]
-
-        let commitmentTxObj = new CommitmentTxObj()
-        commitmentTxObj.outputList = outputList
         yield commitmentTxObj.asyncBuild(
           bob.fundingTxObj.txb,
           bob.multisigAddress,
           bob.id,
           bips)
+        yield commitmentTxObj.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
 
         let txVerifier, error
         txVerifier = new TxVerifier(commitmentTxObj.txb.tx, commitmentTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         // we expect an error here as the transaction is not fully signed
-        error.should.equal('input 0 failed script verify')
+        error.should.equal(false)
 
         should.exist(commitmentTxObj)
         should.exist(commitmentTxObj.txb)
@@ -336,6 +351,7 @@ describe('CommitmentTxObj', function () {
           bob.multisigAddress,
           bob.id,
           bips)
+        yield commitmentTxObj.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
         let json = commitmentTxObj.toJSON()
 
         should.exist(json)
