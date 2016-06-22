@@ -20,9 +20,127 @@ let SpendingTxObj = require('../../lib/txs/spending-tx-obj')
 let bob, carol
 let htlcSecret, revocationSecret
 let bips, bobBip32, carolBip32
-let htlcCommitmentTxObj, revHtlcCommitmentTxObj
+let pubKeyCommitmentTxObj, revPubKeyCommitmentTxObj, htlcCommitmentTxObj, revHtlcCommitmentTxObj
 let txVerifier, error
 let spendingTxObj, address
+
+let buildPubKeyCommitmentTxObj = function () {
+  return asink(function * () {
+    // to build a transaction with pubKey outputs we must make sure that the
+    // builder (carol) is the channel destination
+    pubKeyCommitmentTxObj = new CommitmentTxObj()
+    pubKeyCommitmentTxObj.outputList = [
+      new OutputDescription(
+        'pubKey',
+        'alice', 'bob', 'carol', 'dave',
+        'm/1/2', 'm/4/5',
+        htlcSecret, revocationSecret,
+        Bn(1e7)),
+      new OutputDescription(
+        'pubKey',
+        'alice', 'bob', 'carol', 'dave',
+        'm/1/2', 'm/4/5',
+        htlcSecret, revocationSecret,
+        Bn(1e7))
+    ]
+    yield pubKeyCommitmentTxObj.asyncBuild(
+      carol.fundingTxObj.txb,
+      carol.multisigAddress,
+      carol.id, // builder id
+      bips)
+    yield pubKeyCommitmentTxObj.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
+    return pubKeyCommitmentTxObj
+  }, this)
+}
+
+let buildRevPubKeyCommitmentTxObj = function () {
+  return asink(function * () {
+    // to build a transaction with _revocable_ htlc outputs we
+    // must make sure that the
+    // builder (carol) is _not_ the channel destination
+    revPubKeyCommitmentTxObj = new CommitmentTxObj()
+    revPubKeyCommitmentTxObj.outputList = [
+      new OutputDescription(
+        'pubKey',
+        'alice', 'bob', 'carol', 'dave',
+        'm/1/2', 'm/4/5',
+        htlcSecret, revocationSecret,
+        Bn(1e7)),
+      new OutputDescription(
+        'pubKey',
+        'alice', 'bob', 'carol', 'dave',
+        'm/1/2', 'm/4/5',
+        htlcSecret, revocationSecret,
+        Bn(1e7))
+    ]
+    yield revPubKeyCommitmentTxObj.asyncBuild(
+      bob.fundingTxObj.txb,
+      bob.multisigAddress,
+      bob.id, // builder id
+      bips)
+    yield revPubKeyCommitmentTxObj.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
+    return revPubKeyCommitmentTxObj
+  }, this)
+}
+
+let buildHtlcCommitmentTxObj = function () {
+  return asink(function * () {
+    // to build a transaction with htlc outputs we must make sure that the
+    // builder (carol) is the channel destination
+    htlcCommitmentTxObj = new CommitmentTxObj()
+    htlcCommitmentTxObj.outputList = [
+      new OutputDescription(
+        'htlc',
+        'alice', 'bob', 'carol', 'dave',
+        'm/1/2', 'm/4/5',
+        htlcSecret, revocationSecret,
+        Bn(1e7)),
+      new OutputDescription(
+        'htlc',
+        'alice', 'bob', 'carol', 'dave',
+        'm/1/2', 'm/4/5',
+        htlcSecret, revocationSecret,
+        Bn(1e7))
+    ]
+    yield htlcCommitmentTxObj.asyncBuild(
+      carol.fundingTxObj.txb,
+      carol.multisigAddress,
+      carol.id, // builder id
+      bips)
+    yield htlcCommitmentTxObj.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
+    return htlcCommitmentTxObj
+  }, this)
+}
+
+let buildRevHtlcCommitmentTxObj = function () {
+  return asink(function * () {
+    // to build a transaction with _revocable_ htlc outputs we
+    // must make sure that the
+    // builder (carol) is _not_ the channel destination
+    revHtlcCommitmentTxObj = new CommitmentTxObj()
+    revHtlcCommitmentTxObj.outputList = [
+      new OutputDescription(
+        'htlc',
+        'alice', 'bob', 'carol', 'dave',
+        'm/1/2', 'm/4/5',
+        htlcSecret, revocationSecret,
+        Bn(1e7)),
+      new OutputDescription(
+        'htlc',
+        'alice', 'bob', 'carol', 'dave',
+        'm/1/2', 'm/4/5',
+        htlcSecret, revocationSecret,
+        Bn(1e7))
+    ]
+    yield revHtlcCommitmentTxObj.asyncBuild(
+      bob.fundingTxObj.txb,
+      bob.multisigAddress,
+      bob.id, // builder id
+      bips)
+    yield revHtlcCommitmentTxObj.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
+    return revHtlcCommitmentTxObj
+  }, this)
+}
 
 describe('SpendingTxObj', function () {
   it('should exist', function () {
@@ -74,68 +192,54 @@ describe('SpendingTxObj', function () {
         carol: carolBip32.toPublic()
       }
 
-      let htlcOutputList = [
-        new OutputDescription(
-          'htlc',
-          'alice', 'bob', 'carol', 'dave',
-          'm/1/2', 'm/4/5',
-          htlcSecret, revocationSecret,
-          Bn(1e7)),
-        new OutputDescription(
-          'htlc',
-          'alice', 'bob', 'carol', 'dave',
-          'm/1/2', 'm/4/5',
-          htlcSecret, revocationSecret,
-          Bn(1e7))
-      ]
-
-      // TODO: use some sort of clone here
-      let htlcOutputList2 = [
-        new OutputDescription(
-          'htlc',
-          'alice', 'bob', 'carol', 'dave',
-          'm/1/2', 'm/4/5',
-          htlcSecret, revocationSecret,
-          Bn(1e7)),
-        new OutputDescription(
-          'htlc',
-          'alice', 'bob', 'carol', 'dave',
-          'm/1/2', 'm/4/5',
-          htlcSecret, revocationSecret,
-          Bn(1e7))
-      ]
-
-      // to build a transaction with htlc outputs we must make sure that the
-      // builder (carol) is the channel destination
-      htlcCommitmentTxObj = new CommitmentTxObj()
-      htlcCommitmentTxObj.outputList = htlcOutputList
-      yield htlcCommitmentTxObj.asyncBuild(
-        carol.fundingTxObj.txb,
-        carol.multisigAddress,
-        carol.id, // builder id
-        bips)
-      yield htlcCommitmentTxObj.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
-
-      // to build a transaction with _revocable_ htlc outputs we
-      // must make sure that the
-      // builder (carol) is _not_ the channel destination
-      revHtlcCommitmentTxObj = new CommitmentTxObj()
-      revHtlcCommitmentTxObj.outputList = htlcOutputList2
-      yield revHtlcCommitmentTxObj.asyncBuild(
-        bob.fundingTxObj.txb,
-        bob.multisigAddress,
-        bob.id, // builder id
-        bips)
-      yield revHtlcCommitmentTxObj.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
-
       spendingTxObj = new SpendingTxObj()
       address = new Address().fromPrivKey(new PrivKey().fromRandom())
     }, this)
   })
 
   describe('#asyncBuild', function () {
+    it.skip('build a spending transaction. Case pubKey', function () {
+      return asink(function * () {
+        let pubKeyCommitmentTxObj = yield buildPubKeyCommitmentTxObj()
+        yield spendingTxObj.asyncBuild(address, pubKeyCommitmentTxObj, carolBip32, carol.id)
+        txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        if (error) {
+          console.log(txVerifier.getDebugString())
+        }
+        error.should.equal(false)
+      }, this)
+    })
+
+    it('build a spending transaction. Case revocable pubKey branch one', function () {
+      return asink(function * () {
+        let revPubKeyCommitmentTxObj = yield buildRevPubKeyCommitmentTxObj()
+        yield spendingTxObj.asyncBuild(address, revPubKeyCommitmentTxObj, carolBip32, carol.id)
+        txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        if (error) {
+          console.log(txVerifier.getDebugString())
+        }
+        error.should.equal(false)
+      }, this)
+    })
+
+    it('build a spending transaction. Case revocable pubKey branch two', function () {
+      return asink(function * () {
+        let revPubKeyCommitmentTxObj = yield buildRevPubKeyCommitmentTxObj()
+        yield spendingTxObj.asyncBuild(address, revPubKeyCommitmentTxObj, bobBip32, bob.id)
+        txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        if (error) {
+          console.log(txVerifier.getDebugString())
+        }
+        error.should.equal(false)
+      }, this)
+    })
+
     it('build a spending transaction. Case branch one of htlc', function () {
       return asink(function * () {
+        let htlcCommitmentTxObj = yield buildHtlcCommitmentTxObj()
         yield spendingTxObj.asyncBuild(address, htlcCommitmentTxObj, carolBip32, carol.id)
         txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
@@ -148,6 +252,7 @@ describe('SpendingTxObj', function () {
 
     it('build a spending transaction. Case branch two of htlc', function () {
       return asink(function * () {
+        let htlcCommitmentTxObj = yield buildHtlcCommitmentTxObj()
         yield spendingTxObj.asyncBuild(address, htlcCommitmentTxObj, bobBip32, bob.id)
         txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
@@ -160,6 +265,7 @@ describe('SpendingTxObj', function () {
 
     it('build a spending transaction. Case branch one of revocable htlc', function () {
       return asink(function * () {
+        let revHtlcCommitmentTxObj = yield buildRevHtlcCommitmentTxObj()
         yield spendingTxObj.asyncBuild(address, revHtlcCommitmentTxObj, carolBip32, carol.id)
         txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
@@ -172,6 +278,7 @@ describe('SpendingTxObj', function () {
 
     it('build a spending transaction. Case branch two of revocable htlc', function () {
       return asink(function * () {
+        let revHtlcCommitmentTxObj = yield buildRevHtlcCommitmentTxObj()
         yield spendingTxObj.asyncBuild(address, revHtlcCommitmentTxObj, bobBip32, bob.id)
         txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
@@ -179,6 +286,12 @@ describe('SpendingTxObj', function () {
           console.log(txVerifier.getDebugString())
         }
         error.should.equal(false)
+      }, this)
+    })
+
+    it.skip('build a spending transaction. Case branch three of revocable htlc', function () {
+      return asink(function * () {
+        // TODO
       }, this)
     })
   })
