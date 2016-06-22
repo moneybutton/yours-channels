@@ -1,7 +1,7 @@
 {
   "name": "yours-channels",
-  "version": "1.0.0",
-  "description": "Payment channels for Yours.",
+  "version": "0.0.1",
+  "description": "Channels.",
   "main": "index",
   "scripts": {
     "test-format": "./node_modules/.bin/standard lib/* test/* lib/*/* test/*/*",
@@ -13,7 +13,7 @@
     "url": "git+https://github.com/yoursnetwork/yours-channels.git"
   },
   "author": "",
-  "license": "MIT",
+  "license": "Copyright (c) Yours Inc.",
   "bugs": {
     "url": "https://github.com/yoursnetwork/yours-channels/issues"
   },
