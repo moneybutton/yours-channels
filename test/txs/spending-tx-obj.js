@@ -374,8 +374,8 @@ describe('SpendingTxObj', function () {
         let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          revocationSecret)
-        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
+          { revocationSecret: revocationSecret})
+        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'aliceId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -396,8 +396,8 @@ describe('SpendingTxObj', function () {
         let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          revocationSecret)
-        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
+          { revocationSecret: revocationSecret})
+        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'aliceId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -416,8 +416,8 @@ describe('SpendingTxObj', function () {
         let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          revocationSecret)
-        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
+          { revocationSecret: revocationSecret})
+        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'aliceId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -436,7 +436,7 @@ describe('SpendingTxObj', function () {
         let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          revocationSecret)
+          { revocationSecret: revocationSecret})
         let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'bobId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
@@ -458,7 +458,7 @@ describe('SpendingTxObj', function () {
         let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          revocationSecret)
+          { revocationSecret: revocationSecret})
         let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'bobId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
@@ -478,7 +478,7 @@ describe('SpendingTxObj', function () {
         let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          revocationSecret)
+          { revocationSecret: revocationSecret })
         let revocationSecret2 = new RevocationSecret()
         yield revocationSecret2.asyncInitialize()
         let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret2 }, 'bobId')
@@ -502,7 +502,7 @@ describe('SpendingTxObj', function () {
         let scriptPubKey = commitmentTxObj.htlcRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          htlcSecret)
+          { htlcSecret: htlcSecret })
         let spendingScriptObj = spendingTxObj.htlcInputScript(
           {
             channelDestId: 'aliceId',
@@ -529,7 +529,7 @@ describe('SpendingTxObj', function () {
         let scriptPubKey = commitmentTxObj.htlcRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          htlcSecret)
+          { htlcSecret: htlcSecret })
         let spendingScriptObj = spendingTxObj.htlcInputScript(
           {
             channelDestId: 'aliceId',
@@ -554,7 +554,7 @@ describe('SpendingTxObj', function () {
         let scriptPubKey = commitmentTxObj.htlcRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          htlcSecret)
+          { htlcSecret: htlcSecret })
         let htlcSecret2 = new HtlcSecret()
         yield htlcSecret2.asyncInitialize()
         let spendingScriptObj = spendingTxObj.htlcInputScript(
