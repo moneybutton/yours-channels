@@ -18,6 +18,7 @@ let Interp = require('yours-bitcoin/lib/interp')
 let Bip32 = require('yours-bitcoin/lib/bip-32')
 let SpendingTxObj = require('../../lib/txs/spending-tx-obj')
 let TxHelper = require('../test-helpers/tx-helper')
+let Consts = require('../../lib/consts.js')
 
 let bob, carol
 let htlcSecret, revocationSecret
@@ -236,7 +237,7 @@ describe('SpendingTxObj', function () {
     it('build a spending transaction. Case revocable pubKey branch one', function () {
       return asink(function * () {
         let revPubKeyCommitmentTxObj = yield buildRevPubKeyCommitmentTxObj()
-        yield spendingTxObj.asyncBuild(address, revPubKeyCommitmentTxObj, carolBip32, carol.id)
+        yield spendingTxObj.asyncBuild(address, revPubKeyCommitmentTxObj, carolBip32, carol.id, Bn(100))
         txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
@@ -261,7 +262,7 @@ describe('SpendingTxObj', function () {
     it('build a spending transaction. Case revocable pubKey branch two', function () {
       return asink(function * () {
         let revPubKeyCommitmentTxObj = yield buildRevPubKeyCommitmentTxObj()
-        yield spendingTxObj.asyncBuild(address, revPubKeyCommitmentTxObj, carolBip32, carol.id)
+        yield spendingTxObj.asyncBuild(address, revPubKeyCommitmentTxObj, carolBip32, carol.id, Bn(100))
         txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
@@ -360,7 +361,7 @@ describe('SpendingTxObj', function () {
           scriptPubKey,
           new PrivKey().fromRandom(),
           spendingScriptObj.sigPos,
-          Bn(100))
+          Consts.CSV_DELAY)
 
         verified.should.equal(false)
         JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_EVAL_FALSE')
@@ -375,14 +376,17 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'aliceId')
+        let spendingScriptObj = spendingTxObj.revPubKeyInputScript(
+          { channelDestId: 'aliceId', revocationSecret: revocationSecret },
+          'aliceId',
+          Consts.CSV_DELAY)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
           scriptPubKey,
           destKeyPair.privKey,
           spendingScriptObj.sigPos,
-          Bn(100))
+          Consts.CSV_DELAY)
 
         if (!verified) {
           console.log(debugString)
@@ -397,14 +401,17 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'aliceId')
+        let spendingScriptObj = spendingTxObj.revPubKeyInputScript(
+          { channelDestId: 'aliceId', revocationSecret: revocationSecret },
+          'aliceId',
+          Consts.CSV_DELAY)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
           scriptPubKey,
           new PrivKey().fromRandom(),
           spendingScriptObj.sigPos,
-          Bn(100))
+          Consts.CSV_DELAY)
 
         verified.should.equal(false)
         JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_EVAL_FALSE')
@@ -417,7 +424,10 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'aliceId')
+        let spendingScriptObj = spendingTxObj.revPubKeyInputScript(
+          { channelDestId: 'aliceId', revocationSecret: revocationSecret },
+          'aliceId',
+          Consts.CSV_DELAY)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -437,14 +447,17 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'bobId')
+        let spendingScriptObj = spendingTxObj.revPubKeyInputScript(
+          { channelDestId: 'aliceId', revocationSecret: revocationSecret },
+          'bobId',
+          Consts.CSV_DELAY)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
           scriptPubKey,
           sourceKeyPair.privKey,
           spendingScriptObj.sigPos,
-          Bn(100))
+          Consts.CSV_DELAY)
 
         if (!verified) {
           console.log(debugString)
@@ -459,14 +472,17 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'bobId')
+        let spendingScriptObj = spendingTxObj.revPubKeyInputScript(
+          { channelDestId: 'aliceId', revocationSecret: revocationSecret },
+          'bobId',
+          Consts.CSV_DELAY)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
           scriptPubKey,
           new PrivKey().fromRandom(),
           spendingScriptObj.sigPos,
-          Bn(100))
+          Consts.CSV_DELAY)
 
         verified.should.equal(false)
         JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_CHECKSIGVERIFY')
@@ -481,14 +497,17 @@ describe('SpendingTxObj', function () {
           { revocationSecret: revocationSecret })
         let revocationSecret2 = new RevocationSecret()
         yield revocationSecret2.asyncInitialize()
-        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret2 }, 'bobId')
+        let spendingScriptObj = spendingTxObj.revPubKeyInputScript(
+          { channelDestId: 'aliceId', revocationSecret: revocationSecret2 },
+          'bobId',
+          Consts.CSV_DELAY)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
           scriptPubKey,
           sourceKeyPair.privKey,
           spendingScriptObj.sigPos,
-          Bn(100))
+          Consts.CSV_DELAY)
 
         verified.should.equal(false)
         JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_EVAL_FALSE')
