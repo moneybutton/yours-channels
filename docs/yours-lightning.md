@@ -53,6 +53,8 @@ Definitions
 
 - The agents in the analysis are Alice (A), Bob (B), Carol (C), and Dave (D).
 - Bob opens a channel with Carol. Bob funds the channel.
+- Alice pays Dave. Alice may be the same agent as Bob. Carol may be the same
+  agent as Dave.
 - The channel is funded with N satoshis.
 - The transaction fee is F satoshis.
 - The amount being paid in the payment is M satoshis. There will be more than
@@ -63,9 +65,9 @@ Definitions
   one of Carol’s public keys.
 - The funding transaction is the transaction Bob creates spending to the
   multisig address to fund the channel to Carol.
-- An Output Description is an amount, final recipient’s name (“Alice” or
-  “Dave”), an intermediate recipient’s public key (Bob or Carol), an HTLC hash,
-  and a revocation hash.
+- An Output Description is an amount, final recipient’s id ("Alice" or "Dave"),
+  an intermediate recipient’s public key (Bob or Carol), an HTLC hash, and a
+  revocation hash.
 - An Output Description list is a list of Output Descriptions. The sum of the
   amounts of the output list must equal the funding amount minus the fee (F).
 
@@ -89,17 +91,30 @@ Carol can spend the output with this input:
 <C's signature>
 ```
 
-### Revocable PubKey
+### Revocable PubKey (RevPubKey)
 
-Bob may wish to make a payment to Carol which is revocable:
+Bob and Carol may wish to make an output to Carol which Carol can revoke:
 
 ```
 IF
-  <C's pubkey> CHECKSIGVERIFY
-  HASH160 <Hash160 (B's revocation secret)> EQUAL
+  <C's pubkey> CHECKSIG
+  <2 days> CHECKSEQUENCEVERIFY DROP
 ELSE
-  <C's pubKey> CHECKSIG
-ENDIF
+  <B's pubkey> CHECKSIGVERIFY
+  HASH160 <Hash160 (C's revocation secret)> EQUAL
+ELSE
+```
+
+Carol can spend this transaction after two days with:
+
+```
+<C's signature> TRUE
+```
+
+Or Bob can spend this transaction with:
+
+```
+<C's revocation secret> <B's signature> FALSE
 ```
 
 ### Hash Time Lock Contracts (HTLCs)
@@ -140,7 +155,7 @@ Bob can spend it after two days with this input script:
 In order for channels to remain open an unlimited amount of time, the parties
 must be able to revoke previously made payments. A Revocable Sequence Maturity
 Contract (RSMC) is a technique to achieve just that [1]. We apply this
-technique to HTLCs in order to make them revokable.
+technique to HTLCs in order to make them revocable.
 
 A revocable HTLC (RevHTLC) between B and C is a smart contract that expresses:
 
