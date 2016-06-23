@@ -18,8 +18,8 @@ function interpCheckSig (scriptSig, scriptPubKey, privKey, sigPos, nSequence, re
     txHashBuf.fill(0)
     let txOutNum = 0
     let script = Script.fromString('OP_TRUE')
-    let nSequence = TxIn.SEQUENCE_FINAL
-    tx1.addTxIn(txHashBuf, txOutNum, script, nSequence)
+    tx1.versionBytesNum = 2
+    tx1.addTxIn(txHashBuf, txOutNum, script, TxIn.SEQUENCE_FINAL)
   }
 
   {
@@ -33,6 +33,7 @@ function interpCheckSig (scriptSig, scriptPubKey, privKey, sigPos, nSequence, re
     txHashBuf.fill(0)
     // let txOutNum = 0
     // let script = Script.fromString('OP_TRUE')
+    tx2.versionBytesNum = 2
     tx2.addTxIn(tx1.hash(), 0, scriptSig, nSequence)
   }
 

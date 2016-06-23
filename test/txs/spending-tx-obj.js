@@ -12,10 +12,7 @@ let Wallet = require('../../lib/wallet')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let KeyPair = require('yours-bitcoin/lib/key-pair')
 let Address = require('yours-bitcoin/lib/address')
-let TxIn = require('yours-bitcoin/lib/tx-in')
 let Bn = require('yours-bitcoin/lib/bn')
-let Script = require('yours-bitcoin/lib/script')
-let OpCode = require('yours-bitcoin/lib/op-code')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 let Interp = require('yours-bitcoin/lib/interp')
 let Bip32 = require('yours-bitcoin/lib/bip-32')
@@ -27,7 +24,8 @@ let htlcSecret, revocationSecret
 let bips, bobBip32, carolBip32
 let pubKeyCommitmentTxObj, revPubKeyCommitmentTxObj, htlcCommitmentTxObj, revHtlcCommitmentTxObj
 let txVerifier, error
-let spendingTxObj, address
+let spendingTxObj, commitmentTxObj
+let destKeyPair, sourceKeyPair, address
 
 let buildPubKeyCommitmentTxObj = function () {
   return asink(function * () {
@@ -190,6 +188,9 @@ describe('SpendingTxObj', function () {
       revocationSecret = new RevocationSecret()
       yield revocationSecret.asyncInitialize()
 
+      destKeyPair = new KeyPair().fromRandom()
+      sourceKeyPair = new KeyPair().fromRandom()
+
       bobBip32 = new Bip32().fromRandom()
       carolBip32 = new Bip32().fromRandom()
       bips = {
@@ -197,6 +198,7 @@ describe('SpendingTxObj', function () {
         carol: carolBip32.toPublic()
       }
 
+      commitmentTxObj = new CommitmentTxObj()
       spendingTxObj = new SpendingTxObj()
       address = new Address().fromPrivKey(new PrivKey().fromRandom())
     }, this)
@@ -217,11 +219,11 @@ describe('SpendingTxObj', function () {
       }, this)
     })
 
-    it('build a spending transaction. Case pubKey, should fail with the wrong pub key', function () {
+    it.skip('build a spending transaction. Case pubKey, should fail with the wrong pub key', function () {
       return asink(function * () {
         try {
           let pubKeyCommitmentTxObj = yield buildPubKeyCommitmentTxObj()
-          yield spendingTxObj.asyncBuild(address, pubKeyCommitmentTxObj, bobBip32, bob.id)
+          yield spendingTxObj.asyncBuild(address, pubKeyCommitmentTxObj, bobBip32, carol.id)
           true.should.equal(false)
         } catch (err) {
           err.message.should.equal('no spendable outputs found')
@@ -244,10 +246,22 @@ describe('SpendingTxObj', function () {
       }, this)
     })
 
+    it.skip('build a spending transaction. Case revocable pubKey branch one, should fail with wrong pubKey', function () {
+      return asink(function * () {
+        try {
+          let revPubKeyCommitmentTxObj = yield buildRevPubKeyCommitmentTxObj()
+          yield spendingTxObj.asyncBuild(address, revPubKeyCommitmentTxObj, bobBip32, carol.id)
+          true.should.equal(false)
+        } catch (err) {
+          err.message.should.equal('no spendable outputs found')
+        }
+      }, this)
+    })
+
     it('build a spending transaction. Case revocable pubKey branch two', function () {
       return asink(function * () {
         let revPubKeyCommitmentTxObj = yield buildRevPubKeyCommitmentTxObj()
-        yield spendingTxObj.asyncBuild(address, revPubKeyCommitmentTxObj, bobBip32, bob.id)
+        yield spendingTxObj.asyncBuild(address, revPubKeyCommitmentTxObj, carolBip32, carol.id)
         txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
@@ -317,21 +331,16 @@ describe('SpendingTxObj', function () {
   })
 
   describe('#pubKeyInputScript', function () {
-    it('concatenation of pubKeyRedeemScript and pubKeyInputScript should evaluate to true', function () {
+    it('pubKeyRedeemScript and pubKeyInputScript should evaluate to true', function () {
       return asink(function * () {
-        let keyPair = new KeyPair().fromRandom()
-        let commitmentTxObj = new CommitmentTxObj()
-        let scriptPubKey = commitmentTxObj.pubKeyRedeemScript(keyPair.pubKey)
+        let scriptPubKey = commitmentTxObj.pubKeyRedeemScript(destKeyPair.pubKey)
+        let spendingScriptObj = spendingTxObj.pubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
 
-        let outputObject = {
-          channelDestId: 'aliceId'
-        }
-        let builderId = 'aliceId'
-        let spendingScriptObj = spendingTxObj.pubKeyInputScript(outputObject, builderId)
-        let scriptSig = spendingScriptObj.partialScriptSig
-        let sigPos = spendingScriptObj.sigPos
-
-        let {verified, debugString} = TxHelper.interpCheckSig(scriptSig, scriptPubKey, keyPair.privKey, sigPos, TxIn.SEQUENCE_FINAL)
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig, scriptPubKey,
+          destKeyPair.privKey,
+          spendingScriptObj.sigPos,
+          Bn(100))
 
         if (!verified) {
           console.log(debugString)
@@ -340,30 +349,141 @@ describe('SpendingTxObj', function () {
       }, this)
     })
 
-    it('concatenation of pubKeyRedeemScript and pubKeyInputScript should evaluate to true, p2sh version', function () {
+    it('pubKeyRedeemScript and pubKeyInputScript should evaluate to false if keys don\'t match', function () {
       return asink(function * () {
-        let keyPair = new KeyPair().fromRandom()
-        let redeemScript = new Script()
-          .writeBuffer(keyPair.pubKey.toBuffer())
-          .writeOpCode(OpCode.OP_CHECKSIG)
-        let scriptPubKey = Address.fromRedeemScript(redeemScript).toScript()
+        let scriptPubKey = commitmentTxObj.pubKeyRedeemScript(destKeyPair.pubKey)
+        let spendingScriptObj = spendingTxObj.pubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
 
-        let partialScriptSig = new Script()
-          .writeOpCode(OpCode.OP_FALSE)   // signature will go here
-        let sigPos = 0
-        // let scriptSig = commitmentTxObj.toP2shInput(partialScriptSig, redeemScript)
-        let scriptSig = Script.fromBuffer(partialScriptSig.toBuffer()).writeBuffer(redeemScript.toBuffer())
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig, scriptPubKey,
+          new PrivKey().fromRandom(),
+          spendingScriptObj.sigPos,
+          Bn(100))
 
-        let {verified, debugString} = TxHelper.interpCheckSig(scriptSig, scriptPubKey, keyPair.privKey, sigPos, TxIn.SEQUENCE_FINAL, redeemScript)
+        verified.should.equal(false)
+        JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_EVAL_FALSE')
+      }, this)
+    })
+  })
+
+  describe('#revPubKeyRedeemScript', function () {
+    it('branch 1 of revPubKeyRedeemScript and revPubKeyInputScript should evaluate to true', function () {
+      return asink(function * () {
+        let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
+          destKeyPair.pubKey,
+          sourceKeyPair.pubKey,
+          revocationSecret)
+        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
+
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig, scriptPubKey,
+          destKeyPair.privKey,
+          spendingScriptObj.sigPos,
+          Bn(100))
 
         if (!verified) {
-          console.log('pubKey:', keyPair.pubKey.toString())
-          console.log('pre-scriptSig:', scriptSig.toString())
-          console.log('scriptPubKey:', scriptPubKey.toString())
-          console.log('redeemScript:', redeemScript.toString())
           console.log(debugString)
         }
         verified.should.equal(true)
+      }, this)
+    })
+
+    it('branch 1 of revPubKeyRedeemScript and revPubKeyInputScript should evaluate to false if keys don\'t match', function () {
+      return asink(function * () {
+        let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
+          destKeyPair.pubKey,
+          sourceKeyPair.pubKey,
+          revocationSecret)
+        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
+
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig, scriptPubKey,
+          new PrivKey().fromRandom(),
+          spendingScriptObj.sigPos,
+          Bn(100))
+
+        verified.should.equal(false)
+        JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_CHECKSIGVERIFY')
+      }, this)
+    })
+
+    it('branch 1 of revPubKeyRedeemScript and revPubKeyInputScript should evaluate to false if CSV does', function () {
+      return asink(function * () {
+        let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
+          destKeyPair.pubKey,
+          sourceKeyPair.pubKey,
+          revocationSecret)
+        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
+
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig, scriptPubKey,
+          destKeyPair.privKey,
+          spendingScriptObj.sigPos,
+          Bn(99))
+
+        verified.should.equal(false)
+        JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_UNSATISFIED_LOCKTIME')
+      }, this)
+    })
+
+    it('branch 2 of revPubKeyRedeemScript and revPubKeyInputScript should evaluate to true', function () {
+      return asink(function * () {
+        let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
+          destKeyPair.pubKey,
+          sourceKeyPair.pubKey,
+          revocationSecret)
+        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'bobId')
+
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig, scriptPubKey,
+          sourceKeyPair.privKey,
+          spendingScriptObj.sigPos,
+          Bn(100))
+
+        if (!verified) {
+          console.log(debugString)
+        }
+        verified.should.equal(true)
+      }, this)
+    })
+
+    it('branch 2 of revPubKeyRedeemScript and revPubKeyInputScript should evaluate to false if keys don\'t match', function () {
+      return asink(function * () {
+        let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
+          destKeyPair.pubKey,
+          sourceKeyPair.pubKey,
+          revocationSecret)
+        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'bobId')
+
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig, scriptPubKey,
+          new PrivKey().fromRandom(),
+          spendingScriptObj.sigPos,
+          Bn(100))
+
+        verified.should.equal(false)
+        JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_CHECKSIGVERIFY')
+      }, this)
+    })
+
+    it('branch 2 of revPubKeyRedeemScript and revPubKeyInputScript should evaluate to false if the wrong rev sec is used', function () {
+      return asink(function * () {
+        let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
+          destKeyPair.pubKey,
+          sourceKeyPair.pubKey,
+          revocationSecret)
+        let revocationSecret2 = new RevocationSecret()
+        yield revocationSecret2.asyncInitialize()
+        let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret2 }, 'bobId')
+
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig, scriptPubKey,
+          sourceKeyPair.privKey,
+          spendingScriptObj.sigPos,
+          Bn(100))
+
+        verified.should.equal(false)
+        JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_EVAL_FALSE')
       }, this)
     })
   })
