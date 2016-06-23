@@ -203,6 +203,7 @@ describe('SpendingTxObj', function () {
   })
 
   describe('#asyncBuild', function () {
+    // Case: pubKey
     it('build a spending transaction. Case pubKey', function () {
       return asink(function * () {
         let pubKeyCommitmentTxObj = yield buildPubKeyCommitmentTxObj()
@@ -215,6 +216,20 @@ describe('SpendingTxObj', function () {
         error.should.equal(false)
       }, this)
     })
+
+    it('build a spending transaction. Case pubKey, should fail with the wrong pub key', function () {
+      return asink(function * () {
+        try {
+          let pubKeyCommitmentTxObj = yield buildPubKeyCommitmentTxObj()
+          yield spendingTxObj.asyncBuild(address, pubKeyCommitmentTxObj, bobBip32, bob.id)
+          true.should.equal(false)
+        } catch (err) {
+          err.message.should.equal('no spendable outputs found')
+        }
+      }, this)
+    })
+
+    // Case: revocable pubKey
 
     it('build a spending transaction. Case revocable pubKey branch one', function () {
       return asink(function * () {
