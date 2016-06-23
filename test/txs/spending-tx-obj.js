@@ -337,7 +337,8 @@ describe('SpendingTxObj', function () {
         let spendingScriptObj = spendingTxObj.pubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
-          spendingScriptObj.partialScriptSig, scriptPubKey,
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
           destKeyPair.privKey,
           spendingScriptObj.sigPos,
           Bn(100))
@@ -355,7 +356,8 @@ describe('SpendingTxObj', function () {
         let spendingScriptObj = spendingTxObj.pubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
-          spendingScriptObj.partialScriptSig, scriptPubKey,
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
           new PrivKey().fromRandom(),
           spendingScriptObj.sigPos,
           Bn(100))
@@ -376,7 +378,8 @@ describe('SpendingTxObj', function () {
         let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
-          spendingScriptObj.partialScriptSig, scriptPubKey,
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
           destKeyPair.privKey,
           spendingScriptObj.sigPos,
           Bn(100))
@@ -397,13 +400,14 @@ describe('SpendingTxObj', function () {
         let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
-          spendingScriptObj.partialScriptSig, scriptPubKey,
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
           new PrivKey().fromRandom(),
           spendingScriptObj.sigPos,
           Bn(100))
 
         verified.should.equal(false)
-        JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_CHECKSIGVERIFY')
+        JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_EVAL_FALSE')
       }, this)
     })
 
@@ -416,7 +420,8 @@ describe('SpendingTxObj', function () {
         let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
-          spendingScriptObj.partialScriptSig, scriptPubKey,
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
           destKeyPair.privKey,
           spendingScriptObj.sigPos,
           Bn(99))
@@ -435,7 +440,8 @@ describe('SpendingTxObj', function () {
         let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'bobId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
-          spendingScriptObj.partialScriptSig, scriptPubKey,
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
           sourceKeyPair.privKey,
           spendingScriptObj.sigPos,
           Bn(100))
@@ -456,7 +462,8 @@ describe('SpendingTxObj', function () {
         let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'bobId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
-          spendingScriptObj.partialScriptSig, scriptPubKey,
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
           new PrivKey().fromRandom(),
           spendingScriptObj.sigPos,
           Bn(100))
@@ -477,13 +484,95 @@ describe('SpendingTxObj', function () {
         let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret2 }, 'bobId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
-          spendingScriptObj.partialScriptSig, scriptPubKey,
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
           sourceKeyPair.privKey,
           spendingScriptObj.sigPos,
           Bn(100))
 
         verified.should.equal(false)
         JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_EVAL_FALSE')
+      }, this)
+    })
+  })
+
+  describe('#htlcRedeemScript', function () {
+    it('branch 1 of htlcRedeemScript and htlcInputScript should evaluate to true', function () {
+      return asink(function * () {
+        let scriptPubKey = commitmentTxObj.htlcRedeemScript(
+          destKeyPair.pubKey,
+          sourceKeyPair.pubKey,
+          htlcSecret)
+        let spendingScriptObj = spendingTxObj.htlcInputScript(
+          {
+            channelDestId: 'aliceId',
+            htlcSecret: htlcSecret
+          },
+          'aliceId')
+
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
+          destKeyPair.privKey,
+          spendingScriptObj.sigPos,
+          Bn(100))
+
+        if (!verified) {
+          console.log(debugString)
+        }
+        verified.should.equal(true)
+      }, this)
+    })
+
+    it('branch 1 of htlcRedeemScript and htlcInputScript should evaluate to false if the wrong keys are used', function () {
+      return asink(function * () {
+        let scriptPubKey = commitmentTxObj.htlcRedeemScript(
+          destKeyPair.pubKey,
+          sourceKeyPair.pubKey,
+          htlcSecret)
+        let spendingScriptObj = spendingTxObj.htlcInputScript(
+          {
+            channelDestId: 'aliceId',
+            htlcSecret: htlcSecret
+          },
+          'aliceId')
+
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
+          new PrivKey().fromRandom(),
+          spendingScriptObj.sigPos,
+          Bn(100))
+
+        verified.should.equal(false)
+        JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_CHECKSIGVERIFY')
+      }, this)
+    })
+
+    it('branch 1 of htlcRedeemScript and htlcInputScript should evaluate to false if the wrong htlc secret is', function () {
+      return asink(function * () {
+        let scriptPubKey = commitmentTxObj.htlcRedeemScript(
+          destKeyPair.pubKey,
+          sourceKeyPair.pubKey,
+          htlcSecret)
+        let htlcSecret2 = new HtlcSecret()
+        yield htlcSecret2.asyncInitialize()
+        let spendingScriptObj = spendingTxObj.htlcInputScript(
+          {
+            channelDestId: 'aliceId',
+            htlcSecret: htlcSecret2
+          },
+          'aliceId')
+
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
+          new PrivKey().fromRandom(),
+          spendingScriptObj.sigPos,
+          Bn(100))
+
+        verified.should.equal(false)
+        JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_CHECKSIGVERIFY')
       }, this)
     })
   })
