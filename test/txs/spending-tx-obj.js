@@ -374,7 +374,7 @@ describe('SpendingTxObj', function () {
         let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { revocationSecret: revocationSecret})
+          { revocationSecret: revocationSecret })
         let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'aliceId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
@@ -396,7 +396,7 @@ describe('SpendingTxObj', function () {
         let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { revocationSecret: revocationSecret})
+          { revocationSecret: revocationSecret })
         let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'aliceId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
@@ -416,7 +416,7 @@ describe('SpendingTxObj', function () {
         let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { revocationSecret: revocationSecret})
+          { revocationSecret: revocationSecret })
         let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'aliceId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
@@ -436,7 +436,7 @@ describe('SpendingTxObj', function () {
         let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { revocationSecret: revocationSecret})
+          { revocationSecret: revocationSecret })
         let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'bobId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
@@ -458,7 +458,7 @@ describe('SpendingTxObj', function () {
         let scriptPubKey = commitmentTxObj.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { revocationSecret: revocationSecret})
+          { revocationSecret: revocationSecret })
         let spendingScriptObj = spendingTxObj.revPubKeyInputScript({ channelDestId: 'aliceId', revocationSecret: revocationSecret }, 'bobId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
