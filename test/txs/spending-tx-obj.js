@@ -314,7 +314,7 @@ describe('SpendingTxObj', function () {
     it('build a spending transaction. Case branch two of revocable htlc', function () {
       return asink(function * () {
         let revHtlcCommitmentTxObj = yield buildRevHtlcCommitmentTxObj()
-        yield spendingTxObj.asyncBuild(address, revHtlcCommitmentTxObj, bobBip32, bob.id)
+        yield spendingTxObj.asyncBuild(address, revHtlcCommitmentTxObj, carolBip32, carol.id, Bn(100)) // TODO: does this need to be carol' bib and id or bob's?
         txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
@@ -672,6 +672,121 @@ describe('SpendingTxObj', function () {
 
         verified.should.equal(false)
         JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_UNSATISFIED_LOCKTIME')
+      }, this)
+    })
+  })
+
+  describe('#revHtlcInputScript', function () {
+    it('branch 1 of revHtlcRedeemScript and revHtlcInputScript should evaluate to true', function () {
+      return asink(function * () {
+        let scriptPubKey = commitmentTxObj.revHtlcRedeemScript(
+          destKeyPair.pubKey,
+          sourceKeyPair.pubKey,
+          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+          {
+            channelDestId: 'aliceId',
+            htlcSecret: htlcSecret,
+            revocationSecret: revocationSecret
+          },
+          'aliceId')
+
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
+          destKeyPair.privKey,
+          spendingScriptObj.sigPos,
+          Bn(100))
+
+        if (!verified) {
+          console.log(debugString)
+        }
+        verified.should.equal(true)
+      }, this)
+    })
+
+    it('branch 1 of revHtlcRedeemScript and revHtlcInputScript should evaluate to false if wrong keys are used', function () {
+      return asink(function * () {
+        let scriptPubKey = commitmentTxObj.revHtlcRedeemScript(
+          destKeyPair.pubKey,
+          sourceKeyPair.pubKey,
+          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+          {
+            channelDestId: 'aliceId',
+            htlcSecret: htlcSecret,
+            revocationSecret: revocationSecret
+          },
+          'aliceId')
+
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
+          new PrivKey().fromRandom(),
+          spendingScriptObj.sigPos,
+          Bn(100))
+
+        verified.should.equal(false)
+        JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_CHECKSIGVERIFY')
+      }, this)
+    })
+
+    it('branch 1 of revHtlcRedeemScript and revHtlcInputScript should evaluate to false if wrong htlc secret is used', function () {
+      return asink(function * () {
+        let scriptPubKey = commitmentTxObj.revHtlcRedeemScript(
+          destKeyPair.pubKey,
+          sourceKeyPair.pubKey,
+          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+        let htlcSecret2 = new HtlcSecret()
+        yield htlcSecret2.asyncInitialize()
+
+        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+          {
+            channelDestId: 'aliceId',
+            htlcSecret: htlcSecret2,
+            revocationSecret: revocationSecret
+          },
+          'aliceId')
+
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
+          destKeyPair.privKey,
+          spendingScriptObj.sigPos,
+          Bn(100))
+
+        if (!verified) {
+          console.log(debugString)
+        }
+        verified.should.equal(true)
+      }, this)
+    })
+
+    it('branch 1 of revHtlcRedeemScript and revHtlcInputScript should evaluate to false if CSV does', function () {
+      return asink(function * () {
+        let scriptPubKey = commitmentTxObj.revHtlcRedeemScript(
+          destKeyPair.pubKey,
+          sourceKeyPair.pubKey,
+          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+          {
+            channelDestId: 'aliceId',
+            htlcSecret: htlcSecret,
+            revocationSecret: revocationSecret
+          },
+          'aliceId')
+
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
+          destKeyPair.privKey,
+          spendingScriptObj.sigPos,
+          Consts.CSV_DELAY.sub(Bn(1)))
+
+        if (!verified) {
+          console.log(debugString)
+        }
+        verified.should.equal(true)
       }, this)
     })
   })
