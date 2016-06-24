@@ -16,6 +16,23 @@ describe('Channel', function () {
     should.exist(new Channel())
   })
 
+  describe('Example', function () {
+    it('Bob opens a channel with Carol, sends 1000 satoshi, closes channel', function () {
+      return asink(function * () {
+        let bob = {}
+        let carol = {}
+
+        bob.xPrv = Bip32.fromRandom()
+        carol.xPrv = Bip32.fromRandom()
+
+        bob.channel = new Channel(bob.xPrv, carol.xPrv.toPublic())
+        yield bob.channel.asyncInitialize()
+
+        // TODO: Finished
+      }, this)
+    })
+  })
+
   describe('#constructor', function () {
     return asink(function * () {
       let channel = new Channel(myXPrv, theirXPub)
