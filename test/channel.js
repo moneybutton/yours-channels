@@ -67,4 +67,18 @@ describe('Channel', function () {
       x.should.not.equal(y)
     })
   })
+
+  describe('#asyncBuildMultiSigAddr', function () {
+    it('should build a multisig address', function () {
+      return asink(function * () {
+        let channel = new Channel(myXPrv, theirXPub)
+        yield channel.asyncInitialize()
+        yield channel.asyncBuildMultiSigAddr()
+        should.exist(channel.multiSigAddr)
+
+        // 3 is the mainnet constant; tests always run on mainnet
+        channel.multiSigAddr.toString()[0].should.equal('3')
+      }, this)
+    })
+  })
 })
