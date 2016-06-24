@@ -288,7 +288,7 @@ describe('SpendingTxObj', function () {
     it('build a spending transaction. Case branch two of htlc', function () {
       return asink(function * () {
         let htlcCommitmentTxObj = yield buildHtlcCommitmentTxObj()
-        yield spendingTxObj.asyncBuild(address, htlcCommitmentTxObj, bobBip32, bob.id)
+        yield spendingTxObj.asyncBuild(address, htlcCommitmentTxObj, bobBip32, bob.id, Bn(100))
         txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
@@ -434,7 +434,7 @@ describe('SpendingTxObj', function () {
           scriptPubKey,
           destKeyPair.privKey,
           spendingScriptObj.sigPos,
-          Bn(99))
+          Consts.CSV_DELAY.sub(Bn(1)))
 
         verified.should.equal(false)
         JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_UNSATISFIED_LOCKTIME')
