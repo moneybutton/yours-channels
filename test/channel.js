@@ -80,5 +80,20 @@ describe('Channel', function () {
         channel.multiSigAddr.toString()[0].should.equal('3')
       }, this)
     })
+
+    it('should build this known multisig address', function () {
+      return asink(function * () {
+        let myXPrv = Bip32.fromString('xprv9s21ZrQH143K3vDcUe4KsRnPzFpxwv9VhnExscaAB6KGW9kTr1YhJngKqA47ycSMzzJoGUFeh5PkC4r8nRr7iDqXSdrdh1M1rXqgFhHsFbV')
+        let theirXPub = Bip32.fromString('xpub661MyMwAqRbcGsGCwFS4LxezMPgLmXQDqE5q4fUSpQ4rWSHxtQ3USe9N4AkH2x4tzoMtXiWvepZeq5AicnpqapAS68JWGJLrnrSdW5Crofo')
+        let channel = new Channel(myXPrv, theirXPub)
+        channel.rootPath = 'm/1/1'
+        yield channel.asyncInitialize()
+        yield channel.asyncBuildMultiSigAddr()
+        should.exist(channel.multiSigAddr)
+
+        // 3 is the mainnet constant; tests always run on mainnet
+        channel.multiSigAddr.toString().should.equal('3JPTiXjHVB5HBnUiZMXVmV4G4SkTtVgqE7')
+      }, this)
+    })
   })
 })
