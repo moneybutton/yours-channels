@@ -56,6 +56,10 @@ describe('Channel', function () {
         should.exist(channel.chanPath)
         should.exist(channel.myChanXPrv)
         should.exist(channel.theirChanXPub)
+        should.exist(channel.myId)
+        should.exist(channel.theirId)
+        channel.myId.should.equal(yield channel.myXPrv.toPublic().asyncToString())
+        channel.theirId.should.equal(yield channel.theirXPub.asyncToString())
       }, this)
     })
   })
@@ -128,28 +132,6 @@ describe('Channel', function () {
         yield channel.asyncInitialize()
         let id = yield channel.asyncGetId()
         id.should.equal(channel.multiSigAddr.toString())
-      }, this)
-    })
-  })
-
-  describe('#asyncGetMyId', function () {
-    it('should return my xpub string', function () {
-      return asink(function * () {
-        let channel = new Channel(fundingAmount, myXPrv, theirXPub)
-        yield channel.asyncInitialize()
-        let id = yield channel.asyncGetMyId()
-        id.should.equal(channel.myXPrv.toPublic().toString())
-      }, this)
-    })
-  })
-
-  describe('#asyncGetTheirId', function () {
-    it('should return their xpub string', function () {
-      return asink(function * () {
-        let channel = new Channel(fundingAmount, myXPrv, theirXPub)
-        yield channel.asyncInitialize()
-        let id = yield channel.asyncGetTheirId()
-        id.should.equal(channel.theirXPub.toString())
       }, this)
     })
   })
