@@ -3,6 +3,7 @@
 let Bip32 = require('yours-bitcoin/lib/bip-32')
 let Bn = require('yours-bitcoin/lib/bn')
 let Channel = require('../lib/channel')
+let MsgUpdate = require('../lib/msgs/msg-update')
 let asink = require('asink')
 let should = require('should')
 
@@ -18,7 +19,7 @@ describe('Channel', function () {
     should.exist(new Channel())
   })
 
-  describe('Example', function () {
+  describe('API Example', function () {
     it('Bob opens a channel with Carol, sends 1000 satoshi, closes channel', function () {
       return asink(function * () {
         let bob = {}
@@ -29,6 +30,9 @@ describe('Channel', function () {
 
         bob.channel = new Channel(fundingAmount, bob.xPrv, carol.xPrv.toPublic())
         yield bob.channel.asyncInitialize()
+
+        let msg = yield bob.channel.asyncOpen()
+        ;(msg instanceof MsgUpdate).should.equal(true)
 
         // TODO: Finished
       }, this)
@@ -146,6 +150,17 @@ describe('Channel', function () {
         yield channel.asyncInitialize()
         let id = yield channel.asyncGetTheirId()
         id.should.equal(channel.theirXPub.toString())
+      }, this)
+    })
+  })
+
+  describe('#asyncOpen', function () {
+    it('should create a msgUpdate with output descriptions of length 1', function () {
+      return asink(function * () {
+        let channel = new Channel(fundingAmount, myXPrv, theirXPub)
+        yield channel.asyncInitialize()
+        let msg = yield channel.asyncOpen()
+        msg.args.outputDescriptions.length.should.equal(1)
       }, this)
     })
   })
