@@ -468,9 +468,9 @@ Assume: Bob has Carol's xPub
 - msgUpdate = asyncUpdate(outputDescriptions)
   - note: msgUpdate contains output list, Carol's commitment tx, funding tx hash
 - send msgUpdate to Carol
-- receive msgUpdateRes from Carol
-- asyncHandleMsgUpdateRes(msgUpdateRes)
-  - note: msgUpdateRes contains an output list and Bob's commitment tx
+- receive msgUpdate from Carol
+- asyncHandleMsgUpdate(msgUpdate)
+  - note: msgUpdate contains an output list, and Bob's commitment tx, funding tx hash
 - broadcast funding tx to blockchain
 - wait until funding tx is confirmed to blockchain
 - channel is now open
@@ -483,9 +483,9 @@ Assume: Carol has Bob's xPub
   - note: msgUpdate contains output list, Carol's commitment tx, and both
     party's multisig address path
 - if the Channel object for this multisig address does not yet exist, create it
-- msgUpdateRes = asyncHandleMsgUpdate(msgUpdate)
-  - note: msgUpdateRes contains output list and Bob's commitment tx
-- send msgUpdateRes to Bob
+- msgUpdate = asyncHandleMsgUpdate(msgUpdate)
+  - note: msgUpdate contains output list and Bob's commitment tx
+- send msgUpdate to Bob
 - wait until funding tx is confirmed to blockchain
 - channel is now open
 
@@ -495,9 +495,9 @@ Assume: Carol has Bob's xPub
 - msgUpdate = asyncUpdate (outputDescriptions)
   - note: msgUpdate contains output list and Carol's commitment transaction
 - send msgUpdate to Carol
-- receive msgUpdateRes from Carol
-  - note: msgUpdateRes contains output list and Bob's commitment transaction
-- msgSecret = asyncHandleMsgUpdateRes (msgUpdateRes)
+- receive msgUpdate from Carol
+  - note: msgUpdate contains output list and Bob's commitment transaction
+- msgSecret = asyncHandleMsgUpdate (msgUpdate)
 - send msgSecret to Carol
   - note: msgSecret contains Bob's revocation secret
 - receive msgSecret from Carol
@@ -547,20 +547,8 @@ All message types are JSON objects with these properties:
 - Explanation: When you want to make a payment to someone, either to the agent
   on the other side of the channel or to someone else they are connected to,
   you need to send a MsgUpdate. When an agent sends a MsgUpdate, they expect
-  the other agent to send a MsgUpdateRes with the complementary commitment
-  transaction.
-
-### MsgUpdateRes
-- Command: 'update-res'
-- Arguments:
-  - outputDescriptions: An array of OutputDescription objects specifying what
-    types the outputs are (such as HTLC or pubkey) and how much bitcoin is in
-    that output.
-  - commitmentTxBuilder: A partially signed TxBuilder object created by the
-    builder/sender and to be owned by the owner/receiver.
-- Explanation: An agent's response to an 'update' message. Also contains an
-  Output Description list and a commitment transaction, but built by the other
-  agent and with different hashes and signatures.
+  the other agent to send a MsgUpdate in response with the complementary
+  commitment transaction.
 
 ### MsgSecret
 - Command: 'secret'
