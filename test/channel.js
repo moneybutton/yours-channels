@@ -127,4 +127,26 @@ describe('Channel', function () {
       }, this)
     })
   })
+
+  describe('#asyncGetMyId', function () {
+    it('should return my xpub string', function () {
+      return asink(function * () {
+        let channel = new Channel(fundingAmount, myXPrv, theirXPub)
+        yield channel.asyncInitialize()
+        let id = yield channel.asyncGetMyId()
+        id.should.equal(channel.myXPrv.toPublic().toString())
+      }, this)
+    })
+  })
+
+  describe('#asyncGetTheirId', function () {
+    it('should return their xpub string', function () {
+      return asink(function * () {
+        let channel = new Channel(fundingAmount, myXPrv, theirXPub)
+        yield channel.asyncInitialize()
+        let id = yield channel.asyncGetTheirId()
+        id.should.equal(channel.theirXPub.toString())
+      }, this)
+    })
+  })
 })
