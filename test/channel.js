@@ -25,20 +25,20 @@ describe('Channel', function () {
   })
 
   describe('#asyncInitialize', function () {
-    it('should set rootPath, myXPrvRoot, theirXPubRoot', function () {
+    it('should set chanPath, myChanXPrv, theirChanXPub', function () {
       return asink(function * () {
         let channel = new Channel(myXPrv, theirXPub)
         yield channel.asyncInitialize()
-        should.exist(channel.rootPath)
-        should.exist(channel.myXPrvRoot)
-        should.exist(channel.theirXPubRoot)
+        should.exist(channel.chanPath)
+        should.exist(channel.myChanXPrv)
+        should.exist(channel.theirChanXPub)
       }, this)
     })
   })
 
-  describe('@randomRootPath', function () {
+  describe('@randomChanPath', function () {
     it('should give a path with two numbers', function () {
-      let path = Channel.randomRootPath()
+      let path = Channel.randomChanPath()
       let [, x, y] = path.split('/').map((a) => Number(a))
 
       // these (random) numbers should almost always be between 0 and the
@@ -52,9 +52,9 @@ describe('Channel', function () {
     })
   })
 
-  describe('#randomRootPath', function () {
+  describe('#randomChanPath', function () {
     it('should give a path with two numbers', function () {
-      let path = new Channel().randomRootPath().rootPath
+      let path = new Channel().randomChanPath().chanPath
       let [, x, y] = path.split('/').map((a) => Number(a))
 
       // these (random) numbers should almost always be between 0 and the
@@ -86,7 +86,7 @@ describe('Channel', function () {
         let myXPrv = Bip32.fromString('xprv9s21ZrQH143K3vDcUe4KsRnPzFpxwv9VhnExscaAB6KGW9kTr1YhJngKqA47ycSMzzJoGUFeh5PkC4r8nRr7iDqXSdrdh1M1rXqgFhHsFbV')
         let theirXPub = Bip32.fromString('xpub661MyMwAqRbcGsGCwFS4LxezMPgLmXQDqE5q4fUSpQ4rWSHxtQ3USe9N4AkH2x4tzoMtXiWvepZeq5AicnpqapAS68JWGJLrnrSdW5Crofo')
         let channel = new Channel(myXPrv, theirXPub)
-        channel.rootPath = 'm/1/1'
+        channel.chanPath = 'm/1/1'
         yield channel.asyncInitialize()
         yield channel.asyncBuildMultiSigAddr()
         should.exist(channel.multiSigAddr)
