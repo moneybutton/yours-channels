@@ -6,7 +6,7 @@
   "scripts": {
     "test-format": "./node_modules/.bin/standard lib/* test/* lib/*/* test/*/*",
     "test": "npm run test-format && npm run mocha",
-    "mocha": "./node_modules/.bin/mocha test/*/* test/*"
+    "mocha": "./node_modules/.bin/mocha -R dot test/*/* test/*"
   },
   "repository": {
     "type": "git",
