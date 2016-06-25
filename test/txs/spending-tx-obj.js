@@ -48,7 +48,7 @@ let buildPubKeyCommitmentTxObj = function () {
         Bn(1e7))
     ]
     yield pubKeyCommitmentTxObj.asyncBuild(
-      carol.fundingTxObj.txb,
+      carol.fundingTxObj.txb.tx,
       carol.multisigAddress,
       carol.id, // builder id
       xPubs)
@@ -78,7 +78,7 @@ let buildRevPubKeyCommitmentTxObj = function () {
         Bn(1e7))
     ]
     yield revPubKeyCommitmentTxObj.asyncBuild(
-      bob.fundingTxObj.txb,
+      bob.fundingTxObj.txb.tx,
       bob.multisigAddress,
       bob.id, // builder id
       xPubs)
@@ -107,7 +107,7 @@ let buildHtlcCommitmentTxObj = function () {
         Bn(1e7))
     ]
     yield htlcCommitmentTxObj.asyncBuild(
-      carol.fundingTxObj.txb,
+      carol.fundingTxObj.txb.tx,
       carol.multisigAddress,
       carol.id, // builder id
       xPubs)
@@ -137,7 +137,7 @@ let buildRevHtlcCommitmentTxObj = function () {
         Bn(1e7))
     ]
     yield revHtlcCommitmentTxObj.asyncBuild(
-      bob.fundingTxObj.txb,
+      bob.fundingTxObj.txb.tx,
       bob.multisigAddress,
       bob.id, // builder id
       xPubs)

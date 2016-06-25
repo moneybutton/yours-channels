@@ -94,7 +94,7 @@ describe('CommitmentTxObj', function () {
       let commitmentTxObj = new CommitmentTxObj()
       commitmentTxObj.outputList = outputList
       yield commitmentTxObj.asyncBuild(
-        bob.fundingTxObj.txb,
+        bob.fundingTxObj.txb.tx,
         bob.multisigAddress,
         carol.id,
         xPubs)
@@ -120,7 +120,7 @@ describe('CommitmentTxObj', function () {
             Bn(1e7))
         ]
         yield commitmentTxObj.asyncBuild(
-          carol.fundingTxObj.txb,
+          carol.fundingTxObj.txb.tx,
           carol.multisigAddress,
           carol.id,
           xPubs)
@@ -162,7 +162,7 @@ describe('CommitmentTxObj', function () {
             Bn(1e7))
         ]
         yield commitmentTxObj.asyncBuild(
-          carol.fundingTxObj.txb,
+          carol.fundingTxObj.txb.tx,
           carol.multisigAddress,
           carol.id,
           xPubs)
@@ -211,7 +211,7 @@ describe('CommitmentTxObj', function () {
             Bn(1e7))
         ]
         yield commitmentTxObj.asyncBuild(
-          bob.fundingTxObj.txb,
+          bob.fundingTxObj.txb.tx,
           bob.multisigAddress,
           bob.id,
           xPubs)
@@ -260,7 +260,7 @@ describe('CommitmentTxObj', function () {
             Bn(1e7))
         ]
         yield commitmentTxObj.asyncBuild(
-          carol.fundingTxObj.txb,
+          carol.fundingTxObj.txb.tx,
           carol.multisigAddress,
           carol.id,
           xPubs)
@@ -309,7 +309,7 @@ describe('CommitmentTxObj', function () {
             Bn(1e7))
         ]
         yield commitmentTxObj.asyncBuild(
-          bob.fundingTxObj.txb,
+          bob.fundingTxObj.txb.tx,
           bob.multisigAddress,
           bob.id,
           xPubs)
@@ -347,7 +347,7 @@ describe('CommitmentTxObj', function () {
         let commitmentTxObj = new CommitmentTxObj()
         commitmentTxObj.outputList = outputList
         yield commitmentTxObj.asyncBuild(
-          bob.fundingTxObj.txb,
+          bob.fundingTxObj.txb.tx,
           bob.multisigAddress,
           bob.id,
           xPubs)
@@ -372,7 +372,7 @@ describe('CommitmentTxObj', function () {
         let commitmentTxObj = new CommitmentTxObj()
         commitmentTxObj.outputList = outputList
         yield commitmentTxObj.asyncBuild(
-          bob.fundingTxObj.txb,
+          bob.fundingTxObj.txb.tx,
           bob.multisigAddress,
           bob.id,
           xPubs)
@@ -398,7 +398,7 @@ describe('CommitmentTxObj', function () {
         let commitmentTxObj = new CommitmentTxObj()
         commitmentTxObj.outputList = outputList
         yield commitmentTxObj.asyncBuild(
-          bob.fundingTxObj.txb,
+          bob.fundingTxObj.txb.tx,
           bob.multisigAddress,
           bob.id,
           xPubs)
