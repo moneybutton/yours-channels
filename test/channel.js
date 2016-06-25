@@ -4,6 +4,9 @@ let Bip32 = require('yours-bitcoin/lib/bip-32')
 let Bn = require('yours-bitcoin/lib/bn')
 let Channel = require('../lib/channel')
 let MsgUpdate = require('../lib/msgs/msg-update')
+let Tx = require('yours-bitcoin/lib/tx')
+let TxIn = require('yours-bitcoin/lib/tx-in')
+let Script = require('yours-bitcoin/lib/script')
 let asink = require('asink')
 let should = require('should')
 
@@ -20,6 +23,25 @@ describe('Channel', function () {
   })
 
   describe('API Example', function () {
+    function mockFundingTx (multiSigAddr) {
+      let tx = new Tx()
+      {
+        let txHashBuf = new Buffer(32)
+        txHashBuf.fill(0)
+        let txOutNum = 0
+        let script = Script.fromString('OP_TRUE')
+        tx.versionBytesNum = 2
+        tx.addTxIn(txHashBuf, txOutNum, script, TxIn.SEQUENCE_FINAL)
+      }
+
+      {
+        let script = multiSigAddr.toScript()
+        tx.addTxOut(fundingAmount, script)
+      }
+
+      return tx
+    }
+
     it('Bob opens a channel with Carol, sends 1000 satoshi, closes channel', function () {
       return asink(function * () {
         let bob = {}
@@ -31,7 +53,10 @@ describe('Channel', function () {
         bob.channel = new Channel(fundingAmount, bob.xPrv, carol.xPrv.toPublic())
         yield bob.channel.asyncInitialize()
 
-        let msg = yield bob.channel.asyncOpen()
+        let multiSigAddr = bob.channel.multiSigAddr
+        let fundingTx = mockFundingTx(multiSigAddr)
+
+        let msg = yield bob.channel.asyncOpen(fundingTx)
         ;(msg instanceof MsgUpdate).should.equal(true)
 
         // TODO: Finished
