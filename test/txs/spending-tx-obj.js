@@ -22,7 +22,7 @@ let Consts = require('../../lib/consts.js')
 
 let bob, carol
 let htlcSecret, revocationSecret
-let bips, bobBip32, carolBip32
+let xPubs, bobBip32, carolBip32
 let pubKeyCommitmentTxObj, revPubKeyCommitmentTxObj, htlcCommitmentTxObj, revHtlcCommitmentTxObj
 let txVerifier, error
 let spendingTxObj, commitmentTxObj
@@ -51,7 +51,7 @@ let buildPubKeyCommitmentTxObj = function () {
       carol.fundingTxObj.txb,
       carol.multisigAddress,
       carol.id, // builder id
-      bips)
+      xPubs)
     yield pubKeyCommitmentTxObj.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
     return pubKeyCommitmentTxObj
   }, this)
@@ -81,7 +81,7 @@ let buildRevPubKeyCommitmentTxObj = function () {
       bob.fundingTxObj.txb,
       bob.multisigAddress,
       bob.id, // builder id
-      bips)
+      xPubs)
     yield revPubKeyCommitmentTxObj.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
     return revPubKeyCommitmentTxObj
   }, this)
@@ -110,7 +110,7 @@ let buildHtlcCommitmentTxObj = function () {
       carol.fundingTxObj.txb,
       carol.multisigAddress,
       carol.id, // builder id
-      bips)
+      xPubs)
     yield htlcCommitmentTxObj.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
     return htlcCommitmentTxObj
   }, this)
@@ -140,7 +140,7 @@ let buildRevHtlcCommitmentTxObj = function () {
       bob.fundingTxObj.txb,
       bob.multisigAddress,
       bob.id, // builder id
-      bips)
+      xPubs)
     yield revHtlcCommitmentTxObj.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
     return revHtlcCommitmentTxObj
   }, this)
@@ -194,7 +194,7 @@ describe('SpendingTxObj', function () {
 
       bobBip32 = new Bip32().fromRandom()
       carolBip32 = new Bip32().fromRandom()
-      bips = {
+      xPubs = {
         bob: bobBip32.toPublic(),
         carol: carolBip32.toPublic()
       }

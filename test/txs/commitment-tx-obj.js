@@ -18,7 +18,7 @@ let Interp = require('yours-bitcoin/lib/interp')
 
 let bob, carol
 let htlcSecret, revocationSecret
-let bips, outputList
+let xPubs, outputList
 
 describe('CommitmentTxObj', function () {
   it('should exist', function () {
@@ -67,7 +67,7 @@ describe('CommitmentTxObj', function () {
       let bobBip32Public = bobBip32.toPublic()
       let carolBip32 = new Bip32().fromRandom()
       let carolBip32Public = carolBip32.toPublic()
-      bips = {
+      xPubs = {
         bob: bobBip32Public,
         carol: carolBip32Public
       }
@@ -97,7 +97,7 @@ describe('CommitmentTxObj', function () {
         bob.fundingTxObj.txb,
         bob.multisigAddress,
         carol.id,
-        bips)
+        xPubs)
 
       let txVerifier, error
       txVerifier = new TxVerifier(commitmentTxObj.txb.tx, commitmentTxObj.txb.uTxOutMap)
@@ -123,7 +123,7 @@ describe('CommitmentTxObj', function () {
           carol.fundingTxObj.txb,
           carol.multisigAddress,
           carol.id,
-          bips)
+          xPubs)
         yield commitmentTxObj.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
 
         let txVerifier, error
@@ -165,7 +165,7 @@ describe('CommitmentTxObj', function () {
           carol.fundingTxObj.txb,
           carol.multisigAddress,
           carol.id,
-          bips)
+          xPubs)
         yield commitmentTxObj.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
 
         let txVerifier, error
@@ -214,7 +214,7 @@ describe('CommitmentTxObj', function () {
           bob.fundingTxObj.txb,
           bob.multisigAddress,
           bob.id,
-          bips)
+          xPubs)
         yield commitmentTxObj.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
 
         let txVerifier, error
@@ -263,7 +263,7 @@ describe('CommitmentTxObj', function () {
           carol.fundingTxObj.txb,
           carol.multisigAddress,
           carol.id,
-          bips)
+          xPubs)
         yield commitmentTxObj.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
 
         let txVerifier, error
@@ -312,7 +312,7 @@ describe('CommitmentTxObj', function () {
           bob.fundingTxObj.txb,
           bob.multisigAddress,
           bob.id,
-          bips)
+          xPubs)
         yield commitmentTxObj.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
 
         let txVerifier, error
@@ -350,7 +350,7 @@ describe('CommitmentTxObj', function () {
           bob.fundingTxObj.txb,
           bob.multisigAddress,
           bob.id,
-          bips)
+          xPubs)
         yield commitmentTxObj.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
         let json = commitmentTxObj.toJSON()
 
@@ -375,7 +375,7 @@ describe('CommitmentTxObj', function () {
           bob.fundingTxObj.txb,
           bob.multisigAddress,
           bob.id,
-          bips)
+          xPubs)
 
         let json = commitmentTxObj.toJSON()
         let txo = new CommitmentTxObj().fromJSON(json)
@@ -401,7 +401,7 @@ describe('CommitmentTxObj', function () {
           bob.fundingTxObj.txb,
           bob.multisigAddress,
           bob.id,
-          bips)
+          xPubs)
         let txo = commitmentTxObj.toPublic()
 
         should.exist(txo)
