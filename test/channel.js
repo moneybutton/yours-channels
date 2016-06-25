@@ -161,6 +161,18 @@ describe('Channel', function () {
     })
   })
 
+  describe('#asyncNewRevSecret', function () {
+    it('should add and return a new revSecret', function () {
+      return asink(function * () {
+        let channel = yield new Channel(fundingAmount, myXPrv, theirXPub).asyncInitialize()
+        let revSecret = yield channel.asyncNewRevSecret()
+        should.exist(revSecret.buf)
+        should.exist(revSecret.hash)
+        channel.secrets[0].should.equal(revSecret)
+      }, this)
+    })
+  })
+
   describe('#asyncOpen', function () {
     it('should create a msgUpdate with output descriptions of length 1', function () {
       return asink(function * () {
