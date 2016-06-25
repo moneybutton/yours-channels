@@ -301,7 +301,7 @@ describe('SpendingTxObj', function () {
     it('build a spending transaction. Case branch one of revocable htlc', function () {
       return asink(function * () {
         let revHtlcCommitmentTxObj = yield buildRevHtlcCommitmentTxObj()
-        yield spendingTxObj.asyncBuild(address, revHtlcCommitmentTxObj, carolBip32, carol.id)
+        yield spendingTxObj.asyncBuild(address, revHtlcCommitmentTxObj, carolBip32, carol.id, Bn(100))
         txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
@@ -689,7 +689,8 @@ describe('SpendingTxObj', function () {
             htlcSecret: htlcSecret,
             revocationSecret: revocationSecret
           },
-          'aliceId')
+          'aliceId',
+          Consts.CSV_DELAY)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -717,7 +718,8 @@ describe('SpendingTxObj', function () {
             htlcSecret: htlcSecret,
             revocationSecret: revocationSecret
           },
-          'aliceId')
+          'aliceId',
+          Consts.CSV_DELAY)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -746,7 +748,8 @@ describe('SpendingTxObj', function () {
             htlcSecret: htlcSecret2,
             revocationSecret: revocationSecret
           },
-          'aliceId')
+          'aliceId',
+          Consts.CSV_DELAY)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -755,14 +758,42 @@ describe('SpendingTxObj', function () {
           spendingScriptObj.sigPos,
           Bn(100))
 
-        if (!verified) {
-          console.log(debugString)
-        }
-        verified.should.equal(true)
+        verified.should.equal(false)
+        JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_EQUALVERIFY')
       }, this)
     })
 
     it('branch 1 of revHtlcRedeemScript and revHtlcInputScript should evaluate to false if CSV does', function () {
+      return asink(function * () {
+        let longDelay = Consts.CSV_DELAY
+        let shortDelay = longDelay.div(Bn(2))
+        let scriptPubKey = commitmentTxObj.revHtlcRedeemScript(
+          destKeyPair.pubKey,
+          sourceKeyPair.pubKey,
+          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+          {
+            channelDestId: 'aliceId',
+            htlcSecret: htlcSecret,
+            revocationSecret: revocationSecret
+          },
+          'aliceId',
+          shortDelay)
+
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
+          destKeyPair.privKey,
+          spendingScriptObj.sigPos,
+          shortDelay.sub(Bn(1)))
+
+        verified.should.equal(false)
+        JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_UNSATISFIED_LOCKTIME')
+      }, this)
+    })
+
+    // exact copy of first test case
+    it.skip('branch 1 of revHtlcRedeemScript and revHtlcInputScript should evaluate to true', function () {
       return asink(function * () {
         let scriptPubKey = commitmentTxObj.revHtlcRedeemScript(
           destKeyPair.pubKey,
@@ -774,14 +805,15 @@ describe('SpendingTxObj', function () {
             htlcSecret: htlcSecret,
             revocationSecret: revocationSecret
           },
-          'aliceId')
+          'aliceId',
+          Consts.CSV_DELAY)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
           scriptPubKey,
           destKeyPair.privKey,
           spendingScriptObj.sigPos,
-          Consts.CSV_DELAY.sub(Bn(1)))
+          Bn(100))
 
         if (!verified) {
           console.log(debugString)
