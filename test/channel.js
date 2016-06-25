@@ -17,31 +17,31 @@ describe('Channel', function () {
   let theirXPrv = Bip32.fromRandom()
   let theirXPub = theirXPrv.toPublic()
 
+  function mockFundingTx (multiSigAddr) {
+    let tx = new Tx()
+    {
+      let txHashBuf = new Buffer(32)
+      txHashBuf.fill(0)
+      let txOutNum = 0
+      let script = Script.fromString('OP_TRUE')
+      tx.versionBytesNum = 2
+      tx.addTxIn(txHashBuf, txOutNum, script, TxIn.SEQUENCE_FINAL)
+    }
+
+    {
+      let script = multiSigAddr.toScript()
+      tx.addTxOut(fundingAmount, script)
+    }
+
+    return tx
+  }
+
   it('should exist', function () {
     should.exist(Channel)
     should.exist(new Channel())
   })
 
   describe('API Example', function () {
-    function mockFundingTx (multiSigAddr) {
-      let tx = new Tx()
-      {
-        let txHashBuf = new Buffer(32)
-        txHashBuf.fill(0)
-        let txOutNum = 0
-        let script = Script.fromString('OP_TRUE')
-        tx.versionBytesNum = 2
-        tx.addTxIn(txHashBuf, txOutNum, script, TxIn.SEQUENCE_FINAL)
-      }
-
-      {
-        let script = multiSigAddr.toScript()
-        tx.addTxOut(fundingAmount, script)
-      }
-
-      return tx
-    }
-
     it('Bob opens a channel with Carol, sends 1000 satoshi, closes channel', function () {
       return asink(function * () {
         let bob = {}
@@ -59,7 +59,7 @@ describe('Channel', function () {
         let msg = yield bob.channel.asyncOpen(fundingTx)
         ;(msg instanceof MsgUpdate).should.equal(true)
 
-        // TODO: Finished
+        // TODO: Not finished.
       }, this)
     })
   })
@@ -178,7 +178,8 @@ describe('Channel', function () {
       return asink(function * () {
         let channel = new Channel(fundingAmount, myXPrv, theirXPub)
         yield channel.asyncInitialize()
-        let msg = yield channel.asyncOpen()
+        let fundingTx = mockFundingTx(channel.multiSigAddr)
+        let msg = yield channel.asyncOpen(fundingTx)
         msg.args.outputDescriptions.length.should.equal(1)
       }, this)
     })
