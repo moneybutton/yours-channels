@@ -463,23 +463,23 @@ Here is an alternate explanation. We will consider automata with transition of t
 
 The meaning is that if an automata is in state *A* and it gets the message *getMsg* with arguments *args* then it changes it's state to *q*. It then performs some amount of local computation that might query and alter the db (we provide pseudo code in a box connected to the state). Then it sends the message *sendMsg* with arguments *args'* to the other agent.
 
-The automata for sender and receiver are slightly different:
+The automata for the channel protocol looks as follows.
 
 ![alt text](./img/channel-protocol-automaton.png "channel-protocol-automaton")
 
-To illustrate what the automaton does lets walk through a what happens during a payment. Initially the automaton is in state "INITIAL". When it receives a message *init* with an output description list *list* as an argument it transitions to the state "BUILT" and executes the computation associated with that state. That is, it builds a new commitment transaction and a new message named "reqUpdate". This message is then set to the other agent.
+To illustrate what the automaton does lets walk through a what happens during a payment. Initially the automaton is in state "INITIAL" (indicated by the unlabelled arrow towards this state). A new payment is triggered from the higher level network protocol: An agent from the network protocol sends a message "init" and a list of output descriptions to a channel agent. The channel agent then transitions to the state "BUILT" and executes the computation associated with that state. That is, it builds a new commitment transaction and a packs it into a new message named "reqUpdate". This message is then set to the other agent of the channel.
 
 The other (second) agent is still in state "INITIAL". On receiving the message "reqUpdate" it will transition to state "BUILT AND STORED", store the newly received commitment transaction, and build a commitment transaction for the other party. It then packs this new commitment transaction into a message named "accUpdate" and sends it to the first agent.
 
-Subsequently the agents exchange revocation secrets. Once the the first agent has received the revocation secret, he send the message "done" to the network agent that triggered the payment.
+Subsequently the agents exchange revocation secrets in a second round of communication. Once that round is completed, the first agent sends the message "done" to the network agent that triggered the payment.
 
 The figure below shows what messages are exchanged during execution of the protocol
 
 ![alt text](./img/channel-protocol-execution.png "channel-protocol-execution")
 
-Note that the upper look of the automaton corresponds to the agent being a sender while the lower loop corresponds to being a receiver.
+Note that the upper loop of the automaton corresponds to the agent being a sender while the lower loop corresponds to being a receiver.
 
-Other than the different notation, what is going on is extremely similar to the atomaton at the top of the section. I found it easier however to use different message name depending on the stage of the protocol (for example distinguishing between "reqUpdate" and "accUpdate").
+Other than the different notation, what is going on is extremely similar to the atomaton at the top of the section. I found it easier however to use different message name depending on the stage of the protocol (for example distinguishing between "reqUpdate" and "accUpdate"). I also ignore the issue that there is nothing to revoke in the first round, I assume this is handled by the messages "getSecret" and the corresponding message that checks an incoming secret. Errors in the protocol are not modeled here.
 
 ### As Bob, how to initiate opening a channel from Bob to Carol:
 
