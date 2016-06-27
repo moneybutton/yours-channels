@@ -94,7 +94,8 @@ describe('Commitment', function () {
       let commitment = new Commitment()
       commitment.outputList = outputList
       yield commitment.asyncBuild(
-        bob.fundingTxObj.txb.tx,
+        bob.fundingTxObj.txb.tx.hash(),
+        bob.fundingTxObj.txb.tx.txOuts[0],
         bob.multisigAddress,
         carol.id,
         xPubs)
@@ -120,7 +121,8 @@ describe('Commitment', function () {
             Bn(1e7))
         ]
         yield commitment.asyncBuild(
-          carol.fundingTxObj.txb.tx,
+          carol.fundingTxObj.txb.tx.hash(),
+          carol.fundingTxObj.txb.tx.txOuts[0],
           carol.multisigAddress,
           carol.id,
           xPubs)
@@ -162,7 +164,8 @@ describe('Commitment', function () {
             Bn(1e7))
         ]
         yield commitment.asyncBuild(
-          carol.fundingTxObj.txb.tx,
+          carol.fundingTxObj.txb.tx.hash(),
+          carol.fundingTxObj.txb.tx.txOuts[0],
           carol.multisigAddress,
           carol.id,
           xPubs)
@@ -211,7 +214,8 @@ describe('Commitment', function () {
             Bn(1e7))
         ]
         yield commitment.asyncBuild(
-          bob.fundingTxObj.txb.tx,
+          bob.fundingTxObj.txb.tx.hash(),
+          carol.fundingTxObj.txb.tx.txOuts[0],
           bob.multisigAddress,
           bob.id,
           xPubs)
@@ -260,7 +264,8 @@ describe('Commitment', function () {
             Bn(1e7))
         ]
         yield commitment.asyncBuild(
-          carol.fundingTxObj.txb.tx,
+          carol.fundingTxObj.txb.tx.hash(),
+          carol.fundingTxObj.txb.tx.txOuts[0],
           carol.multisigAddress,
           carol.id,
           xPubs)
@@ -309,7 +314,8 @@ describe('Commitment', function () {
             Bn(1e7))
         ]
         yield commitment.asyncBuild(
-          bob.fundingTxObj.txb.tx,
+          bob.fundingTxObj.txb.tx.hash(),
+          bob.fundingTxObj.txb.tx.txOuts[0],
           bob.multisigAddress,
           bob.id,
           xPubs)
@@ -347,7 +353,8 @@ describe('Commitment', function () {
         let commitment = new Commitment()
         commitment.outputList = outputList
         yield commitment.asyncBuild(
-          bob.fundingTxObj.txb.tx,
+          bob.fundingTxObj.txb.tx.hash(),
+          bob.fundingTxObj.txb.tx.txOuts[0],
           bob.multisigAddress,
           bob.id,
           xPubs)
@@ -372,7 +379,8 @@ describe('Commitment', function () {
         let commitment = new Commitment()
         commitment.outputList = outputList
         yield commitment.asyncBuild(
-          bob.fundingTxObj.txb.tx,
+          bob.fundingTxObj.txb.tx.hash(),
+          bob.fundingTxObj.txb.tx.txOuts[0],
           bob.multisigAddress,
           bob.id,
           xPubs)
@@ -398,7 +406,8 @@ describe('Commitment', function () {
         let commitment = new Commitment()
         commitment.outputList = outputList
         yield commitment.asyncBuild(
-          bob.fundingTxObj.txb.tx,
+          bob.fundingTxObj.txb.tx.hash(),
+          bob.fundingTxObj.txb.tx.txOuts[0],
           bob.multisigAddress,
           bob.id,
           xPubs)

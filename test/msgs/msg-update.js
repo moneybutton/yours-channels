@@ -2,8 +2,7 @@
 'use strict'
 let MsgUpdate = require('../../lib/msgs/msg-update')
 let should = require('should')
-let TxBuilder = require('yours-bitcoin/lib/tx-builder')
-let OutputDescription = require('../../lib/output-description')
+let Commitment = require('../../lib/txs/commitment')
 let Bn = require('yours-bitcoin/lib/bn')
 
 describe('MsgUpdate', function () {
@@ -19,37 +18,20 @@ describe('MsgUpdate', function () {
     })
   })
 
-  describe('#setOutputDescriptions', function () {
-    it('should set this output description list', function () {
-      let outputDescription = new OutputDescription()
-      let msg = new MsgUpdate().setOutputDescriptions([outputDescription])
-      msg.args.outputDescriptions.length.should.equal(1)
+  describe('#setCommitment', function () {
+    it('should set this commitment', function () {
+      let commitment = new Commitment()
+      let msg = new MsgUpdate().setCommitment(commitment)
+      should.exist(msg.args.commitment)
     })
   })
 
-  describe('#getOutputDescriptions', function () {
-    it('should get this output description list', function () {
-      let outputDescription = new OutputDescription()
-      let msg = new MsgUpdate().setOutputDescriptions([outputDescription])
-      let outputDescriptions = msg.getOutputDescriptions()
-      ;(outputDescriptions[0] instanceof OutputDescription).should.equal(true)
-    })
-  })
-
-  describe('#setCommitmentTxBuilder', function () {
-    it('should set a TxBuilder', function () {
-      let txb = new TxBuilder()
-      let msg = new MsgUpdate().setCommitmentTxBuilder(txb)
-      should.exist(msg.args.commitmentTxBuilder)
-    })
-  })
-
-  describe('#getCommitmentTxBuilder', function () {
-    it('should get a TxBuilder', function () {
-      let txb = new TxBuilder()
-      let msg = new MsgUpdate().setCommitmentTxBuilder(txb)
-      let txb2 = msg.getCommitmentTxBuilder()
-      ;(txb2 instanceof TxBuilder).should.equal(true)
+  describe('#getCommitment', function () {
+    it('should get the commitment', function () {
+      let commitment = new Commitment()
+      let msg = new MsgUpdate().setCommitment(commitment)
+      commitment = msg.getCommitment()
+      ;(commitment instanceof Commitment).should.equal(true)
     })
   })
 
@@ -60,8 +42,8 @@ describe('MsgUpdate', function () {
     })
   })
 
-  describe('#getCommitmentTxBuilder', function () {
-    it('should get a TxBuilder', function () {
+  describe('#getAmount', function () {
+    it('should get a bn', function () {
       let msg = new MsgUpdate().setAmount(Bn(5000))
       let amount = msg.getAmount()
       ;(amount instanceof Bn).should.equal(true)

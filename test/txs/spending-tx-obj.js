@@ -48,7 +48,8 @@ let buildPubKeyCommitment = function () {
         Bn(1e7))
     ]
     yield pubKeyCommitment.asyncBuild(
-      carol.fundingTxObj.txb.tx,
+      carol.fundingTxObj.txb.tx.hash(),
+      carol.fundingTxObj.txb.tx.txOuts[0],
       carol.multisigAddress,
       carol.id, // builder id
       xPubs)
@@ -78,7 +79,8 @@ let buildRevPubKeyCommitment = function () {
         Bn(1e7))
     ]
     yield revPubKeyCommitment.asyncBuild(
-      bob.fundingTxObj.txb.tx,
+      bob.fundingTxObj.txb.tx.hash(),
+      bob.fundingTxObj.txb.tx.txOuts[0],
       bob.multisigAddress,
       bob.id, // builder id
       xPubs)
@@ -107,7 +109,8 @@ let buildHtlcCommitment = function () {
         Bn(1e7))
     ]
     yield htlcCommitment.asyncBuild(
-      carol.fundingTxObj.txb.tx,
+      carol.fundingTxObj.txb.tx.hash(),
+      carol.fundingTxObj.txb.tx.txOuts[0],
       carol.multisigAddress,
       carol.id, // builder id
       xPubs)
@@ -137,7 +140,8 @@ let buildRevHtlcCommitment = function () {
         Bn(1e7))
     ]
     yield revHtlcCommitment.asyncBuild(
-      bob.fundingTxObj.txb.tx,
+      bob.fundingTxObj.txb.tx.hash(),
+      bob.fundingTxObj.txb.tx.txOuts[0],
       bob.multisigAddress,
       bob.id, // builder id
       xPubs)

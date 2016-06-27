@@ -79,8 +79,7 @@ describe('Channel', function () {
         let multiSigScript = Script.fromPubKeys(2, [carol.theirXPub.derive(carol.msg.chanPath).pubKey, carol.myXPrv.derive(carol.msg.chanPath).pubKey])
         carol.multiSigAddr = Address.fromRedeemScript(multiSigScript)
         carol.msg.chanId.should.equal(carol.multiSigAddr.toString())
-        should.exist(carol.msg.getCommitmentTxBuilder())
-        should.exist(carol.msg.getOutputDescriptions())
+        should.exist(carol.msg.getCommitment())
 
         // Carol notices that she has never received a message for this channel
         // id. She agrees to open a channel with Bob.
@@ -230,7 +229,7 @@ describe('Channel', function () {
         yield channel.asyncInitialize()
         let fundingTx = mockFundingTx(channel.multiSigAddr, fundingAmount)
         let msg = yield channel.asyncOpen(fundingTx)
-        msg.args.outputDescriptions.length.should.equal(1)
+        should.exist(msg.args.commitment)
         should.exist(channel.fundingTx)
         should.exist(channel.fundingTxHash)
         channel.fundingTxHash.toString('hex').should.equal(channel.fundingTx.hash().toString('hex'))
