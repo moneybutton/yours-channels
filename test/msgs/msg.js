@@ -30,6 +30,24 @@ describe('Msg', function () {
     })
   })
 
+  describe('#setChanPath', function () {
+    it('should set the chanPath', function () {
+      let chanPath = 'm/567/564'
+      let msg = new Msg()
+      msg.setChanPath(chanPath)
+      msg.chanPath.should.equal(chanPath)
+    })
+  })
+
+  describe('#getChanPath', function () {
+    it('should get the chanPath', function () {
+      let chanPath = 'm/567/564'
+      let msg = new Msg()
+      msg.setChanPath(chanPath)
+      msg.getChanPath().should.equal(chanPath)
+    })
+  })
+
   describe('#setConvId', function () {
     it('should set the convId', function () {
       let convId = Random.getRandomBuffer(16).toString('hex')
