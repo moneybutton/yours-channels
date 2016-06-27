@@ -59,13 +59,15 @@ describe('Channel', function () {
         // Bob initializes the channel on his end, creates the (unbroadcasted)
         // funding transaction, and creates the first update message to send to
         // Carol (sending the full funding amount back to Bob).
-        bob.channel = new Channel(fundingAmount, bob.myXPrv, carol.myXPrv.toPublic())
+        bob.channel = new Channel(fundingAmount, bob.myXPrv, bob.theirXPub)
         yield bob.channel.asyncInitialize()
+        bob.channel.state.should.equal(Channel.STATE_INITIAL)
 
         bob.multiSigAddr = bob.channel.multiSigAddr
         let fundingTx = mockFundingTx(bob.multiSigAddr, fundingAmount)
 
         bob.msg = yield bob.channel.asyncOpen(fundingTx)
+        bob.channel.state.should.equal(Channel.STATE_BUILT)
 
         // Bob sends msg to Carol
         carol.msg = bob.msg
@@ -79,6 +81,21 @@ describe('Channel', function () {
         carol.msg.chanId.should.equal(carol.multiSigAddr.toString())
         should.exist(carol.msg.getCommitmentTxBuilder())
         should.exist(carol.msg.getOutputDescriptions())
+
+        // Carol notices that she has never received a message for this channel
+        // id. She agrees to open a channel with Bob.
+        carol.channel = new Channel(carol.msg.getAmount(), carol.myXPrv, carol.theirXPub, carol.msg.getChanPath())
+        yield carol.channel.asyncInitialize()
+        carol.channel.state.should.equal(Channel.STATE_INITIAL)
+        carol.msg = yield carol.channel.asyncHandleMsgUpdate(carol.msg)
+        carol.channel.state.should.equal(Channel.STATE_BUILT_AND_STORED)
+
+        // Carol sends msg to Bob
+        bob.msg = carol.msg
+
+        // Bob does basic validation on message. TODO: Add more validation.
+        ;(bob.msg instanceof MsgUpdate).should.equal(true)
+        bob.msg = yield bob.channel.asyncHandleMsgUpdate(bob.msg)
 
         // TODO: Not finished.
       }, this)

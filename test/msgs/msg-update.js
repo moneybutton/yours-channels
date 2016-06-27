@@ -4,6 +4,7 @@ let MsgUpdate = require('../../lib/msgs/msg-update')
 let should = require('should')
 let TxBuilder = require('yours-bitcoin/lib/tx-builder')
 let OutputDescription = require('../../lib/output-description')
+let Bn = require('yours-bitcoin/lib/bn')
 
 describe('MsgUpdate', function () {
   it('should exist', function () {
@@ -49,6 +50,22 @@ describe('MsgUpdate', function () {
       let msg = new MsgUpdate().setCommitmentTxBuilder(txb)
       let txb2 = msg.getCommitmentTxBuilder()
       ;(txb2 instanceof TxBuilder).should.equal(true)
+    })
+  })
+
+  describe('#setAmount', function () {
+    it('should set a bn', function () {
+      let msg = new MsgUpdate().setAmount(Bn(5000))
+      should.exist(msg.args.amount)
+    })
+  })
+
+  describe('#getCommitmentTxBuilder', function () {
+    it('should get a TxBuilder', function () {
+      let msg = new MsgUpdate().setAmount(Bn(5000))
+      let amount = msg.getAmount()
+      ;(amount instanceof Bn).should.equal(true)
+      amount.eq(Bn(5000)).should.equal(true)
     })
   })
 })
