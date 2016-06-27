@@ -35,29 +35,29 @@ let testSecretsMatch = function (secret1, secret2) {
 
 let asyncTestSecrets = function (txNum, alice, bob) {
   return asink(function * () {
-    should.exist(alice.commitmentTxObjs[txNum])
-    should.exist(alice.commitmentTxObjs[txNum].htlcSecret)
-    should.exist(alice.commitmentTxObjs[txNum].revocationSecret)
-    yield asyncTestSecretChecks(alice.commitmentTxObjs[txNum].htlcSecret)
-    yield asyncTestSecretChecks(alice.commitmentTxObjs[txNum].revocationSecret)
-    yield asyncTestSecretIsHidden(alice.other.commitmentTxObjs[txNum].revocationSecret)
-    yield asyncTestSecretIsHidden(alice.other.commitmentTxObjs[txNum].htlcSecret)
+    should.exist(alice.commitments[txNum])
+    should.exist(alice.commitments[txNum].htlcSecret)
+    should.exist(alice.commitments[txNum].revocationSecret)
+    yield asyncTestSecretChecks(alice.commitments[txNum].htlcSecret)
+    yield asyncTestSecretChecks(alice.commitments[txNum].revocationSecret)
+    yield asyncTestSecretIsHidden(alice.other.commitments[txNum].revocationSecret)
+    yield asyncTestSecretIsHidden(alice.other.commitments[txNum].htlcSecret)
     // check that alices stores the public version of bob's secrets
-    testSecretsMatch(alice.commitmentTxObjs[txNum].htlcSecret, bob.other.commitmentTxObjs[txNum].htlcSecret)
-    testSecretsMatch(alice.commitmentTxObjs[txNum].revocationSecret, bob.other.commitmentTxObjs[txNum].revocationSecret)
-    testSecretsMatch(alice.commitmentTxObjs[txNum].otherHtlcSecret, bob.other.commitmentTxObjs[txNum].otherHtlcSecret)
-    testSecretsMatch(alice.commitmentTxObjs[txNum].otherRevocationSecret, bob.other.commitmentTxObjs[txNum].otherRevocationSecret)
+    testSecretsMatch(alice.commitments[txNum].htlcSecret, bob.other.commitments[txNum].htlcSecret)
+    testSecretsMatch(alice.commitments[txNum].revocationSecret, bob.other.commitments[txNum].revocationSecret)
+    testSecretsMatch(alice.commitments[txNum].otherHtlcSecret, bob.other.commitments[txNum].otherHtlcSecret)
+    testSecretsMatch(alice.commitments[txNum].otherRevocationSecret, bob.other.commitments[txNum].otherRevocationSecret)
 
     // same tests for bob
-    should.exist(bob.commitmentTxObjs[txNum])
-    yield asyncTestSecretChecks(bob.commitmentTxObjs[txNum].revocationSecret)
-    yield asyncTestSecretChecks(bob.commitmentTxObjs[txNum].htlcSecret)
-    yield asyncTestSecretIsHidden(bob.other.commitmentTxObjs[txNum].revocationSecret)
-    yield asyncTestSecretIsHidden(bob.other.commitmentTxObjs[txNum].htlcSecret)
-    testSecretsMatch(bob.commitmentTxObjs[txNum].revocationSecret, alice.other.commitmentTxObjs[txNum].revocationSecret)
-    testSecretsMatch(bob.commitmentTxObjs[txNum].htlcSecret, alice.other.commitmentTxObjs[txNum].htlcSecret)
-    testSecretsMatch(bob.commitmentTxObjs[txNum].otherHtlcSecret, alice.other.commitmentTxObjs[txNum].otherHtlcSecret)
-    testSecretsMatch(bob.commitmentTxObjs[txNum].otherRevocationSecret, alice.other.commitmentTxObjs[txNum].otherRevocationSecret)
+    should.exist(bob.commitments[txNum])
+    yield asyncTestSecretChecks(bob.commitments[txNum].revocationSecret)
+    yield asyncTestSecretChecks(bob.commitments[txNum].htlcSecret)
+    yield asyncTestSecretIsHidden(bob.other.commitments[txNum].revocationSecret)
+    yield asyncTestSecretIsHidden(bob.other.commitments[txNum].htlcSecret)
+    testSecretsMatch(bob.commitments[txNum].revocationSecret, alice.other.commitments[txNum].revocationSecret)
+    testSecretsMatch(bob.commitments[txNum].htlcSecret, alice.other.commitments[txNum].htlcSecret)
+    testSecretsMatch(bob.commitments[txNum].otherHtlcSecret, alice.other.commitments[txNum].otherHtlcSecret)
+    testSecretsMatch(bob.commitments[txNum].otherRevocationSecret, alice.other.commitments[txNum].otherRevocationSecret)
   }, this)
 }
 */
@@ -78,7 +78,7 @@ describe('Agent', function () {
         should.exist(alice.sourceAddress)
         should.exist(alice.multisigAddress)
         should.exist(alice.destinationAddress)
-        should.exist(alice.commitmentTxObjs)
+        should.exist(alice.commitments)
         should.exist(alice.wallet)
         alice.initialized.should.equal(true)
       }, this)
@@ -145,36 +145,36 @@ describe('Agent', function () {
         alice.sender = true
         yield alice.remoteAgent.asyncSendOutputList(outputList, changeOutput)
 
-        alice.commitmentTxObjs.length.should.equal(1)
-        alice.other.commitmentTxObjs.length.should.equal(1)
-        should.exist(bob.other.commitmentTxObjs[0].txb)
+        alice.commitments.length.should.equal(1)
+        alice.other.commitments.length.should.equal(1)
+        should.exist(bob.other.commitments[0].txb)
 
-        bob.commitmentTxObjs.length.should.equal(1)
-        bob.other.commitmentTxObjs.length.should.equal(1)
-        should.exist(bob.other.commitmentTxObjs[0].txb)
+        bob.commitments.length.should.equal(1)
+        bob.other.commitments.length.should.equal(1)
+        should.exist(bob.other.commitments[0].txb)
 
         yield bob.asyncSendOutputList(outputList, changeOutput)
 
-        // check length of the commitmentTxObjs list
-        alice.commitmentTxObjs.length.should.equal(2)
-        alice.other.commitmentTxObjs.length.should.equal(2)
-        should.exist(bob.other.commitmentTxObjs[1].txb)
-        bob.commitmentTxObjs.length.should.equal(2)
-        bob.other.commitmentTxObjs.length.should.equal(2)
-        should.exist(bob.other.commitmentTxObjs[1].txb)
+        // check length of the commitments list
+        alice.commitments.length.should.equal(2)
+        alice.other.commitments.length.should.equal(2)
+        should.exist(bob.other.commitments[1].txb)
+        bob.commitments.length.should.equal(2)
+        bob.other.commitments.length.should.equal(2)
+        should.exist(bob.other.commitments[1].txb)
 
         // check that the revocationSecret has been added
-        should.exist(bob.commitmentTxObjs[0].outputList[0].revocationSecret)
+        should.exist(bob.commitments[0].outputList[0].revocationSecret)
 
         let txVerifier, error
         // verify bob's commitmentTx
-        txVerifier = new TxVerifier(bob.commitmentTxObjs[0].txb.tx, bob.commitmentTxObjs[0].txb.uTxOutMap)
+        txVerifier = new TxVerifier(bob.commitments[0].txb.tx, bob.commitments[0].txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         // we expect an error here as the transaction is not fully signed
         error.should.equal(false)
 
         // verify bob's commitmentTx
-        txVerifier = new TxVerifier(alice.commitmentTxObjs[0].txb.tx, bob.commitmentTxObjs[0].txb.uTxOutMap)
+        txVerifier = new TxVerifier(alice.commitments[0].txb.tx, bob.commitments[0].txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         // we expect an error here as the transaction is not fully signed
         error.should.equal(false)

@@ -3,7 +3,7 @@
 let should = require('should')
 let asink = require('asink')
 let OutputDescription = require('../../lib/output-description')
-let CommitmentTxObj = require('../../lib/txs/commitment-tx-obj')
+let Commitment = require('../../lib/txs/commitment')
 let FundingTxObj = require('../../lib/txs/funding-tx-obj')
 let HtlcSecret = require('../../lib/scrts/htlc-secret')
 let RevocationSecret = require('../../lib/scrts/revocation-secret')
@@ -20,10 +20,10 @@ let bob, carol
 let htlcSecret, revocationSecret
 let xPubs, outputList
 
-describe('CommitmentTxObj', function () {
+describe('Commitment', function () {
   it('should exist', function () {
-    should.exist(CommitmentTxObj)
-    should.exist(new CommitmentTxObj())
+    should.exist(Commitment)
+    should.exist(new Commitment())
   })
 
   beforeEach(function () {
@@ -91,16 +91,16 @@ describe('CommitmentTxObj', function () {
 
   it('build without signing', function () {
     return asink(function * () {
-      let commitmentTxObj = new CommitmentTxObj()
-      commitmentTxObj.outputList = outputList
-      yield commitmentTxObj.asyncBuild(
+      let commitment = new Commitment()
+      commitment.outputList = outputList
+      yield commitment.asyncBuild(
         bob.fundingTxObj.txb.tx,
         bob.multisigAddress,
         carol.id,
         xPubs)
 
       let txVerifier, error
-      txVerifier = new TxVerifier(commitmentTxObj.txb.tx, commitmentTxObj.txb.uTxOutMap)
+      txVerifier = new TxVerifier(commitment.txb.tx, commitment.txb.uTxOutMap)
       error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
       // we expect an error here as the transaction is not fully signed
       error.should.equal('input 0 failed script verify')
@@ -110,8 +110,8 @@ describe('CommitmentTxObj', function () {
   describe('#asyncBuild', function () {
     it('case with only a change output', function () {
       return asink(function * () {
-        let commitmentTxObj = new CommitmentTxObj()
-        commitmentTxObj.outputList = [
+        let commitment = new Commitment()
+        commitment.outputList = [
           new OutputDescription(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
@@ -119,35 +119,35 @@ describe('CommitmentTxObj', function () {
             htlcSecret, revocationSecret,
             Bn(1e7))
         ]
-        yield commitmentTxObj.asyncBuild(
+        yield commitment.asyncBuild(
           carol.fundingTxObj.txb.tx,
           carol.multisigAddress,
           carol.id,
           xPubs)
-        yield commitmentTxObj.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
+        yield commitment.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
 
         let txVerifier, error
-        txVerifier = new TxVerifier(commitmentTxObj.txb.tx, commitmentTxObj.txb.uTxOutMap)
+        txVerifier = new TxVerifier(commitment.txb.tx, commitment.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         error.should.equal(false)
 
-        should.exist(commitmentTxObj)
-        should.exist(commitmentTxObj.txb)
-        should.exist(commitmentTxObj.outputList)
+        should.exist(commitment)
+        should.exist(commitment.txb)
+        should.exist(commitment.outputList)
 
-        should.exist(commitmentTxObj.outputList[0])
-        should.exist(commitmentTxObj.outputList[0].redeemScript)
-        should.exist(commitmentTxObj.outputList[0].scriptPubkey)
+        should.exist(commitment.outputList[0])
+        should.exist(commitment.outputList[0].redeemScript)
+        should.exist(commitment.outputList[0].scriptPubkey)
 
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[0].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[0].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[0].revocationSecret)
       }, this)
     })
 
     it('case with one pubKey output and a change output', function () {
       return asink(function * () {
-        let commitmentTxObj = new CommitmentTxObj()
-        commitmentTxObj.outputList = [
+        let commitment = new Commitment()
+        commitment.outputList = [
           new OutputDescription(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
@@ -161,42 +161,42 @@ describe('CommitmentTxObj', function () {
             htlcSecret, revocationSecret,
             Bn(1e7))
         ]
-        yield commitmentTxObj.asyncBuild(
+        yield commitment.asyncBuild(
           carol.fundingTxObj.txb.tx,
           carol.multisigAddress,
           carol.id,
           xPubs)
-        yield commitmentTxObj.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
+        yield commitment.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
 
         let txVerifier, error
-        txVerifier = new TxVerifier(commitmentTxObj.txb.tx, commitmentTxObj.txb.uTxOutMap)
+        txVerifier = new TxVerifier(commitment.txb.tx, commitment.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         // we expect an error here as the transaction is not fully signed
         error.should.equal(false)
 
-        should.exist(commitmentTxObj)
-        should.exist(commitmentTxObj.txb)
-        should.exist(commitmentTxObj.outputList)
+        should.exist(commitment)
+        should.exist(commitment.txb)
+        should.exist(commitment.outputList)
 
-        should.exist(commitmentTxObj.outputList[0])
-        should.exist(commitmentTxObj.outputList[0].redeemScript)
-        should.exist(commitmentTxObj.outputList[0].scriptPubkey)
+        should.exist(commitment.outputList[0])
+        should.exist(commitment.outputList[0].redeemScript)
+        should.exist(commitment.outputList[0].scriptPubkey)
 
-        should.exist(commitmentTxObj.outputList[1])
-        should.exist(commitmentTxObj.outputList[1].redeemScript)
-        should.exist(commitmentTxObj.outputList[1].scriptPubkey)
+        should.exist(commitment.outputList[1])
+        should.exist(commitment.outputList[1].redeemScript)
+        should.exist(commitment.outputList[1].scriptPubkey)
 
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[0].revocationSecret)
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[1].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[1].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[0].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[0].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[1].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[1].revocationSecret)
       }, this)
     })
 
     it('case with one revocable pubKey output and a change output', function () {
       return asink(function * () {
-        let commitmentTxObj = new CommitmentTxObj()
-        commitmentTxObj.outputList = [
+        let commitment = new Commitment()
+        commitment.outputList = [
           new OutputDescription(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
@@ -210,42 +210,42 @@ describe('CommitmentTxObj', function () {
             htlcSecret, revocationSecret,
             Bn(1e7))
         ]
-        yield commitmentTxObj.asyncBuild(
+        yield commitment.asyncBuild(
           bob.fundingTxObj.txb.tx,
           bob.multisigAddress,
           bob.id,
           xPubs)
-        yield commitmentTxObj.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
+        yield commitment.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
 
         let txVerifier, error
-        txVerifier = new TxVerifier(commitmentTxObj.txb.tx, commitmentTxObj.txb.uTxOutMap)
+        txVerifier = new TxVerifier(commitment.txb.tx, commitment.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         // we expect an error here as the transaction is not fully signed
         error.should.equal(false)
 
-        should.exist(commitmentTxObj)
-        should.exist(commitmentTxObj.txb)
-        should.exist(commitmentTxObj.outputList)
+        should.exist(commitment)
+        should.exist(commitment.txb)
+        should.exist(commitment.outputList)
 
-        should.exist(commitmentTxObj.outputList[0])
-        should.exist(commitmentTxObj.outputList[0].redeemScript)
-        should.exist(commitmentTxObj.outputList[0].scriptPubkey)
+        should.exist(commitment.outputList[0])
+        should.exist(commitment.outputList[0].redeemScript)
+        should.exist(commitment.outputList[0].scriptPubkey)
 
-        should.exist(commitmentTxObj.outputList[1])
-        should.exist(commitmentTxObj.outputList[1].redeemScript)
-        should.exist(commitmentTxObj.outputList[1].scriptPubkey)
+        should.exist(commitment.outputList[1])
+        should.exist(commitment.outputList[1].redeemScript)
+        should.exist(commitment.outputList[1].scriptPubkey)
 
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[0].revocationSecret)
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[1].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[1].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[0].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[0].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[1].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[1].revocationSecret)
       }, this)
     })
 
     it('case with one htlc output and a change output', function () {
       return asink(function * () {
-        let commitmentTxObj = new CommitmentTxObj()
-        commitmentTxObj.outputList = [
+        let commitment = new Commitment()
+        commitment.outputList = [
           new OutputDescription(
             'htlc',
             'alice', 'bob', 'carol', 'dave',
@@ -259,42 +259,42 @@ describe('CommitmentTxObj', function () {
             htlcSecret, revocationSecret,
             Bn(1e7))
         ]
-        yield commitmentTxObj.asyncBuild(
+        yield commitment.asyncBuild(
           carol.fundingTxObj.txb.tx,
           carol.multisigAddress,
           carol.id,
           xPubs)
-        yield commitmentTxObj.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
+        yield commitment.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
 
         let txVerifier, error
-        txVerifier = new TxVerifier(commitmentTxObj.txb.tx, commitmentTxObj.txb.uTxOutMap)
+        txVerifier = new TxVerifier(commitment.txb.tx, commitment.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         // we expect an error here as the transaction is not fully signed
         error.should.equal(false)
 
-        should.exist(commitmentTxObj)
-        should.exist(commitmentTxObj.txb)
-        should.exist(commitmentTxObj.outputList)
+        should.exist(commitment)
+        should.exist(commitment.txb)
+        should.exist(commitment.outputList)
 
-        should.exist(commitmentTxObj.outputList[0])
-        should.exist(commitmentTxObj.outputList[0].redeemScript)
-        should.exist(commitmentTxObj.outputList[0].scriptPubkey)
+        should.exist(commitment.outputList[0])
+        should.exist(commitment.outputList[0].redeemScript)
+        should.exist(commitment.outputList[0].scriptPubkey)
 
-        should.exist(commitmentTxObj.outputList[1])
-        should.exist(commitmentTxObj.outputList[1].redeemScript)
-        should.exist(commitmentTxObj.outputList[1].scriptPubkey)
+        should.exist(commitment.outputList[1])
+        should.exist(commitment.outputList[1].redeemScript)
+        should.exist(commitment.outputList[1].scriptPubkey)
 
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[0].revocationSecret)
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[1].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[1].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[0].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[0].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[1].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[1].revocationSecret)
       }, this)
     })
 
     it('case with one revocable htlc output and a change output', function () {
       return asink(function * () {
-        let commitmentTxObj = new CommitmentTxObj()
-        commitmentTxObj.outputList = [
+        let commitment = new Commitment()
+        commitment.outputList = [
           new OutputDescription(
             'htlc',
             'alice', 'bob', 'carol', 'dave',
@@ -308,35 +308,35 @@ describe('CommitmentTxObj', function () {
             htlcSecret, revocationSecret,
             Bn(1e7))
         ]
-        yield commitmentTxObj.asyncBuild(
+        yield commitment.asyncBuild(
           bob.fundingTxObj.txb.tx,
           bob.multisigAddress,
           bob.id,
           xPubs)
-        yield commitmentTxObj.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
+        yield commitment.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
 
         let txVerifier, error
-        txVerifier = new TxVerifier(commitmentTxObj.txb.tx, commitmentTxObj.txb.uTxOutMap)
+        txVerifier = new TxVerifier(commitment.txb.tx, commitment.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         // we expect an error here as the transaction is not fully signed
         error.should.equal(false)
 
-        should.exist(commitmentTxObj)
-        should.exist(commitmentTxObj.txb)
-        should.exist(commitmentTxObj.outputList)
+        should.exist(commitment)
+        should.exist(commitment.txb)
+        should.exist(commitment.outputList)
 
-        should.exist(commitmentTxObj.outputList[0])
-        should.exist(commitmentTxObj.outputList[0].redeemScript)
-        should.exist(commitmentTxObj.outputList[0].scriptPubkey)
+        should.exist(commitment.outputList[0])
+        should.exist(commitment.outputList[0].redeemScript)
+        should.exist(commitment.outputList[0].scriptPubkey)
 
-        should.exist(commitmentTxObj.outputList[1])
-        should.exist(commitmentTxObj.outputList[1].redeemScript)
-        should.exist(commitmentTxObj.outputList[1].scriptPubkey)
+        should.exist(commitment.outputList[1])
+        should.exist(commitment.outputList[1].redeemScript)
+        should.exist(commitment.outputList[1].scriptPubkey)
 
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[0].revocationSecret)
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[1].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitmentTxObj.outputList[1].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[0].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[0].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[1].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputList[1].revocationSecret)
       }, this)
     })
   })
@@ -344,15 +344,15 @@ describe('CommitmentTxObj', function () {
   describe('#toJSON', function () {
     it('should create a json object', function () {
       return asink(function * () {
-        let commitmentTxObj = new CommitmentTxObj()
-        commitmentTxObj.outputList = outputList
-        yield commitmentTxObj.asyncBuild(
+        let commitment = new Commitment()
+        commitment.outputList = outputList
+        yield commitment.asyncBuild(
           bob.fundingTxObj.txb.tx,
           bob.multisigAddress,
           bob.id,
           xPubs)
-        yield commitmentTxObj.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
-        let json = commitmentTxObj.toJSON()
+        yield commitment.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
+        let json = commitment.toJSON()
 
         should.exist(json)
         should.exist(json.txb)
@@ -367,18 +367,18 @@ describe('CommitmentTxObj', function () {
   })
 
   describe('#fromJSON', function () {
-    it('should create CommitmentTxObj from a json object', function () {
+    it('should create Commitment from a json object', function () {
       return asink(function * () {
-        let commitmentTxObj = new CommitmentTxObj()
-        commitmentTxObj.outputList = outputList
-        yield commitmentTxObj.asyncBuild(
+        let commitment = new Commitment()
+        commitment.outputList = outputList
+        yield commitment.asyncBuild(
           bob.fundingTxObj.txb.tx,
           bob.multisigAddress,
           bob.id,
           xPubs)
 
-        let json = commitmentTxObj.toJSON()
-        let txo = new CommitmentTxObj().fromJSON(json)
+        let json = commitment.toJSON()
+        let txo = new Commitment().fromJSON(json)
 
         should.exist(txo)
         should.exist(txo.txb)
@@ -393,16 +393,16 @@ describe('CommitmentTxObj', function () {
   })
 
   describe('#toPublic', function () {
-    it('should create a public CommitmentTxObj object', function () {
+    it('should create a public Commitment object', function () {
       return asink(function * () {
-        let commitmentTxObj = new CommitmentTxObj()
-        commitmentTxObj.outputList = outputList
-        yield commitmentTxObj.asyncBuild(
+        let commitment = new Commitment()
+        commitment.outputList = outputList
+        yield commitment.asyncBuild(
           bob.fundingTxObj.txb.tx,
           bob.multisigAddress,
           bob.id,
           xPubs)
-        let txo = commitmentTxObj.toPublic()
+        let txo = commitment.toPublic()
 
         should.exist(txo)
         should.exist(txo.txb)
