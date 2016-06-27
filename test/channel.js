@@ -1,5 +1,6 @@
 /* global describe,it */
 'use strict'
+let Address = require('yours-bitcoin/lib/address')
 let Bip32 = require('yours-bitcoin/lib/bip-32')
 let Bn = require('yours-bitcoin/lib/bn')
 let Channel = require('../lib/channel')
@@ -47,17 +48,36 @@ describe('Channel', function () {
         let bob = {}
         let carol = {}
 
-        bob.xPrv = Bip32.fromRandom()
-        carol.xPrv = Bip32.fromRandom()
+        bob.myXPrv = Bip32.fromRandom()
+        carol.myXPrv = Bip32.fromRandom()
 
-        bob.channel = new Channel(fundingAmount, bob.xPrv, carol.xPrv.toPublic())
+        // It is assumed there is an external mechanism that allows Bob and
+        // Carol to find the other person's extended public key.
+        bob.theirXPub = carol.myXPrv.toPublic()
+        carol.theirXPub = bob.myXPrv.toPublic()
+
+        // Bob initializes the channel on his end, creates the (unbroadcasted)
+        // funding transaction, and creates the first update message to send to
+        // Carol (sending the full funding amount back to Bob).
+        bob.channel = new Channel(fundingAmount, bob.myXPrv, carol.myXPrv.toPublic())
         yield bob.channel.asyncInitialize()
 
-        let multiSigAddr = bob.channel.multiSigAddr
-        let fundingTx = mockFundingTx(multiSigAddr, fundingAmount)
+        bob.multiSigAddr = bob.channel.multiSigAddr
+        let fundingTx = mockFundingTx(bob.multiSigAddr, fundingAmount)
 
-        let msg = yield bob.channel.asyncOpen(fundingTx)
-        ;(msg instanceof MsgUpdate).should.equal(true)
+        bob.msg = yield bob.channel.asyncOpen(fundingTx)
+
+        // Bob sends msg to Carol
+        carol.msg = bob.msg
+
+        // Carol already has Bob's xPub. Carol confirms that the chanId is
+        // equal to the multiSigAddr she gets when deriving the chanPath from
+        // the xPub.
+        ;(carol.msg instanceof MsgUpdate).should.equal(true)
+        should.exist(carol.msg.chanId)
+        let multiSigScript = Script.fromPubKeys(2, [carol.theirXPub.derive(carol.msg.chanPath).pubKey, carol.myXPrv.derive(carol.msg.chanPath).pubKey])
+        carol.multiSigAddr = Address.fromRedeemScript(multiSigScript)
+        carol.msg.chanId.should.equal(carol.multiSigAddr.toString())
 
         // TODO: Not finished.
       }, this)
