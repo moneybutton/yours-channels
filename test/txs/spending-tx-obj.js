@@ -677,7 +677,7 @@ describe('SpendingTxObj', function () {
   })
 
   describe('#revHtlcInputScript', function () {
-    it('branch 1 of revHtlcRedeemScript and revHtlcInputScript should evaluate to true', function () {
+    it.skip('branch 1 of revHtlcRedeemScript and revHtlcInputScript should evaluate to true', function () {
       return asink(function * () {
         let scriptPubKey = commitmentTxObj.revHtlcRedeemScript(
           destKeyPair.pubKey,
