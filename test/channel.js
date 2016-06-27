@@ -70,11 +70,10 @@ describe('Channel', function () {
         // Bob sends msg to Carol
         carol.msg = bob.msg
 
-        // Carol already has Bob's xPub. Carol confirms that the chanId is
+        // Carol already has Bob's xPub. Carol confirms that the id is
         // equal to the multiSigAddr she gets when deriving the chanPath from
         // the xPub.
         ;(carol.msg instanceof MsgUpdate).should.equal(true)
-        should.exist(carol.msg.chanId)
         let multiSigScript = Script.fromPubKeys(2, [carol.theirXPub.derive(carol.msg.chanPath).pubKey, carol.myXPrv.derive(carol.msg.chanPath).pubKey])
         carol.multiSigAddr = Address.fromRedeemScript(multiSigScript)
         carol.msg.chanId.should.equal(carol.multiSigAddr.toString())
@@ -106,6 +105,18 @@ describe('Channel', function () {
         channel.myId.should.equal(yield channel.myXPrv.toPublic().asyncToString())
         channel.theirId.should.equal(yield channel.theirXPub.asyncToString())
       }, this)
+    })
+  })
+
+  describe('@randomIndex', function () {
+    it('should give a random index', function () {
+      let x = Channel.randomIndex()
+
+      // this (random) number should almost always be between 0 and the
+      // largest 31 bit number. technically, it could be exactly equal to 0
+      // or the largest 31 bit number, but that should almost never happen.
+      x.should.greaterThan(0)
+      x.should.lessThan(0x7fffffff)
     })
   })
 
