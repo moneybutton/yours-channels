@@ -461,7 +461,7 @@ Here is an alternate explanation. We will consider automata with transition of t
 
 ![alt text](./img/channel-protocol-model.png "channel-protocol-model")
 
-The meaning is that if an automata is in state *A* and it gets the message *getMsg* with arguments *args* then it changes it's state to *q*. It then performs some amount of local computation that might query and alter the db (we provide pseudo code in a box connected to the state). Then it sends the message *sendMsg* with arguments *args'* to the other agent.
+The meaning is that if an automata is in state *A* and it gets the message *getMsg* with arguments *args* then it changes it's state to *B*. It then performs some amount of local computation that might query and alter the db (we provide pseudo code in a box connected to the state). Then it sends the message *sendMsg* with arguments *args'* to the other agent.
 
 The automata for the channel protocol looks as follows.
 
