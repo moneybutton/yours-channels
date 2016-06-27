@@ -677,7 +677,7 @@ describe('SpendingTxObj', function () {
   })
 
   describe('#revHtlcInputScript', function () {
-    it.skip('branch 1 of revHtlcRedeemScript and revHtlcInputScript should evaluate to true', function () {
+    it('branch 1 of revHtlcRedeemScript and revHtlcInputScript should evaluate to true', function () {
       return asink(function * () {
         let scriptPubKey = commitmentTxObj.revHtlcRedeemScript(
           destKeyPair.pubKey,
@@ -792,8 +792,7 @@ describe('SpendingTxObj', function () {
       }, this)
     })
 
-    // exact copy of first test case
-    it.skip('branch 1 of revHtlcRedeemScript and revHtlcInputScript should evaluate to true', function () {
+    it('branch 2 of revHtlcRedeemScript and revHtlcInputScript should evaluate to true', function () {
       return asink(function * () {
         let scriptPubKey = commitmentTxObj.revHtlcRedeemScript(
           destKeyPair.pubKey,
@@ -805,13 +804,13 @@ describe('SpendingTxObj', function () {
             htlcSecret: htlcSecret,
             revocationSecret: revocationSecret
           },
-          'aliceId',
+          'bobId',
           Consts.CSV_DELAY)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
           scriptPubKey,
-          destKeyPair.privKey,
+          sourceKeyPair.privKey,
           spendingScriptObj.sigPos,
           Bn(100))
 
@@ -819,6 +818,60 @@ describe('SpendingTxObj', function () {
           console.log(debugString)
         }
         verified.should.equal(true)
+      }, this)
+    })
+
+    it('branch 2 of revHtlcRedeemScript and revHtlcInputScript should evaluate to false if wrong keys are used', function () {
+      return asink(function * () {
+        let scriptPubKey = commitmentTxObj.revHtlcRedeemScript(
+          destKeyPair.pubKey,
+          sourceKeyPair.pubKey,
+          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+          {
+            channelDestId: 'aliceId',
+            htlcSecret: htlcSecret,
+            revocationSecret: revocationSecret
+          },
+          'bobId',
+          Consts.CSV_DELAY)
+
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
+          new PrivKey().fromRandom(),
+          spendingScriptObj.sigPos,
+          Bn(100))
+
+        verified.should.equal(false)
+        JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_EVAL_FALSE')
+      }, this)
+    })
+
+    it('branch 2 of revHtlcRedeemScript and revHtlcInputScript should evaluate to false if CSV does', function () {
+      return asink(function * () {
+        let scriptPubKey = commitmentTxObj.revHtlcRedeemScript(
+          destKeyPair.pubKey,
+          sourceKeyPair.pubKey,
+          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+          {
+            channelDestId: 'aliceId',
+            htlcSecret: htlcSecret,
+            revocationSecret: revocationSecret
+          },
+          'bobId',
+          Consts.CSV_DELAY)
+
+        let {verified, debugString} = TxHelper.interpCheckSig(
+          spendingScriptObj.partialScriptSig,
+          scriptPubKey,
+          sourceKeyPair.privKey,
+          spendingScriptObj.sigPos,
+          Consts.CSV_DELAY.sub(Bn(1)))
+
+          verified.should.equal(false)
+          JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_UNSATISFIED_LOCKTIME')
       }, this)
     })
   })
