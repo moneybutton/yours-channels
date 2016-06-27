@@ -77,6 +77,8 @@ describe('Channel', function () {
         let multiSigScript = Script.fromPubKeys(2, [carol.theirXPub.derive(carol.msg.chanPath).pubKey, carol.myXPrv.derive(carol.msg.chanPath).pubKey])
         carol.multiSigAddr = Address.fromRedeemScript(multiSigScript)
         carol.msg.chanId.should.equal(carol.multiSigAddr.toString())
+        should.exist(carol.msg.getCommitmentTxBuilder())
+        should.exist(carol.msg.getOutputDescriptions())
 
         // TODO: Not finished.
       }, this)
