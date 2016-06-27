@@ -17,7 +17,7 @@ describe('Channel', function () {
   let theirXPrv = Bip32.fromRandom()
   let theirXPub = theirXPrv.toPublic()
 
-  function mockFundingTx (multiSigAddr) {
+  function mockFundingTx (multiSigAddr, fundingAmount) {
     let tx = new Tx()
     {
       let txHashBuf = new Buffer(32)
@@ -54,7 +54,7 @@ describe('Channel', function () {
         yield bob.channel.asyncInitialize()
 
         let multiSigAddr = bob.channel.multiSigAddr
-        let fundingTx = mockFundingTx(multiSigAddr)
+        let fundingTx = mockFundingTx(multiSigAddr, fundingAmount)
 
         let msg = yield bob.channel.asyncOpen(fundingTx)
         ;(msg instanceof MsgUpdate).should.equal(true)
@@ -178,7 +178,7 @@ describe('Channel', function () {
       return asink(function * () {
         let channel = new Channel(fundingAmount, myXPrv, theirXPub)
         yield channel.asyncInitialize()
-        let fundingTx = mockFundingTx(channel.multiSigAddr)
+        let fundingTx = mockFundingTx(channel.multiSigAddr, fundingAmount)
         let msg = yield channel.asyncOpen(fundingTx)
         msg.args.outputDescriptions.length.should.equal(1)
         should.exist(channel.fundingTx)
