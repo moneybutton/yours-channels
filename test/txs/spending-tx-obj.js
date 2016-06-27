@@ -868,10 +868,11 @@ describe('SpendingTxObj', function () {
           scriptPubKey,
           sourceKeyPair.privKey,
           spendingScriptObj.sigPos,
-          Consts.CSV_DELAY.sub(Bn(1)))
+          Consts.CSV_DELAY.sub(Bn(1))
+        )
 
-          verified.should.equal(false)
-          JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_UNSATISFIED_LOCKTIME')
+        verified.should.equal(false)
+        JSON.parse(debugString).errStr.should.equal('SCRIPT_ERR_UNSATISFIED_LOCKTIME')
       }, this)
     })
   })
