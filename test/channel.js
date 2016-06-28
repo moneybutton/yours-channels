@@ -226,6 +226,17 @@ describe('Channel', function () {
     })
   })
 
+  describe('#asyncGetSecret', function () {
+    it('should get a secret', function () {
+      return asink(function * () {
+        let channel = yield new Channel(fundingAmount, myXPrv, theirXPub).asyncInitialize()
+        let revSecret = yield channel.asyncNewRevSecret()
+        let revSecret2 = yield channel.asyncGetSecret(revSecret.hash)
+        revSecret2.should.equal(revSecret)
+      }, this)
+    })
+  })
+
   describe('#asyncOpen', function () {
     it('should create a msgUpdate with output descriptions of length 1', function () {
       return asink(function * () {
