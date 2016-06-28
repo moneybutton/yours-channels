@@ -122,6 +122,9 @@ describe('Channel', function () {
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
         ;(bob.msg === null).should.equal(true)
 
+        // A this point, the channel is now open. Bob wishes pay Carol 1000 satoshis.
+        bob.msg = yield bob.channel.asyncPay(Bn(1000))
+
         // TODO: Not finished.
       }, this)
     })
