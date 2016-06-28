@@ -5,6 +5,7 @@ let Bip32 = require('yours-bitcoin/lib/bip-32')
 let Bn = require('yours-bitcoin/lib/bn')
 let Channel = require('../lib/channel')
 let MsgUpdate = require('../lib/msgs/msg-update')
+let MsgSecrets = require('../lib/msgs/msg-secrets')
 let Tx = require('yours-bitcoin/lib/tx')
 let TxIn = require('yours-bitcoin/lib/tx-in')
 let Script = require('yours-bitcoin/lib/script')
@@ -99,6 +100,14 @@ describe('Channel', function () {
         bob.channel.state.should.equal(Channel.STATE_BUILT)
         bob.msg = yield bob.channel.asyncHandleMsgUpdate(bob.msg)
         bob.channel.state.should.equal(Channel.STATE_STORED)
+
+        // Now Bob sends msg containing revocation secrets to Carol
+        carol.msg = bob.msg
+
+        // Carol does basic validation of message
+        ;(carol.msg instanceof MsgSecrets).should.equal(true)
+        carol.msg.args.secrets.length.should.equal(0) // no earlier commitment tx for refund tx
+        carol.msg = yield carol.channel.asyncHandleMsgSecrets(carol.msg)
 
         // TODO: Not finished.
       }, this)
