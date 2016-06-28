@@ -139,12 +139,33 @@ describe('Channel', function () {
         // Carol sends update to Bob
         bob.msg = carol.msg
 
-        //
+        // Bob handles message
         ;(bob.msg instanceof MsgUpdate).should.equal(true)
         bob.msg.getFundingAmount().eq(fundingAmount).should.equal(true)
         bob.channel.state.should.equal(Channel.STATE_BUILT)
         bob.msg = yield bob.channel.asyncHandleMsgUpdate(bob.msg)
         bob.channel.state.should.equal(Channel.STATE_STORED)
+
+        // Bob sends response to Carol containing secrets
+        carol.msg = bob.msg
+
+        // Carol does basic validation of message
+        ;(carol.msg instanceof MsgSecrets).should.equal(true)
+        carol.msg.args.secrets.length.should.equal(1)
+        carol.channel.state.should.equal(Channel.STATE_BUILT_AND_STORED)
+        carol.msg = yield carol.channel.asyncHandleMsgSecrets(carol.msg)
+        carol.channel.state.should.equal(Channel.STATE_INITIAL)
+
+        // Now Carol sends the message with her secrets to Bob
+        bob.msg = carol.msg
+
+        // Bob does basic validation
+        ;(bob.msg instanceof MsgSecrets).should.equal(true)
+        carol.msg.args.secrets.length.should.equal(1)
+        bob.channel.state.should.equal(Channel.STATE_STORED)
+        bob.msg = bob.channel.asyncHandleMsgSecrets(bob.msg)
+        bob.channel.state.should.equal(Channel.STATE_INITIAL)
+        ;(bob.msg === null).should.equal(true)
 
         // TODO: Not finished.
       }, this)
