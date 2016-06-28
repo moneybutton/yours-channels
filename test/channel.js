@@ -123,7 +123,28 @@ describe('Channel', function () {
         ;(bob.msg === null).should.equal(true)
 
         // A this point, the channel is now open. Bob wishes pay Carol 1000 satoshis.
+        bob.channel.state.should.equal(Channel.STATE_INITIAL)
         bob.msg = yield bob.channel.asyncPay(Bn(1000))
+        bob.channel.state.should.equal(Channel.STATE_BUILT)
+
+        // Bob sends the message to Carol.
+        carol.msg = bob.msg
+
+        // Carol does basic validation
+        ;(carol.msg instanceof MsgUpdate).should.equal(true)
+        carol.channel.state.should.equal(Channel.STATE_INITIAL)
+        carol.msg = yield carol.channel.asyncHandleMsgUpdate(carol.msg)
+        carol.channel.state.should.equal(Channel.STATE_BUILT_AND_STORED)
+
+        // Carol sends update to Bob
+        bob.msg = carol.msg
+
+        //
+        ;(bob.msg instanceof MsgUpdate).should.equal(true)
+        bob.msg.getFundingAmount().eq(fundingAmount).should.equal(true)
+        bob.channel.state.should.equal(Channel.STATE_BUILT)
+        bob.msg = yield bob.channel.asyncHandleMsgUpdate(bob.msg)
+        bob.channel.state.should.equal(Channel.STATE_STORED)
 
         // TODO: Not finished.
       }, this)
