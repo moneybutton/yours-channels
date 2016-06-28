@@ -61,11 +61,11 @@ describe('Channel', function () {
         // Carol (sending the full funding amount back to Bob).
         bob.channel = new Channel(fundingAmount, bob.myXPrv, bob.theirXPub)
         yield bob.channel.asyncInitialize()
-        bob.channel.state.should.equal(Channel.STATE_INITIAL)
 
         bob.multiSigAddr = bob.channel.multiSigAddr
         let fundingTx = mockFundingTx(bob.multiSigAddr, fundingAmount)
 
+        bob.channel.state.should.equal(Channel.STATE_INITIAL)
         bob.msg = yield bob.channel.asyncOpen(fundingTx)
         bob.channel.state.should.equal(Channel.STATE_BUILT)
 
@@ -89,12 +89,16 @@ describe('Channel', function () {
         carol.msg = yield carol.channel.asyncHandleMsgUpdate(carol.msg)
         carol.channel.state.should.equal(Channel.STATE_BUILT_AND_STORED)
 
-        // Carol sends msg to Bob
+        // Carol sends msg to Bob. This is Carol's 'update' response containing
+        // the commitment transaction built by Carol and to be owned by Bob.
         bob.msg = carol.msg
 
         // Bob does basic validation on message. TODO: Add more validation.
         ;(bob.msg instanceof MsgUpdate).should.equal(true)
+        bob.msg.getAmount().eq(fundingAmount).should.equal(true)
+        bob.channel.state.should.equal(Channel.STATE_BUILT)
         bob.msg = yield bob.channel.asyncHandleMsgUpdate(bob.msg)
+        bob.channel.state.should.equal(Channel.STATE_STORED)
 
         // TODO: Not finished.
       }, this)
