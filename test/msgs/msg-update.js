@@ -35,19 +35,19 @@ describe('MsgUpdate', function () {
     })
   })
 
-  describe('#setAmount', function () {
+  describe('#setFundingAmount', function () {
     it('should set a bn', function () {
-      let msg = new MsgUpdate().setAmount(Bn(5000))
-      should.exist(msg.args.amount)
+      let msg = new MsgUpdate().setFundingAmount(Bn(5000))
+      should.exist(msg.args.fundingAmount)
     })
   })
 
-  describe('#getAmount', function () {
+  describe('#getFundingAmount', function () {
     it('should get a bn', function () {
-      let msg = new MsgUpdate().setAmount(Bn(5000))
-      let amount = msg.getAmount()
-      ;(amount instanceof Bn).should.equal(true)
-      amount.eq(Bn(5000)).should.equal(true)
+      let msg = new MsgUpdate().setFundingAmount(Bn(5000))
+      let fundingAmount = msg.getFundingAmount()
+      ;(fundingAmount instanceof Bn).should.equal(true)
+      fundingAmount.eq(Bn(5000)).should.equal(true)
     })
   })
 })

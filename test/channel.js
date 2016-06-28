@@ -83,7 +83,7 @@ describe('Channel', function () {
 
         // Carol notices that she has never received a message for this channel
         // id. She agrees to open a channel with Bob.
-        carol.channel = new Channel(carol.msg.getAmount(), carol.myXPrv, carol.theirXPub, carol.msg.getChanPath())
+        carol.channel = new Channel(carol.msg.getFundingAmount(), carol.myXPrv, carol.theirXPub, carol.msg.getChanPath())
         yield carol.channel.asyncInitialize()
         carol.channel.state.should.equal(Channel.STATE_INITIAL)
         carol.msg = yield carol.channel.asyncHandleMsgUpdate(carol.msg)
@@ -95,7 +95,7 @@ describe('Channel', function () {
 
         // Bob does basic validation on message. TODO: Add more validation.
         ;(bob.msg instanceof MsgUpdate).should.equal(true)
-        bob.msg.getAmount().eq(fundingAmount).should.equal(true)
+        bob.msg.getFundingAmount().eq(fundingAmount).should.equal(true)
         bob.channel.state.should.equal(Channel.STATE_BUILT)
         bob.msg = yield bob.channel.asyncHandleMsgUpdate(bob.msg)
         bob.channel.state.should.equal(Channel.STATE_STORED)
