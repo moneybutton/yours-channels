@@ -101,11 +101,11 @@ describe('Agent', function () {
 
         alice.multisigAddress.initialized.should.equal(true)
         should.exist(alice.other)
-        should.exist(alice.fundingTxObj)
+        should.exist(alice.funding)
 
         bob.multisigAddress.initialized.should.equal(true)
         should.exist(bob.other)
-        should.exist(bob.fundingTxObj)
+        should.exist(bob.funding)
 
         alice.id.should.equal('Alice')
         alice.other.id.should.equal('Bob')

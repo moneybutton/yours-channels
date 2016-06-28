@@ -4,16 +4,16 @@ let should = require('should')
 let asink = require('asink')
 let Agent = require('../../lib/agent')
 let Wallet = require('../../lib/wallet')
-let FundingTxObj = require('../../lib/txs/funding-tx-obj')
+let Funding = require('../../lib/txs/funding')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let Bn = require('yours-bitcoin/lib/bn')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 let Interp = require('yours-bitcoin/lib/interp')
 
-describe('FundingTxObj', function () {
+describe('Funding', function () {
   it('should exist', function () {
-    should.exist(FundingTxObj)
-    should.exist(new FundingTxObj())
+    should.exist(Funding)
+    should.exist(new Funding())
   })
 
   describe('#asyncInitialize', function () {
@@ -37,20 +37,20 @@ describe('FundingTxObj', function () {
         let wallet = new Wallet()
         let output = wallet.getUnspentOutput(inputAmountBn, alice.sourceAddress.keyPair.pubKey)
 
-        alice.fundingTxObj = new FundingTxObj()
-        yield alice.fundingTxObj.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        alice.funding = new Funding()
+        yield alice.funding.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
-        let txVerifier = new TxVerifier(alice.fundingTxObj.txb.tx, alice.fundingTxObj.txb.uTxOutMap)
+        let txVerifier = new TxVerifier(alice.funding.txb.tx, alice.funding.txb.uTxOutMap)
         let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         error.should.equal(false)
 
         // first output should equal amount
-        alice.fundingTxObj.txb.tx.txOuts[0].valueBn.eq(fundingAmount).should.equal(true)
+        alice.funding.txb.tx.txOuts[0].valueBn.eq(fundingAmount).should.equal(true)
         // there should be one output
-        alice.fundingTxObj.txb.tx.toJSON().txIns.length.should.equal(1)
+        alice.funding.txb.tx.toJSON().txIns.length.should.equal(1)
         // and two inputs
-        alice.fundingTxObj.txb.tx.toJSON().txOuts.length.should.equal(2)
-        ;(alice.fundingTxObj.txb.tx.toJSON().txOuts[0].valueBn).should.equal(fundingAmount.toString())
+        alice.funding.txb.tx.toJSON().txOuts.length.should.equal(2)
+        ;(alice.funding.txb.tx.toJSON().txOuts[0].valueBn).should.equal(fundingAmount.toString())
       }, this)
     })
   })
@@ -76,10 +76,10 @@ describe('FundingTxObj', function () {
         let wallet = new Wallet()
         let output = wallet.getUnspentOutput(inputAmountBn, alice.sourceAddress.keyPair.pubKey)
 
-        alice.fundingTxObj = new FundingTxObj()
-        yield alice.fundingTxObj.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        alice.funding = new Funding()
+        yield alice.funding.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
-        let json = alice.fundingTxObj.toJSON()
+        let json = alice.funding.toJSON()
 
         should.exist(json.txb)
         should.exist(json.amount)
@@ -108,15 +108,15 @@ describe('FundingTxObj', function () {
         let wallet = new Wallet()
         let output = wallet.getUnspentOutput(inputAmountBn, alice.sourceAddress.keyPair.pubKey)
 
-        alice.fundingTxObj = new FundingTxObj()
-        yield alice.fundingTxObj.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        alice.funding = new Funding()
+        yield alice.funding.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
-        let json = alice.fundingTxObj.toJSON()
+        let json = alice.funding.toJSON()
 
-        let fundingTxObj = new FundingTxObj().fromJSON(json)
+        let funding = new Funding().fromJSON(json)
 
-        should.exist(fundingTxObj.txb)
-        should.exist(fundingTxObj.amount)
+        should.exist(funding.txb)
+        should.exist(funding.amount)
       }, this)
     })
   })
@@ -144,22 +144,22 @@ describe('FundingTxObj', function () {
         let wallet = new Wallet()
         let output = wallet.getUnspentOutput(inputAmountBn, alice.sourceAddress.keyPair.pubKey)
 
-        bob.fundingTxObj = new FundingTxObj()
-        yield bob.fundingTxObj.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
+        bob.funding = new Funding()
+        yield bob.funding.asyncInitialize(fundingAmount, alice.sourceAddress, alice.multisigAddress, output.txhashbuf, output.txoutnum, output.txout, output.pubKey, output.inputTxout)
 
-        let publicFundingTxObj = yield bob.fundingTxObj.asyncToPublic()
+        let publicFunding = yield bob.funding.asyncToPublic()
 
-        should.exist(publicFundingTxObj.txb)
-        should.exist(publicFundingTxObj.amount)
+        should.exist(publicFunding.txb)
+        should.exist(publicFunding.amount)
 
-        JSON.stringify(Object.keys(publicFundingTxObj.txb.tx))
+        JSON.stringify(Object.keys(publicFunding.txb.tx))
           .should.equal('["versionBytesNum","txInsVi","txIns","txOutsVi","txOuts","nLockTime","hash"]')
-        publicFundingTxObj.txb.tx.versionBytesNum.should.equal(1)
-        publicFundingTxObj.txb.tx.txInsVi.toString().should.equal('00')
-        publicFundingTxObj.txb.tx.txIns.should.deepEqual([])
-        publicFundingTxObj.txb.tx.txOutsVi.toString().should.equal('00')
-        should.exist(publicFundingTxObj.txb.tx.txOuts)
-        publicFundingTxObj.txb.tx.nLockTime.toString().should.equal('0')
+        publicFunding.txb.tx.versionBytesNum.should.equal(1)
+        publicFunding.txb.tx.txInsVi.toString().should.equal('00')
+        publicFunding.txb.tx.txIns.should.deepEqual([])
+        publicFunding.txb.tx.txOutsVi.toString().should.equal('00')
+        should.exist(publicFunding.txb.tx.txOuts)
+        publicFunding.txb.tx.nLockTime.toString().should.equal('0')
       }, this)
     })
   })

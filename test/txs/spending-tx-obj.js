@@ -4,7 +4,7 @@ let should = require('should')
 let asink = require('asink')
 let OutputDescription = require('../../lib/output-description')
 let Commitment = require('../../lib/txs/commitment')
-let FundingTxObj = require('../../lib/txs/funding-tx-obj')
+let Funding = require('../../lib/txs/funding')
 let HtlcSecret = require('../../lib/scrts/htlc-secret')
 let RevocationSecret = require('../../lib/scrts/revocation-secret')
 let Agent = require('../../lib/agent')
@@ -16,7 +16,7 @@ let Bn = require('yours-bitcoin/lib/bn')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 let Interp = require('yours-bitcoin/lib/interp')
 let Bip32 = require('yours-bitcoin/lib/bip-32')
-let SpendingTxObj = require('../../lib/txs/spending-tx-obj')
+let Spending = require('../../lib/txs/spending')
 let TxHelper = require('../test-helpers/tx-helper')
 let Consts = require('../../lib/consts.js')
 
@@ -25,7 +25,7 @@ let htlcSecret, revocationSecret
 let xPubs, bobBip32, carolBip32
 let pubKeyCommitment, revPubKeyCommitment, htlcCommitment, revHtlcCommitment
 let txVerifier, error
-let spendingTxObj, commitment
+let spending, commitment
 let destKeyPair, sourceKeyPair, address
 
 let buildPubKeyCommitment = function () {
@@ -48,12 +48,12 @@ let buildPubKeyCommitment = function () {
         Bn(1e7))
     ]
     yield pubKeyCommitment.asyncBuild(
-      carol.fundingTxObj.txb.tx.hash(),
-      carol.fundingTxObj.txb.tx.txOuts[0],
+      carol.funding.txb.tx.hash(),
+      carol.funding.txb.tx.txOuts[0],
       carol.multisigAddress,
       carol.id, // builder id
       xPubs)
-    yield pubKeyCommitment.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
+    yield pubKeyCommitment.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.funding.txb.tx.txOuts[0])
     return pubKeyCommitment
   }, this)
 }
@@ -79,12 +79,12 @@ let buildRevPubKeyCommitment = function () {
         Bn(1e7))
     ]
     yield revPubKeyCommitment.asyncBuild(
-      bob.fundingTxObj.txb.tx.hash(),
-      bob.fundingTxObj.txb.tx.txOuts[0],
+      bob.funding.txb.tx.hash(),
+      bob.funding.txb.tx.txOuts[0],
       bob.multisigAddress,
       bob.id, // builder id
       xPubs)
-    yield revPubKeyCommitment.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
+    yield revPubKeyCommitment.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.funding.txb.tx.txOuts[0])
     return revPubKeyCommitment
   }, this)
 }
@@ -109,12 +109,12 @@ let buildHtlcCommitment = function () {
         Bn(1e7))
     ]
     yield htlcCommitment.asyncBuild(
-      carol.fundingTxObj.txb.tx.hash(),
-      carol.fundingTxObj.txb.tx.txOuts[0],
+      carol.funding.txb.tx.hash(),
+      carol.funding.txb.tx.txOuts[0],
       carol.multisigAddress,
       carol.id, // builder id
       xPubs)
-    yield htlcCommitment.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
+    yield htlcCommitment.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.funding.txb.tx.txOuts[0])
     return htlcCommitment
   }, this)
 }
@@ -140,20 +140,20 @@ let buildRevHtlcCommitment = function () {
         Bn(1e7))
     ]
     yield revHtlcCommitment.asyncBuild(
-      bob.fundingTxObj.txb.tx.hash(),
-      bob.fundingTxObj.txb.tx.txOuts[0],
+      bob.funding.txb.tx.hash(),
+      bob.funding.txb.tx.txOuts[0],
       bob.multisigAddress,
       bob.id, // builder id
       xPubs)
-    yield revHtlcCommitment.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
+    yield revHtlcCommitment.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.funding.txb.tx.txOuts[0])
     return revHtlcCommitment
   }, this)
 }
 
-describe('SpendingTxObj', function () {
+describe('Spending', function () {
   it('should exist', function () {
-    should.exist(SpendingTxObj)
-    should.exist(new SpendingTxObj())
+    should.exist(Spending)
+    should.exist(new Spending())
   })
 
   beforeEach(function () {
@@ -175,8 +175,8 @@ describe('SpendingTxObj', function () {
       let wallet = new Wallet()
       let output = wallet.getUnspentOutput(inputAmountBn, bob.sourceAddress.keyPair.pubKey)
 
-      let fundingTxObj = new FundingTxObj()
-      yield fundingTxObj.asyncInitialize(
+      let funding = new Funding()
+      yield funding.asyncInitialize(
         fundingAmount,
         bob.sourceAddress,
         bob.multisigAddress,
@@ -186,7 +186,7 @@ describe('SpendingTxObj', function () {
         output.pubKey,
         output.inputTxout)
 
-      bob.fundingTxObj = carol.fundingTxObj = fundingTxObj
+      bob.funding = carol.funding = funding
 
       htlcSecret = new HtlcSecret()
       yield htlcSecret.asyncInitialize()
@@ -204,7 +204,7 @@ describe('SpendingTxObj', function () {
       }
 
       commitment = new Commitment()
-      spendingTxObj = new SpendingTxObj()
+      spending = new Spending()
       address = new Address().fromPrivKey(new PrivKey().fromRandom())
     }, this)
   })
@@ -214,8 +214,8 @@ describe('SpendingTxObj', function () {
     it('build a spending transaction. Case pubKey', function () {
       return asink(function * () {
         let pubKeyCommitment = yield buildPubKeyCommitment()
-        yield spendingTxObj.asyncBuild(address, pubKeyCommitment, carolBip32, carol.id)
-        txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
+        yield spending.asyncBuild(address, pubKeyCommitment, carolBip32, carol.id)
+        txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
           console.log(txVerifier.getDebugString())
@@ -228,7 +228,7 @@ describe('SpendingTxObj', function () {
       return asink(function * () {
         try {
           let pubKeyCommitment = yield buildPubKeyCommitment()
-          yield spendingTxObj.asyncBuild(address, pubKeyCommitment, bobBip32, carol.id)
+          yield spending.asyncBuild(address, pubKeyCommitment, bobBip32, carol.id)
           true.should.equal(false)
         } catch (err) {
           err.message.should.equal('no spendable outputs found')
@@ -241,8 +241,8 @@ describe('SpendingTxObj', function () {
     it('build a spending transaction. Case revocable pubKey branch 1', function () {
       return asink(function * () {
         let revPubKeyCommitment = yield buildRevPubKeyCommitment()
-        yield spendingTxObj.asyncBuild(address, revPubKeyCommitment, carolBip32, carol.id, Bn(100))
-        txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
+        yield spending.asyncBuild(address, revPubKeyCommitment, carolBip32, carol.id, Bn(100))
+        txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
           console.log(txVerifier.getDebugString())
@@ -255,7 +255,7 @@ describe('SpendingTxObj', function () {
       return asink(function * () {
         try {
           let revPubKeyCommitment = yield buildRevPubKeyCommitment()
-          yield spendingTxObj.asyncBuild(address, revPubKeyCommitment, bobBip32, carol.id)
+          yield spending.asyncBuild(address, revPubKeyCommitment, bobBip32, carol.id)
           true.should.equal(false)
         } catch (err) {
           err.message.should.equal('no spendable outputs found')
@@ -266,8 +266,8 @@ describe('SpendingTxObj', function () {
     it('build a spending transaction. Case revocable pubKey branch 2', function () {
       return asink(function * () {
         let revPubKeyCommitment = yield buildRevPubKeyCommitment()
-        yield spendingTxObj.asyncBuild(address, revPubKeyCommitment, carolBip32, carol.id, Bn(100))
-        txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
+        yield spending.asyncBuild(address, revPubKeyCommitment, carolBip32, carol.id, Bn(100))
+        txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
           console.log(txVerifier.getDebugString())
@@ -279,8 +279,8 @@ describe('SpendingTxObj', function () {
     it('build a spending transaction. Case branch one of htlc', function () {
       return asink(function * () {
         let htlcCommitment = yield buildHtlcCommitment()
-        yield spendingTxObj.asyncBuild(address, htlcCommitment, carolBip32, carol.id)
-        txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
+        yield spending.asyncBuild(address, htlcCommitment, carolBip32, carol.id)
+        txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
           console.log(txVerifier.getDebugString())
@@ -292,8 +292,8 @@ describe('SpendingTxObj', function () {
     it('build a spending transaction. Case branch two of htlc', function () {
       return asink(function * () {
         let htlcCommitment = yield buildHtlcCommitment()
-        yield spendingTxObj.asyncBuild(address, htlcCommitment, carolBip32, carol.id, Bn(100))
-        txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
+        yield spending.asyncBuild(address, htlcCommitment, carolBip32, carol.id, Bn(100))
+        txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
           console.log(txVerifier.getDebugString())
@@ -305,8 +305,8 @@ describe('SpendingTxObj', function () {
     it('build a spending transaction. Case branch one of revocable htlc', function () {
       return asink(function * () {
         let revHtlcCommitment = yield buildRevHtlcCommitment()
-        yield spendingTxObj.asyncBuild(address, revHtlcCommitment, carolBip32, carol.id, Bn(100))
-        txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
+        yield spending.asyncBuild(address, revHtlcCommitment, carolBip32, carol.id, Bn(100))
+        txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
           console.log(txVerifier.getDebugString())
@@ -318,8 +318,8 @@ describe('SpendingTxObj', function () {
     it('build a spending transaction. Case branch two of revocable htlc', function () {
       return asink(function * () {
         let revHtlcCommitment = yield buildRevHtlcCommitment()
-        yield spendingTxObj.asyncBuild(address, revHtlcCommitment, carolBip32, carol.id, Bn(100)) // TODO: does this need to be carol' bib and id or bob's?
-        txVerifier = new TxVerifier(spendingTxObj.txb.tx, spendingTxObj.txb.uTxOutMap)
+        yield spending.asyncBuild(address, revHtlcCommitment, carolBip32, carol.id, Bn(100)) // TODO: does this need to be carol' bib and id or bob's?
+        txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
           console.log(txVerifier.getDebugString())
@@ -339,7 +339,7 @@ describe('SpendingTxObj', function () {
     it('pubKeyRedeemScript and pubKeyInputScript should evaluate to true', function () {
       return asink(function * () {
         let scriptPubKey = commitment.pubKeyRedeemScript(destKeyPair.pubKey)
-        let spendingScriptObj = spendingTxObj.pubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
+        let spendingScriptObj = spending.pubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -358,7 +358,7 @@ describe('SpendingTxObj', function () {
     it('pubKeyRedeemScript and pubKeyInputScript should evaluate to false if keys don\'t match', function () {
       return asink(function * () {
         let scriptPubKey = commitment.pubKeyRedeemScript(destKeyPair.pubKey)
-        let spendingScriptObj = spendingTxObj.pubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
+        let spendingScriptObj = spending.pubKeyInputScript({ channelDestId: 'aliceId' }, 'aliceId')
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -380,7 +380,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revPubKeyInputScript(
+        let spendingScriptObj = spending.revPubKeyInputScript(
           { channelDestId: 'aliceId', revocationSecret: revocationSecret },
           'aliceId',
           Consts.CSV_DELAY)
@@ -405,7 +405,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revPubKeyInputScript(
+        let spendingScriptObj = spending.revPubKeyInputScript(
           { channelDestId: 'aliceId', revocationSecret: revocationSecret },
           'aliceId',
           Consts.CSV_DELAY)
@@ -428,7 +428,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revPubKeyInputScript(
+        let spendingScriptObj = spending.revPubKeyInputScript(
           { channelDestId: 'aliceId', revocationSecret: revocationSecret },
           'aliceId',
           Consts.CSV_DELAY)
@@ -451,7 +451,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revPubKeyInputScript(
+        let spendingScriptObj = spending.revPubKeyInputScript(
           { channelDestId: 'aliceId', revocationSecret: revocationSecret },
           'bobId',
           Consts.CSV_DELAY)
@@ -476,7 +476,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revPubKeyInputScript(
+        let spendingScriptObj = spending.revPubKeyInputScript(
           { channelDestId: 'aliceId', revocationSecret: revocationSecret },
           'bobId',
           Consts.CSV_DELAY)
@@ -501,7 +501,7 @@ describe('SpendingTxObj', function () {
           { revocationSecret: revocationSecret })
         let revocationSecret2 = new RevocationSecret()
         yield revocationSecret2.asyncInitialize()
-        let spendingScriptObj = spendingTxObj.revPubKeyInputScript(
+        let spendingScriptObj = spending.revPubKeyInputScript(
           { channelDestId: 'aliceId', revocationSecret: revocationSecret2 },
           'bobId',
           Consts.CSV_DELAY)
@@ -526,7 +526,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret })
-        let spendingScriptObj = spendingTxObj.htlcInputScript(
+        let spendingScriptObj = spending.htlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret
@@ -553,7 +553,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret })
-        let spendingScriptObj = spendingTxObj.htlcInputScript(
+        let spendingScriptObj = spending.htlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret
@@ -580,7 +580,7 @@ describe('SpendingTxObj', function () {
           { htlcSecret: htlcSecret })
         let htlcSecret2 = new HtlcSecret()
         yield htlcSecret2.asyncInitialize()
-        let spendingScriptObj = spendingTxObj.htlcInputScript(
+        let spendingScriptObj = spending.htlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret2
@@ -605,7 +605,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret })
-        let spendingScriptObj = spendingTxObj.htlcInputScript(
+        let spendingScriptObj = spending.htlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret
@@ -633,7 +633,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret })
-        let spendingScriptObj = spendingTxObj.htlcInputScript(
+        let spendingScriptObj = spending.htlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret
@@ -659,7 +659,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret })
-        let spendingScriptObj = spendingTxObj.htlcInputScript(
+        let spendingScriptObj = spending.htlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret
@@ -687,7 +687,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+        let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
@@ -716,7 +716,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+        let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
@@ -746,7 +746,7 @@ describe('SpendingTxObj', function () {
         let htlcSecret2 = new HtlcSecret()
         yield htlcSecret2.asyncInitialize()
 
-        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+        let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret2,
@@ -775,7 +775,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+        let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
@@ -802,7 +802,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+        let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
@@ -831,7 +831,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+        let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
@@ -858,7 +858,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+        let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
@@ -886,7 +886,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+        let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
@@ -915,7 +915,7 @@ describe('SpendingTxObj', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
-        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+        let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
@@ -945,7 +945,7 @@ describe('SpendingTxObj', function () {
 
         let revocationSecret2 = new RevocationSecret()
         yield revocationSecret2.asyncInitialize()
-        let spendingScriptObj = spendingTxObj.revHtlcInputScript(
+        let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,

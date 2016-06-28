@@ -4,7 +4,7 @@ let should = require('should')
 let asink = require('asink')
 let OutputDescription = require('../../lib/output-description')
 let Commitment = require('../../lib/txs/commitment')
-let FundingTxObj = require('../../lib/txs/funding-tx-obj')
+let Funding = require('../../lib/txs/funding')
 let HtlcSecret = require('../../lib/scrts/htlc-secret')
 let RevocationSecret = require('../../lib/scrts/revocation-secret')
 let Agent = require('../../lib/agent')
@@ -45,8 +45,8 @@ describe('Commitment', function () {
       let wallet = new Wallet()
       let output = wallet.getUnspentOutput(inputAmountBn, bob.sourceAddress.keyPair.pubKey)
 
-      let fundingTxObj = new FundingTxObj()
-      yield fundingTxObj.asyncInitialize(
+      let funding = new Funding()
+      yield funding.asyncInitialize(
         fundingAmount,
         bob.sourceAddress,
         bob.multisigAddress,
@@ -56,7 +56,7 @@ describe('Commitment', function () {
         output.pubKey,
         output.inputTxout)
 
-      bob.fundingTxObj = carol.fundingTxObj = fundingTxObj
+      bob.funding = carol.funding = funding
 
       htlcSecret = new HtlcSecret()
       yield htlcSecret.asyncInitialize()
@@ -94,8 +94,8 @@ describe('Commitment', function () {
       let commitment = new Commitment()
       commitment.outputList = outputList
       yield commitment.asyncBuild(
-        bob.fundingTxObj.txb.tx.hash(),
-        bob.fundingTxObj.txb.tx.txOuts[0],
+        bob.funding.txb.tx.hash(),
+        bob.funding.txb.tx.txOuts[0],
         bob.multisigAddress,
         carol.id,
         xPubs)
@@ -121,12 +121,12 @@ describe('Commitment', function () {
             Bn(1e7))
         ]
         yield commitment.asyncBuild(
-          carol.fundingTxObj.txb.tx.hash(),
-          carol.fundingTxObj.txb.tx.txOuts[0],
+          carol.funding.txb.tx.hash(),
+          carol.funding.txb.tx.txOuts[0],
           carol.multisigAddress,
           carol.id,
           xPubs)
-        yield commitment.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
+        yield commitment.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.funding.txb.tx.txOuts[0])
 
         let txVerifier, error
         txVerifier = new TxVerifier(commitment.txb.tx, commitment.txb.uTxOutMap)
@@ -164,12 +164,12 @@ describe('Commitment', function () {
             Bn(1e7))
         ]
         yield commitment.asyncBuild(
-          carol.fundingTxObj.txb.tx.hash(),
-          carol.fundingTxObj.txb.tx.txOuts[0],
+          carol.funding.txb.tx.hash(),
+          carol.funding.txb.tx.txOuts[0],
           carol.multisigAddress,
           carol.id,
           xPubs)
-        yield commitment.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
+        yield commitment.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.funding.txb.tx.txOuts[0])
 
         let txVerifier, error
         txVerifier = new TxVerifier(commitment.txb.tx, commitment.txb.uTxOutMap)
@@ -214,12 +214,12 @@ describe('Commitment', function () {
             Bn(1e7))
         ]
         yield commitment.asyncBuild(
-          bob.fundingTxObj.txb.tx.hash(),
-          carol.fundingTxObj.txb.tx.txOuts[0],
+          bob.funding.txb.tx.hash(),
+          carol.funding.txb.tx.txOuts[0],
           bob.multisigAddress,
           bob.id,
           xPubs)
-        yield commitment.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
+        yield commitment.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.funding.txb.tx.txOuts[0])
 
         let txVerifier, error
         txVerifier = new TxVerifier(commitment.txb.tx, commitment.txb.uTxOutMap)
@@ -264,12 +264,12 @@ describe('Commitment', function () {
             Bn(1e7))
         ]
         yield commitment.asyncBuild(
-          carol.fundingTxObj.txb.tx.hash(),
-          carol.fundingTxObj.txb.tx.txOuts[0],
+          carol.funding.txb.tx.hash(),
+          carol.funding.txb.tx.txOuts[0],
           carol.multisigAddress,
           carol.id,
           xPubs)
-        yield commitment.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.fundingTxObj.txb.tx.txOuts[0])
+        yield commitment.txb.asyncSign(0, bob.multisigAddress.keyPair, bob.funding.txb.tx.txOuts[0])
 
         let txVerifier, error
         txVerifier = new TxVerifier(commitment.txb.tx, commitment.txb.uTxOutMap)
@@ -314,12 +314,12 @@ describe('Commitment', function () {
             Bn(1e7))
         ]
         yield commitment.asyncBuild(
-          bob.fundingTxObj.txb.tx.hash(),
-          bob.fundingTxObj.txb.tx.txOuts[0],
+          bob.funding.txb.tx.hash(),
+          bob.funding.txb.tx.txOuts[0],
           bob.multisigAddress,
           bob.id,
           xPubs)
-        yield commitment.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
+        yield commitment.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.funding.txb.tx.txOuts[0])
 
         let txVerifier, error
         txVerifier = new TxVerifier(commitment.txb.tx, commitment.txb.uTxOutMap)
@@ -353,12 +353,12 @@ describe('Commitment', function () {
         let commitment = new Commitment()
         commitment.outputList = outputList
         yield commitment.asyncBuild(
-          bob.fundingTxObj.txb.tx.hash(),
-          bob.fundingTxObj.txb.tx.txOuts[0],
+          bob.funding.txb.tx.hash(),
+          bob.funding.txb.tx.txOuts[0],
           bob.multisigAddress,
           bob.id,
           xPubs)
-        yield commitment.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.fundingTxObj.txb.tx.txOuts[0])
+        yield commitment.txb.asyncSign(0, carol.multisigAddress.keyPair, carol.funding.txb.tx.txOuts[0])
         let json = commitment.toJSON()
 
         should.exist(json)
@@ -379,8 +379,8 @@ describe('Commitment', function () {
         let commitment = new Commitment()
         commitment.outputList = outputList
         yield commitment.asyncBuild(
-          bob.fundingTxObj.txb.tx.hash(),
-          bob.fundingTxObj.txb.tx.txOuts[0],
+          bob.funding.txb.tx.hash(),
+          bob.funding.txb.tx.txOuts[0],
           bob.multisigAddress,
           bob.id,
           xPubs)
@@ -406,8 +406,8 @@ describe('Commitment', function () {
         let commitment = new Commitment()
         commitment.outputList = outputList
         yield commitment.asyncBuild(
-          bob.fundingTxObj.txb.tx.hash(),
-          bob.fundingTxObj.txb.tx.txOuts[0],
+          bob.funding.txb.tx.hash(),
+          bob.funding.txb.tx.txOuts[0],
           bob.multisigAddress,
           bob.id,
           xPubs)
