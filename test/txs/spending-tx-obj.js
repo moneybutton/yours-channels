@@ -33,7 +33,7 @@ let buildPubKeyCommitment = function () {
     // to build a transaction with pubKey outputs we must make sure that the
     // builder (carol) is the channel destination
     pubKeyCommitment = new Commitment()
-    pubKeyCommitment.outputList = [
+    pubKeyCommitment.outputDescriptions = [
       new OutputDescription(
         'pubKey',
         'alice', 'bob', 'carol', 'dave',
@@ -64,7 +64,7 @@ let buildRevPubKeyCommitment = function () {
     // must make sure that the
     // builder (carol) is _not_ the channel destination
     revPubKeyCommitment = new Commitment()
-    revPubKeyCommitment.outputList = [
+    revPubKeyCommitment.outputDescriptions = [
       new OutputDescription(
         'pubKey',
         'alice', 'bob', 'carol', 'dave',
@@ -94,7 +94,7 @@ let buildHtlcCommitment = function () {
     // to build a transaction with htlc outputs we must make sure that the
     // builder (carol) is the channel destination
     htlcCommitment = new Commitment()
-    htlcCommitment.outputList = [
+    htlcCommitment.outputDescriptions = [
       new OutputDescription(
         'htlc',
         'alice', 'bob', 'carol', 'dave',
@@ -125,7 +125,7 @@ let buildRevHtlcCommitment = function () {
     // must make sure that the
     // builder (carol) is _not_ the channel destination
     revHtlcCommitment = new Commitment()
-    revHtlcCommitment.outputList = [
+    revHtlcCommitment.outputDescriptions = [
       new OutputDescription(
         'htlc',
         'alice', 'bob', 'carol', 'dave',

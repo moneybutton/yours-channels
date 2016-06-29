@@ -115,7 +115,7 @@ describe('Agent', function () {
     })
   })
 
-  describe('#sendOutputList', function () {
+  describe('#sendOutputDescriptions', function () {
     it.skip('should work', function () {
       return asink(function * () {
         let alice = new Agent('Alice')
@@ -130,7 +130,7 @@ describe('Agent', function () {
         let revocationSecret = new RevocationSecret()
         yield revocationSecret.asyncInitialize()
 
-        let outputList = [
+        let outputDescriptions = [
           new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7)),
           new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7)),
           new OutputDescription(bob.id, 'finalDestId1', 'pubKey', htlcSecret, revocationSecret, Bn(1e7))
@@ -143,7 +143,7 @@ describe('Agent', function () {
         yield alice.remoteAgent.asyncOpenChannel(Bn(1e8), yield alice.asyncToPublic())
 
         alice.sender = true
-        yield alice.remoteAgent.asyncSendOutputList(outputList, changeOutput)
+        yield alice.remoteAgent.asyncSendOutputDescriptions(outputDescriptions, changeOutput)
 
         alice.commitments.length.should.equal(1)
         alice.other.commitments.length.should.equal(1)
@@ -153,7 +153,7 @@ describe('Agent', function () {
         bob.other.commitments.length.should.equal(1)
         should.exist(bob.other.commitments[0].txb)
 
-        yield bob.asyncSendOutputList(outputList, changeOutput)
+        yield bob.asyncSendOutputDescriptions(outputDescriptions, changeOutput)
 
         // check length of the commitments list
         alice.commitments.length.should.equal(2)
@@ -164,7 +164,7 @@ describe('Agent', function () {
         should.exist(bob.other.commitments[1].txb)
 
         // check that the revocationSecret has been added
-        should.exist(bob.commitments[0].outputList[0].revocationSecret)
+        should.exist(bob.commitments[0].outputDescriptions[0].revocationSecret)
 
         let txVerifier, error
         // verify bob's commitmentTx

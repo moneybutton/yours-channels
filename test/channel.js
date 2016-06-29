@@ -49,7 +49,7 @@ describe('Channel', function () {
   })
 
   describe('API Example', function () {
-    it('Bob opens a channel with Carol, sends 1000 satoshi, closes channel', function () {
+    it('Bob opens a channel with Carol, sends 50000 satoshi in first payment, sends 50000 in second payment, closes channel', function () {
       return asink(function * () {
         let bob = {}
         let carol = {}
