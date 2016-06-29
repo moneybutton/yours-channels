@@ -6,12 +6,12 @@ let Bn = require('yours-bitcoin/lib/bn')
 let Channel = require('../lib/channel')
 let MsgUpdate = require('../lib/msgs/msg-update')
 let MsgSecrets = require('../lib/msgs/msg-secrets')
-let Spending = require('../lib/txs/spending')
-let Consts = require('../lib/consts.js')
+// let Spending = require('../lib/txs/spending')
+// let Consts = require('../lib/consts.js')
 let Tx = require('yours-bitcoin/lib/tx')
 let TxIn = require('yours-bitcoin/lib/tx-in')
 let Script = require('yours-bitcoin/lib/script')
-let PrivKey = require('yours-bitcoin/lib/priv-key')
+// let PrivKey = require('yours-bitcoin/lib/priv-key')
 // let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 // let Interp = require('yours-bitcoin/lib/interp')
 let asink = require('asink')
@@ -129,11 +129,33 @@ describe('Channel', function () {
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
         ;(bob.msg === null).should.equal(true)
 
+        /*
+        let spending, txVerifier, error
+        // this might work
+
+        // bob tests the validity of the refund transaction by building a spending
+        // tx but not broadcasting it
+        spending = new Spending()
+        yield spending.asyncBuild(
+          new Address().fromPrivKey(new PrivKey().fromRandom()),
+          bob.channel.myCommitments[0],
+          bob.channel.myChanXPrv,
+          bob.channel.myId,
+          Consts.CSV_DELAY)
+
+        txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        if (error) {
+          console.log(txVerifier.getDebugString())
+        }
+        error.should.equal(false)
+        */
+
         /* ---- sending a payment ---- */
 
         // A this point, the channel is now open. Bob wishes pay Carol 1000 satoshis.
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
-        bob.msg = yield bob.channel.asyncPay(Bn(1000))
+        bob.msg = yield bob.channel.asyncPay(Bn(100000))
         bob.channel.state.should.equal(Channel.STATE_BUILT)
 
         // Bob sends the message to Carol.
@@ -145,14 +167,6 @@ describe('Channel', function () {
         carol.msg = yield carol.channel.asyncHandleMsgUpdate(carol.msg)
         carol.channel.state.should.equal(Channel.STATE_BUILT_AND_STORED)
 
-        // some sanity checks
-        bob.channel.myCommitments.length.should.equal(2)
-        bob.channel.myCommitments[1].txb.tx.txOuts.length.should.equal(2)
-        bob.channel.myCommitments[1].txb.tx.txOuts[0].valueBn.toString().should.equal('1000')
-        carol.channel.myCommitments.length.should.equal(2)
-        carol.channel.myCommitments[1].txb.tx.txOuts.length.should.equal(2)
-        carol.channel.myCommitments[1].txb.tx.txOuts[0].valueBn.toString().should.equal('1000')
-
         // Carol sends update to Bob
         bob.msg = carol.msg
 
@@ -162,6 +176,14 @@ describe('Channel', function () {
         bob.channel.state.should.equal(Channel.STATE_BUILT)
         bob.msg = yield bob.channel.asyncHandleMsgUpdate(bob.msg)
         bob.channel.state.should.equal(Channel.STATE_STORED)
+
+        // some sanity checks
+        bob.channel.myCommitments.length.should.equal(2)
+        bob.channel.myCommitments[1].txb.tx.txOuts.length.should.equal(2)
+        bob.channel.myCommitments[1].txb.tx.txOuts[0].valueBn.toString().should.equal('100000')
+        carol.channel.myCommitments.length.should.equal(2)
+        carol.channel.myCommitments[1].txb.tx.txOuts.length.should.equal(2)
+        carol.channel.myCommitments[1].txb.tx.txOuts[0].valueBn.toString().should.equal('100000')
 
         // Bob sends response to Carol containing secrets
         carol.msg = bob.msg
@@ -187,8 +209,47 @@ describe('Channel', function () {
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
         ;(bob.msg === null).should.equal(true)
 
+        /*
+        // bob tests the validity of the new commitment transaction by building a spending
+        // tx but not broadcasting it
+        spending = new Spending()
+        yield spending.asyncBuild(
+          new Address().fromPrivKey(new PrivKey().fromRandom()),
+          bob.channel.myCommitments[1],
+          bob.channel.myChanXPrv,
+          bob.channel.myId,
+          Consts.CSV_DELAY)
+
+        txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        if (error) {
+          console.log(txVerifier.getDebugString())
+        }
+        error.should.equal(false)
+        */
+
+        /*
+        // carol tests the validity of the new commitment transaction by building a spending
+        // tx but not broadcasting it
+        spending = new Spending()
+        yield spending.asyncBuild(
+          new Address().fromPrivKey(new PrivKey().fromRandom()),
+          carol.channel.myCommitments[1],
+          carol.channel.myChanXPrv,
+          carol.channel.myId,
+          Consts.CSV_DELAY)
+
+        txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
+        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        if (error) {
+          console.log(txVerifier.getDebugString())
+        }
+        error.should.equal(false)
+        */
+
         /* ---- sending a second payment ---- */
 
+        /*
         // Bob wishes pays Carol an additional 2000 satoshis.
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
         bob.msg = yield bob.channel.asyncPay(Bn(2000))
@@ -244,28 +305,6 @@ describe('Channel', function () {
         bob.msg = bob.channel.asyncHandleMsgSecrets(bob.msg)
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
         ;(bob.msg === null).should.equal(true)
-
-        /* ---- closing the channel ---- */
-
-        // console.log(carol.channel.myCommitments[1].outputList);
-
-        // carol builds a spending transaction
-        let spending = new Spending()
-        yield spending.asyncBuild(
-          new Address().fromPrivKey(new PrivKey().fromRandom()),
-          carol.channel.myCommitments[1],
-          carol.channel.myXPrv,
-          carol.channel.theirId,
-          Consts.CSV_DELAY)
-
-        // yield spending.asyncBuild(address, revPubKeyCommitment, carolBip32, carol.id, Bn(100))
-        /*
-        let txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
-        let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
-        if (error) {
-          console.log(txVerifier.getDebugString())
-        }
-        error.should.equal(false)
         */
       }, this)
     })
