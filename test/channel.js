@@ -130,7 +130,7 @@ describe('Channel', function () {
         // Bob sends the message to Carol.
         carol.msg = bob.msg
 
-        // Carol does basic validation
+        // Carol does basic validation of the update message
         ;(carol.msg instanceof MsgUpdate).should.equal(true)
         carol.channel.state.should.equal(Channel.STATE_INITIAL)
         carol.msg = yield carol.channel.asyncHandleMsgUpdate(carol.msg)
@@ -139,7 +139,7 @@ describe('Channel', function () {
         // Carol sends update to Bob
         bob.msg = carol.msg
 
-        // Bob handles message
+        // Bob handles update message
         ;(bob.msg instanceof MsgUpdate).should.equal(true)
         bob.msg.getFundingAmount().eq(fundingAmount).should.equal(true)
         bob.channel.state.should.equal(Channel.STATE_BUILT)
@@ -149,9 +149,10 @@ describe('Channel', function () {
         // Bob sends response to Carol containing secrets
         carol.msg = bob.msg
 
-        // Carol does basic validation of message
+        // Carol does basic validation of the secret message
         ;(carol.msg instanceof MsgSecrets).should.equal(true)
         carol.msg.args.secrets.length.should.equal(1)
+        should.exist(carol.msg.args.secrets[0].buf)
         carol.channel.state.should.equal(Channel.STATE_BUILT_AND_STORED)
         carol.msg = yield carol.channel.asyncHandleMsgSecrets(carol.msg)
         carol.channel.state.should.equal(Channel.STATE_INITIAL)
@@ -159,9 +160,11 @@ describe('Channel', function () {
         // Now Carol sends the message with her secrets to Bob
         bob.msg = carol.msg
 
-        // Bob does basic validation
+        // Bob does basic validation of the secret message
         ;(bob.msg instanceof MsgSecrets).should.equal(true)
-        carol.msg.args.secrets.length.should.equal(1)
+        bob.msg.args.secrets.length.should.equal(1)
+        // TODO: Should carol be retransmitting Bob's secrets?
+        // should.not.exist(bob.msg.args.secrets[0].buf)
         bob.channel.state.should.equal(Channel.STATE_STORED)
         bob.msg = bob.channel.asyncHandleMsgSecrets(bob.msg)
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
