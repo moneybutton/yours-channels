@@ -6,7 +6,7 @@ let OutputDescription = require('../../lib/output-description')
 let Commitment = require('../../lib/txs/commitment')
 let Funding = require('../../lib/txs/funding')
 let HtlcSecret = require('../../lib/scrts/htlc-secret')
-let RevocationSecret = require('../../lib/scrts/revocation-secret')
+let RevSecret = require('../../lib/scrts/rev-secret')
 let Agent = require('../../lib/agent')
 let Wallet = require('../../lib/wallet')
 let SecretHelper = require('../test-helpers/secret-helper')
@@ -17,7 +17,7 @@ let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
 let Interp = require('yours-bitcoin/lib/interp')
 
 let bob, carol
-let htlcSecret, revocationSecret
+let htlcSecret, revSecret
 let xPubs, outputDescriptions
 
 describe('Commitment', function () {
@@ -60,8 +60,8 @@ describe('Commitment', function () {
 
       htlcSecret = new HtlcSecret()
       yield htlcSecret.asyncInitialize()
-      revocationSecret = new RevocationSecret()
-      yield revocationSecret.asyncInitialize()
+      revSecret = new RevSecret()
+      yield revSecret.asyncInitialize()
 
       let bobBip32 = new Bip32().fromRandom()
       let bobBip32Public = bobBip32.toPublic()
@@ -77,13 +77,13 @@ describe('Commitment', function () {
           'htlc',
           'alice', 'bob', 'carol', 'dave',
           'm/1/2', 'm/4/5',
-          htlcSecret, revocationSecret,
+          htlcSecret, revSecret,
           Bn(1e7)),
         new OutputDescription(
           'pubKey',
           'alice', 'bob', 'carol', 'dave',
           'm/1/2', 'm/4/5',
-          htlcSecret, revocationSecret,
+          htlcSecret, revSecret,
           Bn(1e7))
       ]
     }, this)
@@ -117,7 +117,7 @@ describe('Commitment', function () {
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
-            htlcSecret, revocationSecret,
+            htlcSecret, revSecret,
             Bn(1e7))
         ]
         yield commitment.asyncBuild(
@@ -142,7 +142,7 @@ describe('Commitment', function () {
         should.exist(commitment.outputDescriptions[0].scriptPubkey)
 
         SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].revSecret)
       }, this)
     })
 
@@ -154,13 +154,13 @@ describe('Commitment', function () {
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
-            htlcSecret, revocationSecret,
+            htlcSecret, revSecret,
             Bn(1e7)),
           new OutputDescription(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
-            htlcSecret, revocationSecret,
+            htlcSecret, revSecret,
             Bn(1e7))
         ]
         yield commitment.asyncBuild(
@@ -190,9 +190,9 @@ describe('Commitment', function () {
         should.exist(commitment.outputDescriptions[1].scriptPubkey)
 
         SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].revSecret)
         SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].revSecret)
       }, this)
     })
 
@@ -204,13 +204,13 @@ describe('Commitment', function () {
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
-            htlcSecret, revocationSecret,
+            htlcSecret, revSecret,
             Bn(1e7)),
           new OutputDescription(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
-            htlcSecret, revocationSecret,
+            htlcSecret, revSecret,
             Bn(1e7))
         ]
         yield commitment.asyncBuild(
@@ -240,9 +240,9 @@ describe('Commitment', function () {
         should.exist(commitment.outputDescriptions[1].scriptPubkey)
 
         SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].revSecret)
         SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].revSecret)
       }, this)
     })
 
@@ -254,13 +254,13 @@ describe('Commitment', function () {
             'htlc',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
-            htlcSecret, revocationSecret,
+            htlcSecret, revSecret,
             Bn(1e7)),
           new OutputDescription(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
-            htlcSecret, revocationSecret,
+            htlcSecret, revSecret,
             Bn(1e7))
         ]
         yield commitment.asyncBuild(
@@ -290,9 +290,9 @@ describe('Commitment', function () {
         should.exist(commitment.outputDescriptions[1].scriptPubkey)
 
         SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].revSecret)
         SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].revSecret)
       }, this)
     })
 
@@ -304,13 +304,13 @@ describe('Commitment', function () {
             'htlc',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
-            htlcSecret, revocationSecret,
+            htlcSecret, revSecret,
             Bn(1e7)),
           new OutputDescription(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
-            htlcSecret, revocationSecret,
+            htlcSecret, revSecret,
             Bn(1e7))
         ]
         yield commitment.asyncBuild(
@@ -340,9 +340,9 @@ describe('Commitment', function () {
         should.exist(commitment.outputDescriptions[1].scriptPubkey)
 
         SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].revSecret)
         SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].revocationSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].revSecret)
       }, this)
     })
   })
@@ -366,9 +366,9 @@ describe('Commitment', function () {
         should.exist(json.outputDescriptions)
 
         SecretHelper.checkSecretNotHidden(json.outputDescriptions[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(json.outputDescriptions[0].revocationSecret)
+        SecretHelper.checkSecretNotHidden(json.outputDescriptions[0].revSecret)
         SecretHelper.checkSecretNotHidden(json.outputDescriptions[1].htlcSecret)
-        SecretHelper.checkSecretNotHidden(json.outputDescriptions[1].revocationSecret)
+        SecretHelper.checkSecretNotHidden(json.outputDescriptions[1].revSecret)
       }, this)
     })
   })
@@ -393,9 +393,9 @@ describe('Commitment', function () {
         should.exist(txo.outputDescriptions)
 
         SecretHelper.checkSecretNotHidden(txo.outputDescriptions[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(txo.outputDescriptions[0].revocationSecret)
+        SecretHelper.checkSecretNotHidden(txo.outputDescriptions[0].revSecret)
         SecretHelper.checkSecretNotHidden(txo.outputDescriptions[1].htlcSecret)
-        SecretHelper.checkSecretNotHidden(txo.outputDescriptions[1].revocationSecret)
+        SecretHelper.checkSecretNotHidden(txo.outputDescriptions[1].revSecret)
       }, this)
     })
   })
@@ -418,9 +418,9 @@ describe('Commitment', function () {
         should.exist(txo.outputDescriptions)
 
         SecretHelper.checkSecretHidden(txo.outputDescriptions[0].htlcSecret)
-        SecretHelper.checkSecretHidden(txo.outputDescriptions[0].revocationSecret)
+        SecretHelper.checkSecretHidden(txo.outputDescriptions[0].revSecret)
         SecretHelper.checkSecretHidden(txo.outputDescriptions[1].htlcSecret)
-        SecretHelper.checkSecretHidden(txo.outputDescriptions[1].revocationSecret)
+        SecretHelper.checkSecretHidden(txo.outputDescriptions[1].revSecret)
       }, this)
     })
   })

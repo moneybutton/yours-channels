@@ -6,7 +6,7 @@ let OutputDescription = require('../../lib/output-description')
 let Commitment = require('../../lib/txs/commitment')
 let Funding = require('../../lib/txs/funding')
 let HtlcSecret = require('../../lib/scrts/htlc-secret')
-let RevocationSecret = require('../../lib/scrts/revocation-secret')
+let RevSecret = require('../../lib/scrts/rev-secret')
 let Agent = require('../../lib/agent')
 let Wallet = require('../../lib/wallet')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
@@ -21,7 +21,7 @@ let TxHelper = require('../test-helpers/tx-helper')
 let Consts = require('../../lib/consts.js')
 
 let bob, carol
-let htlcSecret, revocationSecret
+let htlcSecret, revSecret
 let xPubs, bobBip32, carolBip32
 let pubKeyCommitment, revPubKeyCommitment, htlcCommitment, revHtlcCommitment
 let txVerifier, error
@@ -38,13 +38,13 @@ let buildPubKeyCommitment = function () {
         'pubKey',
         'alice', 'bob', 'carol', 'dave',
         'm/1/2', 'm/1/2',
-        htlcSecret, revocationSecret,
+        htlcSecret, revSecret,
         Bn(1e7)),
       new OutputDescription(
         'pubKey',
         'alice', 'bob', 'carol', 'dave',
         'm/4/5', 'm/4/5',
-        htlcSecret, revocationSecret,
+        htlcSecret, revSecret,
         Bn(1e7))
     ]
     yield pubKeyCommitment.asyncBuild(
@@ -69,13 +69,13 @@ let buildRevPubKeyCommitment = function () {
         'pubKey',
         'alice', 'bob', 'carol', 'dave',
         'm/1/2', 'm/1/2',
-        htlcSecret, revocationSecret,
+        htlcSecret, revSecret,
         Bn(1e7)),
       new OutputDescription(
         'pubKey',
         'alice', 'bob', 'carol', 'dave',
         'm/4/5', 'm/4/5',
-        htlcSecret, revocationSecret,
+        htlcSecret, revSecret,
         Bn(1e7))
     ]
     yield revPubKeyCommitment.asyncBuild(
@@ -99,13 +99,13 @@ let buildHtlcCommitment = function () {
         'htlc',
         'alice', 'bob', 'carol', 'dave',
         'm/1/2', 'm/4/5',
-        htlcSecret, revocationSecret,
+        htlcSecret, revSecret,
         Bn(1e7)),
       new OutputDescription(
         'htlc',
         'alice', 'bob', 'carol', 'dave',
         'm/1/2', 'm/4/5',
-        htlcSecret, revocationSecret,
+        htlcSecret, revSecret,
         Bn(1e7))
     ]
     yield htlcCommitment.asyncBuild(
@@ -130,13 +130,13 @@ let buildRevHtlcCommitment = function () {
         'htlc',
         'alice', 'bob', 'carol', 'dave',
         'm/1/2', 'm/4/5',
-        htlcSecret, revocationSecret,
+        htlcSecret, revSecret,
         Bn(1e7)),
       new OutputDescription(
         'htlc',
         'alice', 'bob', 'carol', 'dave',
         'm/1/2', 'm/4/5',
-        htlcSecret, revocationSecret,
+        htlcSecret, revSecret,
         Bn(1e7))
     ]
     yield revHtlcCommitment.asyncBuild(
@@ -190,8 +190,8 @@ describe('Spending', function () {
 
       htlcSecret = new HtlcSecret()
       yield htlcSecret.asyncInitialize()
-      revocationSecret = new RevocationSecret()
-      yield revocationSecret.asyncInitialize()
+      revSecret = new RevSecret()
+      yield revSecret.asyncInitialize()
 
       destKeyPair = new KeyPair().fromRandom()
       sourceKeyPair = new KeyPair().fromRandom()
@@ -381,9 +381,9 @@ describe('Spending', function () {
         let scriptPubKey = commitment.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { revocationSecret: revocationSecret })
+          { revSecret: revSecret })
         let spendingScriptObj = spending.revPubKeyInputScript(
-          { channelDestId: 'aliceId', revocationSecret: revocationSecret },
+          { channelDestId: 'aliceId', revSecret: revSecret },
           'aliceId',
           Consts.CSV_DELAY)
 
@@ -406,9 +406,9 @@ describe('Spending', function () {
         let scriptPubKey = commitment.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { revocationSecret: revocationSecret })
+          { revSecret: revSecret })
         let spendingScriptObj = spending.revPubKeyInputScript(
-          { channelDestId: 'aliceId', revocationSecret: revocationSecret },
+          { channelDestId: 'aliceId', revSecret: revSecret },
           'aliceId',
           Consts.CSV_DELAY)
 
@@ -429,9 +429,9 @@ describe('Spending', function () {
         let scriptPubKey = commitment.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { revocationSecret: revocationSecret })
+          { revSecret: revSecret })
         let spendingScriptObj = spending.revPubKeyInputScript(
-          { channelDestId: 'aliceId', revocationSecret: revocationSecret },
+          { channelDestId: 'aliceId', revSecret: revSecret },
           'aliceId',
           Consts.CSV_DELAY)
 
@@ -452,9 +452,9 @@ describe('Spending', function () {
         let scriptPubKey = commitment.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { revocationSecret: revocationSecret })
+          { revSecret: revSecret })
         let spendingScriptObj = spending.revPubKeyInputScript(
-          { channelDestId: 'carolId', revocationSecret: revocationSecret },
+          { channelDestId: 'carolId', revSecret: revSecret },
           'bobId',
           Consts.CSV_DELAY.sub(Bn(1)))
 
@@ -477,9 +477,9 @@ describe('Spending', function () {
         let scriptPubKey = commitment.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { revocationSecret: revocationSecret })
+          { revSecret: revSecret })
         let spendingScriptObj = spending.revPubKeyInputScript(
-          { channelDestId: 'aliceId', revocationSecret: revocationSecret },
+          { channelDestId: 'aliceId', revSecret: revSecret },
           'bobId',
           Consts.CSV_DELAY)
 
@@ -500,11 +500,11 @@ describe('Spending', function () {
         let scriptPubKey = commitment.revPubKeyRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { revocationSecret: revocationSecret })
-        let revocationSecret2 = new RevocationSecret()
-        yield revocationSecret2.asyncInitialize()
+          { revSecret: revSecret })
+        let revSecret2 = new RevSecret()
+        yield revSecret2.asyncInitialize()
         let spendingScriptObj = spending.revPubKeyInputScript(
-          { channelDestId: 'aliceId', revocationSecret: revocationSecret2 },
+          { channelDestId: 'aliceId', revSecret: revSecret2 },
           'bobId',
           Consts.CSV_DELAY)
 
@@ -688,12 +688,12 @@ describe('Spending', function () {
         let scriptPubKey = commitment.revHtlcRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+          { htlcSecret: htlcSecret, revSecret: revSecret })
         let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
-            revocationSecret: revocationSecret
+            revSecret: revSecret
           },
           'aliceId',
           Consts.CSV_DELAY)
@@ -717,12 +717,12 @@ describe('Spending', function () {
         let scriptPubKey = commitment.revHtlcRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+          { htlcSecret: htlcSecret, revSecret: revSecret })
         let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
-            revocationSecret: revocationSecret
+            revSecret: revSecret
           },
           'aliceId',
           Consts.CSV_DELAY)
@@ -744,7 +744,7 @@ describe('Spending', function () {
         let scriptPubKey = commitment.revHtlcRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+          { htlcSecret: htlcSecret, revSecret: revSecret })
         let htlcSecret2 = new HtlcSecret()
         yield htlcSecret2.asyncInitialize()
 
@@ -752,7 +752,7 @@ describe('Spending', function () {
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret2,
-            revocationSecret: revocationSecret
+            revSecret: revSecret
           },
           'aliceId',
           Consts.CSV_DELAY)
@@ -776,12 +776,12 @@ describe('Spending', function () {
         let scriptPubKey = commitment.revHtlcRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+          { htlcSecret: htlcSecret, revSecret: revSecret })
         let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
-            revocationSecret: revocationSecret
+            revSecret: revSecret
           },
           'aliceId',
           shortDelay)
@@ -803,12 +803,12 @@ describe('Spending', function () {
         let scriptPubKey = commitment.revHtlcRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+          { htlcSecret: htlcSecret, revSecret: revSecret })
         let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
-            revocationSecret: revocationSecret
+            revSecret: revSecret
           },
           'bobId',
           Consts.CSV_DELAY)
@@ -832,12 +832,12 @@ describe('Spending', function () {
         let scriptPubKey = commitment.revHtlcRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+          { htlcSecret: htlcSecret, revSecret: revSecret })
         let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
-            revocationSecret: revocationSecret
+            revSecret: revSecret
           },
           'bobId',
           Consts.CSV_DELAY)
@@ -859,12 +859,12 @@ describe('Spending', function () {
         let scriptPubKey = commitment.revHtlcRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+          { htlcSecret: htlcSecret, revSecret: revSecret })
         let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
-            revocationSecret: revocationSecret
+            revSecret: revSecret
           },
           'bobId',
           Consts.CSV_DELAY)
@@ -887,12 +887,12 @@ describe('Spending', function () {
         let scriptPubKey = commitment.revHtlcRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+          { htlcSecret: htlcSecret, revSecret: revSecret })
         let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
-            revocationSecret: revocationSecret
+            revSecret: revSecret
           },
           'bobId',
           Consts.CSV_DELAY.sub(Bn(1)))
@@ -916,12 +916,12 @@ describe('Spending', function () {
         let scriptPubKey = commitment.revHtlcRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+          { htlcSecret: htlcSecret, revSecret: revSecret })
         let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
-            revocationSecret: revocationSecret
+            revSecret: revSecret
           },
           'bobId',
           Consts.CSV_DELAY.sub(Bn(1)))
@@ -938,20 +938,20 @@ describe('Spending', function () {
       }, this)
     })
 
-    it('branch 3 of revHtlcRedeemScript and revHtlcInputScript should evaluate to false if the wrong revocationSecret is used', function () {
+    it('branch 3 of revHtlcRedeemScript and revHtlcInputScript should evaluate to false if the wrong revSecret is used', function () {
       return asink(function * () {
         let scriptPubKey = commitment.revHtlcRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
-          { htlcSecret: htlcSecret, revocationSecret: revocationSecret })
+          { htlcSecret: htlcSecret, revSecret: revSecret })
 
-        let revocationSecret2 = new RevocationSecret()
-        yield revocationSecret2.asyncInitialize()
+        let revSecret2 = new RevSecret()
+        yield revSecret2.asyncInitialize()
         let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
-            revocationSecret: revocationSecret2
+            revSecret: revSecret2
           },
           'bobId',
           Consts.CSV_DELAY.sub(Bn(1)))

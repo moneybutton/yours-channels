@@ -3,7 +3,7 @@
 let should = require('should')
 let Agent = require('../lib/agent')
 let HtlcSecret = require('../lib/scrts/htlc-secret')
-let RevocationSecret = require('../lib/scrts/revocation-secret')
+let RevSecret = require('../lib/scrts/rev-secret')
 let OutputDescription = require('../lib/output-description')
 let asink = require('asink')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
@@ -37,27 +37,27 @@ let asyncTestSecrets = function (txNum, alice, bob) {
   return asink(function * () {
     should.exist(alice.commitments[txNum])
     should.exist(alice.commitments[txNum].htlcSecret)
-    should.exist(alice.commitments[txNum].revocationSecret)
+    should.exist(alice.commitments[txNum].revSecret)
     yield asyncTestSecretChecks(alice.commitments[txNum].htlcSecret)
-    yield asyncTestSecretChecks(alice.commitments[txNum].revocationSecret)
-    yield asyncTestSecretIsHidden(alice.other.commitments[txNum].revocationSecret)
+    yield asyncTestSecretChecks(alice.commitments[txNum].revSecret)
+    yield asyncTestSecretIsHidden(alice.other.commitments[txNum].revSecret)
     yield asyncTestSecretIsHidden(alice.other.commitments[txNum].htlcSecret)
     // check that alices stores the public version of bob's secrets
     testSecretsMatch(alice.commitments[txNum].htlcSecret, bob.other.commitments[txNum].htlcSecret)
-    testSecretsMatch(alice.commitments[txNum].revocationSecret, bob.other.commitments[txNum].revocationSecret)
+    testSecretsMatch(alice.commitments[txNum].revSecret, bob.other.commitments[txNum].revSecret)
     testSecretsMatch(alice.commitments[txNum].otherHtlcSecret, bob.other.commitments[txNum].otherHtlcSecret)
-    testSecretsMatch(alice.commitments[txNum].otherRevocationSecret, bob.other.commitments[txNum].otherRevocationSecret)
+    testSecretsMatch(alice.commitments[txNum].otherRevSecret, bob.other.commitments[txNum].otherRevSecret)
 
     // same tests for bob
     should.exist(bob.commitments[txNum])
-    yield asyncTestSecretChecks(bob.commitments[txNum].revocationSecret)
+    yield asyncTestSecretChecks(bob.commitments[txNum].revSecret)
     yield asyncTestSecretChecks(bob.commitments[txNum].htlcSecret)
-    yield asyncTestSecretIsHidden(bob.other.commitments[txNum].revocationSecret)
+    yield asyncTestSecretIsHidden(bob.other.commitments[txNum].revSecret)
     yield asyncTestSecretIsHidden(bob.other.commitments[txNum].htlcSecret)
-    testSecretsMatch(bob.commitments[txNum].revocationSecret, alice.other.commitments[txNum].revocationSecret)
+    testSecretsMatch(bob.commitments[txNum].revSecret, alice.other.commitments[txNum].revSecret)
     testSecretsMatch(bob.commitments[txNum].htlcSecret, alice.other.commitments[txNum].htlcSecret)
     testSecretsMatch(bob.commitments[txNum].otherHtlcSecret, alice.other.commitments[txNum].otherHtlcSecret)
-    testSecretsMatch(bob.commitments[txNum].otherRevocationSecret, alice.other.commitments[txNum].otherRevocationSecret)
+    testSecretsMatch(bob.commitments[txNum].otherRevSecret, alice.other.commitments[txNum].otherRevSecret)
   }, this)
 }
 */
@@ -127,16 +127,16 @@ describe('Agent', function () {
         bob.remoteAgent = alice
         let htlcSecret = new HtlcSecret()
         yield htlcSecret.asyncInitialize()
-        let revocationSecret = new RevocationSecret()
-        yield revocationSecret.asyncInitialize()
+        let revSecret = new RevSecret()
+        yield revSecret.asyncInitialize()
 
         let outputDescriptions = [
-          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7)),
-          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revocationSecret, Bn(1e7)),
-          new OutputDescription(bob.id, 'finalDestId1', 'pubKey', htlcSecret, revocationSecret, Bn(1e7))
+          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revSecret, Bn(1e7)),
+          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revSecret, Bn(1e7)),
+          new OutputDescription(bob.id, 'finalDestId1', 'pubKey', htlcSecret, revSecret, Bn(1e7))
         ]
         let changeOutput = new OutputDescription(
-          bob.id, 'finalDestId2', 'pubKey', htlcSecret, revocationSecret
+          bob.id, 'finalDestId2', 'pubKey', htlcSecret, revSecret
         )
 
         alice.funder = true
@@ -163,8 +163,8 @@ describe('Agent', function () {
         bob.other.commitments.length.should.equal(2)
         should.exist(bob.other.commitments[1].txb)
 
-        // check that the revocationSecret has been added
-        should.exist(bob.commitments[0].outputDescriptions[0].revocationSecret)
+        // check that the revSecret has been added
+        should.exist(bob.commitments[0].outputDescriptions[0].revSecret)
 
         let txVerifier, error
         // verify bob's commitmentTx
