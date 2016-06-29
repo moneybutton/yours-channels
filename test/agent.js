@@ -4,7 +4,7 @@ let should = require('should')
 let Agent = require('../lib/agent')
 let HtlcSecret = require('../lib/scrts/htlc-secret')
 let RevSecret = require('../lib/scrts/rev-secret')
-let OutputDescription = require('../lib/output-description')
+let Output = require('../lib/output')
 let asink = require('asink')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
 let Bn = require('yours-bitcoin/lib/bn')
@@ -115,7 +115,7 @@ describe('Agent', function () {
     })
   })
 
-  describe('#sendOutputDescriptions', function () {
+  describe('#sendOutputs', function () {
     it.skip('should work', function () {
       return asink(function * () {
         let alice = new Agent('Alice')
@@ -130,12 +130,12 @@ describe('Agent', function () {
         let revSecret = new RevSecret()
         yield revSecret.asyncInitialize()
 
-        let outputDescriptions = [
-          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revSecret, Bn(1e7)),
-          new OutputDescription(alice.id, 'finalDestId1', 'htlc', htlcSecret, revSecret, Bn(1e7)),
-          new OutputDescription(bob.id, 'finalDestId1', 'pubKey', htlcSecret, revSecret, Bn(1e7))
+        let outputs = [
+          new Output(alice.id, 'finalDestId1', 'htlc', htlcSecret, revSecret, Bn(1e7)),
+          new Output(alice.id, 'finalDestId1', 'htlc', htlcSecret, revSecret, Bn(1e7)),
+          new Output(bob.id, 'finalDestId1', 'pubKey', htlcSecret, revSecret, Bn(1e7))
         ]
-        let changeOutput = new OutputDescription(
+        let changeOutput = new Output(
           bob.id, 'finalDestId2', 'pubKey', htlcSecret, revSecret
         )
 
@@ -143,7 +143,7 @@ describe('Agent', function () {
         yield alice.remoteAgent.asyncOpenChannel(Bn(1e8), yield alice.asyncToPublic())
 
         alice.sender = true
-        yield alice.remoteAgent.asyncSendOutputDescriptions(outputDescriptions, changeOutput)
+        yield alice.remoteAgent.asyncSendOutputs(outputs, changeOutput)
 
         alice.commitments.length.should.equal(1)
         alice.other.commitments.length.should.equal(1)
@@ -153,7 +153,7 @@ describe('Agent', function () {
         bob.other.commitments.length.should.equal(1)
         should.exist(bob.other.commitments[0].txb)
 
-        yield bob.asyncSendOutputDescriptions(outputDescriptions, changeOutput)
+        yield bob.asyncSendOutputs(outputs, changeOutput)
 
         // check length of the commitments list
         alice.commitments.length.should.equal(2)
@@ -164,7 +164,7 @@ describe('Agent', function () {
         should.exist(bob.other.commitments[1].txb)
 
         // check that the revSecret has been added
-        should.exist(bob.commitments[0].outputDescriptions[0].revSecret)
+        should.exist(bob.commitments[0].outputs[0].revSecret)
 
         let txVerifier, error
         // verify bob's commitmentTx

@@ -2,7 +2,7 @@
 'use strict'
 let should = require('should')
 let asink = require('asink')
-let OutputDescription = require('../../lib/output-description')
+let Output = require('../../lib/output')
 let Commitment = require('../../lib/txs/commitment')
 let Funding = require('../../lib/txs/funding')
 let HtlcSecret = require('../../lib/scrts/htlc-secret')
@@ -18,7 +18,7 @@ let Interp = require('yours-bitcoin/lib/interp')
 
 let bob, carol
 let htlcSecret, revSecret
-let xPubs, outputDescriptions
+let xPubs, outputs
 
 describe('Commitment', function () {
   it('should exist', function () {
@@ -72,14 +72,14 @@ describe('Commitment', function () {
         carol: carolBip32Public
       }
 
-      outputDescriptions = [
-        new OutputDescription(
+      outputs = [
+        new Output(
           'htlc',
           'alice', 'bob', 'carol', 'dave',
           'm/1/2', 'm/4/5',
           htlcSecret, revSecret,
           Bn(1e7)),
-        new OutputDescription(
+        new Output(
           'pubKey',
           'alice', 'bob', 'carol', 'dave',
           'm/1/2', 'm/4/5',
@@ -92,7 +92,7 @@ describe('Commitment', function () {
   it('build without signing', function () {
     return asink(function * () {
       let commitment = new Commitment()
-      commitment.outputDescriptions = outputDescriptions
+      commitment.outputs = outputs
       yield commitment.asyncBuild(
         bob.funding.txb.tx.hash(),
         bob.funding.txb.tx.txOuts[0],
@@ -112,8 +112,8 @@ describe('Commitment', function () {
     it('case with only a change output', function () {
       return asink(function * () {
         let commitment = new Commitment()
-        commitment.outputDescriptions = [
-          new OutputDescription(
+        commitment.outputs = [
+          new Output(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
@@ -135,28 +135,28 @@ describe('Commitment', function () {
 
         should.exist(commitment)
         should.exist(commitment.txb)
-        should.exist(commitment.outputDescriptions)
+        should.exist(commitment.outputs)
 
-        should.exist(commitment.outputDescriptions[0])
-        should.exist(commitment.outputDescriptions[0].redeemScript)
-        should.exist(commitment.outputDescriptions[0].scriptPubkey)
+        should.exist(commitment.outputs[0])
+        should.exist(commitment.outputs[0].redeemScript)
+        should.exist(commitment.outputs[0].scriptPubkey)
 
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].revSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[0].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[0].revSecret)
       }, this)
     })
 
     it('case with one pubKey output and a change output', function () {
       return asink(function * () {
         let commitment = new Commitment()
-        commitment.outputDescriptions = [
-          new OutputDescription(
+        commitment.outputs = [
+          new Output(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
             htlcSecret, revSecret,
             Bn(1e7)),
-          new OutputDescription(
+          new Output(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
@@ -179,34 +179,34 @@ describe('Commitment', function () {
 
         should.exist(commitment)
         should.exist(commitment.txb)
-        should.exist(commitment.outputDescriptions)
+        should.exist(commitment.outputs)
 
-        should.exist(commitment.outputDescriptions[0])
-        should.exist(commitment.outputDescriptions[0].redeemScript)
-        should.exist(commitment.outputDescriptions[0].scriptPubkey)
+        should.exist(commitment.outputs[0])
+        should.exist(commitment.outputs[0].redeemScript)
+        should.exist(commitment.outputs[0].scriptPubkey)
 
-        should.exist(commitment.outputDescriptions[1])
-        should.exist(commitment.outputDescriptions[1].redeemScript)
-        should.exist(commitment.outputDescriptions[1].scriptPubkey)
+        should.exist(commitment.outputs[1])
+        should.exist(commitment.outputs[1].redeemScript)
+        should.exist(commitment.outputs[1].scriptPubkey)
 
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].revSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].revSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[0].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[0].revSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[1].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[1].revSecret)
       }, this)
     })
 
     it('case with one revocable pubKey output and a change output', function () {
       return asink(function * () {
         let commitment = new Commitment()
-        commitment.outputDescriptions = [
-          new OutputDescription(
+        commitment.outputs = [
+          new Output(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
             htlcSecret, revSecret,
             Bn(1e7)),
-          new OutputDescription(
+          new Output(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
@@ -229,34 +229,34 @@ describe('Commitment', function () {
 
         should.exist(commitment)
         should.exist(commitment.txb)
-        should.exist(commitment.outputDescriptions)
+        should.exist(commitment.outputs)
 
-        should.exist(commitment.outputDescriptions[0])
-        should.exist(commitment.outputDescriptions[0].redeemScript)
-        should.exist(commitment.outputDescriptions[0].scriptPubkey)
+        should.exist(commitment.outputs[0])
+        should.exist(commitment.outputs[0].redeemScript)
+        should.exist(commitment.outputs[0].scriptPubkey)
 
-        should.exist(commitment.outputDescriptions[1])
-        should.exist(commitment.outputDescriptions[1].redeemScript)
-        should.exist(commitment.outputDescriptions[1].scriptPubkey)
+        should.exist(commitment.outputs[1])
+        should.exist(commitment.outputs[1].redeemScript)
+        should.exist(commitment.outputs[1].scriptPubkey)
 
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].revSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].revSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[0].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[0].revSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[1].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[1].revSecret)
       }, this)
     })
 
     it('case with one htlc output and a change output', function () {
       return asink(function * () {
         let commitment = new Commitment()
-        commitment.outputDescriptions = [
-          new OutputDescription(
+        commitment.outputs = [
+          new Output(
             'htlc',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
             htlcSecret, revSecret,
             Bn(1e7)),
-          new OutputDescription(
+          new Output(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
@@ -279,34 +279,34 @@ describe('Commitment', function () {
 
         should.exist(commitment)
         should.exist(commitment.txb)
-        should.exist(commitment.outputDescriptions)
+        should.exist(commitment.outputs)
 
-        should.exist(commitment.outputDescriptions[0])
-        should.exist(commitment.outputDescriptions[0].redeemScript)
-        should.exist(commitment.outputDescriptions[0].scriptPubkey)
+        should.exist(commitment.outputs[0])
+        should.exist(commitment.outputs[0].redeemScript)
+        should.exist(commitment.outputs[0].scriptPubkey)
 
-        should.exist(commitment.outputDescriptions[1])
-        should.exist(commitment.outputDescriptions[1].redeemScript)
-        should.exist(commitment.outputDescriptions[1].scriptPubkey)
+        should.exist(commitment.outputs[1])
+        should.exist(commitment.outputs[1].redeemScript)
+        should.exist(commitment.outputs[1].scriptPubkey)
 
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].revSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].revSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[0].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[0].revSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[1].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[1].revSecret)
       }, this)
     })
 
     it('case with one revocable htlc output and a change output', function () {
       return asink(function * () {
         let commitment = new Commitment()
-        commitment.outputDescriptions = [
-          new OutputDescription(
+        commitment.outputs = [
+          new Output(
             'htlc',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
             htlcSecret, revSecret,
             Bn(1e7)),
-          new OutputDescription(
+          new Output(
             'pubKey',
             'alice', 'bob', 'carol', 'dave',
             'm/1/2', 'm/4/5',
@@ -329,20 +329,20 @@ describe('Commitment', function () {
 
         should.exist(commitment)
         should.exist(commitment.txb)
-        should.exist(commitment.outputDescriptions)
+        should.exist(commitment.outputs)
 
-        should.exist(commitment.outputDescriptions[0])
-        should.exist(commitment.outputDescriptions[0].redeemScript)
-        should.exist(commitment.outputDescriptions[0].scriptPubkey)
+        should.exist(commitment.outputs[0])
+        should.exist(commitment.outputs[0].redeemScript)
+        should.exist(commitment.outputs[0].scriptPubkey)
 
-        should.exist(commitment.outputDescriptions[1])
-        should.exist(commitment.outputDescriptions[1].redeemScript)
-        should.exist(commitment.outputDescriptions[1].scriptPubkey)
+        should.exist(commitment.outputs[1])
+        should.exist(commitment.outputs[1].redeemScript)
+        should.exist(commitment.outputs[1].scriptPubkey)
 
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[0].revSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].htlcSecret)
-        SecretHelper.checkSecretNotHidden(commitment.outputDescriptions[1].revSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[0].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[0].revSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[1].htlcSecret)
+        SecretHelper.checkSecretNotHidden(commitment.outputs[1].revSecret)
       }, this)
     })
   })
@@ -351,7 +351,7 @@ describe('Commitment', function () {
     it('should create a json object', function () {
       return asink(function * () {
         let commitment = new Commitment()
-        commitment.outputDescriptions = outputDescriptions
+        commitment.outputs = outputs
         yield commitment.asyncBuild(
           bob.funding.txb.tx.hash(),
           bob.funding.txb.tx.txOuts[0],
@@ -363,12 +363,12 @@ describe('Commitment', function () {
 
         should.exist(json)
         should.exist(json.txb)
-        should.exist(json.outputDescriptions)
+        should.exist(json.outputs)
 
-        SecretHelper.checkSecretNotHidden(json.outputDescriptions[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(json.outputDescriptions[0].revSecret)
-        SecretHelper.checkSecretNotHidden(json.outputDescriptions[1].htlcSecret)
-        SecretHelper.checkSecretNotHidden(json.outputDescriptions[1].revSecret)
+        SecretHelper.checkSecretNotHidden(json.outputs[0].htlcSecret)
+        SecretHelper.checkSecretNotHidden(json.outputs[0].revSecret)
+        SecretHelper.checkSecretNotHidden(json.outputs[1].htlcSecret)
+        SecretHelper.checkSecretNotHidden(json.outputs[1].revSecret)
       }, this)
     })
   })
@@ -377,7 +377,7 @@ describe('Commitment', function () {
     it('should create Commitment from a json object', function () {
       return asink(function * () {
         let commitment = new Commitment()
-        commitment.outputDescriptions = outputDescriptions
+        commitment.outputs = outputs
         yield commitment.asyncBuild(
           bob.funding.txb.tx.hash(),
           bob.funding.txb.tx.txOuts[0],
@@ -390,12 +390,12 @@ describe('Commitment', function () {
 
         should.exist(txo)
         should.exist(txo.txb)
-        should.exist(txo.outputDescriptions)
+        should.exist(txo.outputs)
 
-        SecretHelper.checkSecretNotHidden(txo.outputDescriptions[0].htlcSecret)
-        SecretHelper.checkSecretNotHidden(txo.outputDescriptions[0].revSecret)
-        SecretHelper.checkSecretNotHidden(txo.outputDescriptions[1].htlcSecret)
-        SecretHelper.checkSecretNotHidden(txo.outputDescriptions[1].revSecret)
+        SecretHelper.checkSecretNotHidden(txo.outputs[0].htlcSecret)
+        SecretHelper.checkSecretNotHidden(txo.outputs[0].revSecret)
+        SecretHelper.checkSecretNotHidden(txo.outputs[1].htlcSecret)
+        SecretHelper.checkSecretNotHidden(txo.outputs[1].revSecret)
       }, this)
     })
   })
@@ -404,7 +404,7 @@ describe('Commitment', function () {
     it('should create a public Commitment object', function () {
       return asink(function * () {
         let commitment = new Commitment()
-        commitment.outputDescriptions = outputDescriptions
+        commitment.outputs = outputs
         yield commitment.asyncBuild(
           bob.funding.txb.tx.hash(),
           bob.funding.txb.tx.txOuts[0],
@@ -415,12 +415,12 @@ describe('Commitment', function () {
 
         should.exist(txo)
         should.exist(txo.txb)
-        should.exist(txo.outputDescriptions)
+        should.exist(txo.outputs)
 
-        SecretHelper.checkSecretHidden(txo.outputDescriptions[0].htlcSecret)
-        SecretHelper.checkSecretHidden(txo.outputDescriptions[0].revSecret)
-        SecretHelper.checkSecretHidden(txo.outputDescriptions[1].htlcSecret)
-        SecretHelper.checkSecretHidden(txo.outputDescriptions[1].revSecret)
+        SecretHelper.checkSecretHidden(txo.outputs[0].htlcSecret)
+        SecretHelper.checkSecretHidden(txo.outputs[0].revSecret)
+        SecretHelper.checkSecretHidden(txo.outputs[1].htlcSecret)
+        SecretHelper.checkSecretHidden(txo.outputs[1].revSecret)
       }, this)
     })
   })

@@ -2,7 +2,7 @@
 'use strict'
 let should = require('should')
 let asink = require('asink')
-let OutputDescription = require('../../lib/output-description')
+let Output = require('../../lib/output')
 let Commitment = require('../../lib/txs/commitment')
 let Funding = require('../../lib/txs/funding')
 let HtlcSecret = require('../../lib/scrts/htlc-secret')
@@ -33,14 +33,14 @@ let buildPubKeyCommitment = function () {
     // to build a transaction with pubKey outputs we must make sure that the
     // builder (carol) is the channel destination
     pubKeyCommitment = new Commitment()
-    pubKeyCommitment.outputDescriptions = [
-      new OutputDescription(
+    pubKeyCommitment.outputs = [
+      new Output(
         'pubKey',
         'alice', 'bob', 'carol', 'dave',
         'm/1/2', 'm/1/2',
         htlcSecret, revSecret,
         Bn(1e7)),
-      new OutputDescription(
+      new Output(
         'pubKey',
         'alice', 'bob', 'carol', 'dave',
         'm/4/5', 'm/4/5',
@@ -64,14 +64,14 @@ let buildRevPubKeyCommitment = function () {
     // must make sure that the
     // builder (carol) is _not_ the channel destination
     revPubKeyCommitment = new Commitment()
-    revPubKeyCommitment.outputDescriptions = [
-      new OutputDescription(
+    revPubKeyCommitment.outputs = [
+      new Output(
         'pubKey',
         'alice', 'bob', 'carol', 'dave',
         'm/1/2', 'm/1/2',
         htlcSecret, revSecret,
         Bn(1e7)),
-      new OutputDescription(
+      new Output(
         'pubKey',
         'alice', 'bob', 'carol', 'dave',
         'm/4/5', 'm/4/5',
@@ -94,14 +94,14 @@ let buildHtlcCommitment = function () {
     // to build a transaction with htlc outputs we must make sure that the
     // builder (carol) is the channel destination
     htlcCommitment = new Commitment()
-    htlcCommitment.outputDescriptions = [
-      new OutputDescription(
+    htlcCommitment.outputs = [
+      new Output(
         'htlc',
         'alice', 'bob', 'carol', 'dave',
         'm/1/2', 'm/4/5',
         htlcSecret, revSecret,
         Bn(1e7)),
-      new OutputDescription(
+      new Output(
         'htlc',
         'alice', 'bob', 'carol', 'dave',
         'm/1/2', 'm/4/5',
@@ -125,14 +125,14 @@ let buildRevHtlcCommitment = function () {
     // must make sure that the
     // builder (carol) is _not_ the channel destination
     revHtlcCommitment = new Commitment()
-    revHtlcCommitment.outputDescriptions = [
-      new OutputDescription(
+    revHtlcCommitment.outputs = [
+      new Output(
         'htlc',
         'alice', 'bob', 'carol', 'dave',
         'm/1/2', 'm/4/5',
         htlcSecret, revSecret,
         Bn(1e7)),
-      new OutputDescription(
+      new Output(
         'htlc',
         'alice', 'bob', 'carol', 'dave',
         'm/1/2', 'm/4/5',
