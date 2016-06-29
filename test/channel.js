@@ -6,9 +6,14 @@ let Bn = require('yours-bitcoin/lib/bn')
 let Channel = require('../lib/channel')
 let MsgUpdate = require('../lib/msgs/msg-update')
 let MsgSecrets = require('../lib/msgs/msg-secrets')
+let Spending = require('../lib/txs/spending')
+let Consts = require('../lib/consts.js')
 let Tx = require('yours-bitcoin/lib/tx')
 let TxIn = require('yours-bitcoin/lib/tx-in')
 let Script = require('yours-bitcoin/lib/script')
+let PrivKey = require('yours-bitcoin/lib/priv-key')
+// let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
+// let Interp = require('yours-bitcoin/lib/interp')
 let asink = require('asink')
 let should = require('should')
 
@@ -239,6 +244,29 @@ describe('Channel', function () {
         bob.msg = bob.channel.asyncHandleMsgSecrets(bob.msg)
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
         ;(bob.msg === null).should.equal(true)
+
+        /* ---- closing the channel ---- */
+
+        // console.log(carol.channel.myCommitments[1].outputList);
+
+        // carol builds a spending transaction
+        let spending = new Spending()
+        yield spending.asyncBuild(
+          new Address().fromPrivKey(new PrivKey().fromRandom()),
+          carol.channel.myCommitments[1],
+          carol.channel.myXPrv,
+          carol.channel.theirId,
+          Consts.CSV_DELAY)
+
+        // yield spending.asyncBuild(address, revPubKeyCommitment, carolBip32, carol.id, Bn(100))
+        /*
+        let txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
+        let error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        if (error) {
+          console.log(txVerifier.getDebugString())
+        }
+        error.should.equal(false)
+        */
       }, this)
     })
   })
