@@ -453,10 +453,13 @@ describe('Spending', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { revSecret: revSecret })
+        let secretMap = new Map()
+        secretMap.set(revSecret.hash.toString('hex'), revSecret.buf)
         let spendingScriptObj = spending.revPubKeyInputScript(
           { channelDestId: 'carolId', revSecret: revSecret },
           'bobId',
-          Consts.CSV_DELAY.sub(Bn(1)))
+          Consts.CSV_DELAY.sub(Bn(1)),
+          secretMap)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -478,10 +481,13 @@ describe('Spending', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { revSecret: revSecret })
+        let secretMap = new Map()
+        secretMap.set(revSecret.hash.toString('hex'), revSecret.buf)
         let spendingScriptObj = spending.revPubKeyInputScript(
           { channelDestId: 'aliceId', revSecret: revSecret },
           'bobId',
-          Consts.CSV_DELAY)
+          Consts.CSV_DELAY,
+          secretMap)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -501,12 +507,13 @@ describe('Spending', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { revSecret: revSecret })
-        let revSecret2 = new RevSecret()
-        yield revSecret2.asyncInitialize()
+        let secretMap = new Map()
+        secretMap.set(revSecret.hash.toString('hex'), new Buffer('hi'))
         let spendingScriptObj = spending.revPubKeyInputScript(
-          { channelDestId: 'aliceId', revSecret: revSecret2 },
+          { channelDestId: 'aliceId', revSecret: revSecret },
           'bobId',
-          Consts.CSV_DELAY)
+          Consts.CSV_DELAY,
+          secretMap)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,

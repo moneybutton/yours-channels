@@ -7,7 +7,6 @@ let Channel = require('../lib/channel')
 let MsgUpdate = require('../lib/msgs/msg-update')
 let MsgSecrets = require('../lib/msgs/msg-secrets')
 let Consts = require('../lib/consts.js')
-let Secret = require('../lib/scrts/secret')
 let Tx = require('yours-bitcoin/lib/tx')
 let TxIn = require('yours-bitcoin/lib/tx-in')
 let Script = require('yours-bitcoin/lib/script')
@@ -263,8 +262,8 @@ describe('Channel', function () {
 
     it('Bob opens a channel with Carol, sends 50000 satoshi to Carol via an htlc, Carol sends 2000 satoshi back to Bob, both validate every commitment', function () {
       return asink(function * () {
-        let htlcSecret = yield new Secret().asyncInitialize()
         let { bob, carol } = yield openChannel()
+        let htlcSecret = yield bob.channel.asyncNewRevSecret()
         yield send(bob, carol, Bn(50000), htlcSecret)
         yield send(carol, bob, Bn(2000))
       }, this)
