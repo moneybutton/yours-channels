@@ -6,14 +6,14 @@ let Bn = require('yours-bitcoin/lib/bn')
 let Channel = require('../lib/channel')
 let MsgUpdate = require('../lib/msgs/msg-update')
 let MsgSecrets = require('../lib/msgs/msg-secrets')
-// let Spending = require('../lib/txs/spending')
-// let Consts = require('../lib/consts.js')
+let Spending = require('../lib/txs/spending')
+let Consts = require('../lib/consts.js')
 let Tx = require('yours-bitcoin/lib/tx')
 let TxIn = require('yours-bitcoin/lib/tx-in')
 let Script = require('yours-bitcoin/lib/script')
-// let PrivKey = require('yours-bitcoin/lib/priv-key')
-// let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
-// let Interp = require('yours-bitcoin/lib/interp')
+let PrivKey = require('yours-bitcoin/lib/priv-key')
+let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
+let Interp = require('yours-bitcoin/lib/interp')
 let asink = require('asink')
 let should = require('should')
 
@@ -129,27 +129,19 @@ describe('Channel', function () {
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
         ;(bob.msg === null).should.equal(true)
 
-        /*
-        let spending, txVerifier, error
-        // this might work
-
         // bob tests the validity of the refund transaction by building a spending
         // tx but not broadcasting it
-        spending = new Spending()
-        yield spending.asyncBuild(
+        bob.spending = new Spending()
+        yield bob.spending.asyncBuild(
           new Address().fromPrivKey(new PrivKey().fromRandom()),
           bob.channel.myCommitments[0],
           bob.channel.myChanXPrv,
           bob.channel.myId,
-          Consts.CSV_DELAY)
+          Consts.CSV_DELAY
+        )
 
-        txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
-        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
-        if (error) {
-          console.log(txVerifier.getDebugString())
-        }
-        error.should.equal(false)
-        */
+        bob.txVerifier = new TxVerifier(bob.spending.txb.tx, bob.spending.txb.uTxOutMap)
+        bob.txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false)
 
         /* ---- sending a payment ---- */
 
