@@ -205,42 +205,21 @@ describe('Channel', function () {
         )
         bob.txVerifier = new TxVerifier(bob.spending.txb.tx, bob.spending.txb.uTxOutMap)
         bob.txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false)
-        /*
-        // bob tests the validity of the new commitment transaction by building a spending
-        // tx but not broadcasting it
-        spending = new Spending()
-        yield spending.asyncBuild(
-          new Address().fromPrivKey(new PrivKey().fromRandom()),
-          bob.channel.myCommitments[1],
-          bob.channel.myChanXPrv,
-          bob.channel.myId,
-          Consts.CSV_DELAY)
-
-        txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
-        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
-        if (error) {
-          console.log(txVerifier.getDebugString())
-        }
-        error.should.equal(false)
-        */
 
         /*
         // carol tests the validity of the new commitment transaction by building a spending
         // tx but not broadcasting it
-        spending = new Spending()
-        yield spending.asyncBuild(
+        carol.spending = yield carol.channel.asyncBuildSpending(
           new Address().fromPrivKey(new PrivKey().fromRandom()),
           carol.channel.myCommitments[1],
           carol.channel.myChanXPrv,
           carol.channel.myId,
-          Consts.CSV_DELAY)
-
-        txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
-        error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
-        if (error) {
-          console.log(txVerifier.getDebugString())
-        }
-        error.should.equal(false)
+          Consts.CSV_DELAY
+        )
+        carol.txVerifier = new TxVerifier(carol.spending.txb.tx, carol.spending.txb.uTxOutMap)
+        carol.verifyStr = carol.txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
+        console.log(carol.txVerifier.getDebugString())
+        carol.verifyStr.should.equal(false)
         */
 
         /* ---- sending a second payment ---- */
