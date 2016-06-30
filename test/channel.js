@@ -123,6 +123,11 @@ describe('Channel', function () {
         bob.msg = bob.channel.asyncHandleMsgSecrets(bob.msg)
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
         ;(bob.msg === null).should.equal(true)
+
+        // Now carol and bob monitor the multisig address until they find that
+        // the refund transaction has one confirmation
+        yield carol.channel.asyncConfirmFundingTx(bob.channel.fundingTx)
+
         return { bob, carol }
       }, this)
     }
@@ -195,7 +200,7 @@ describe('Channel', function () {
       }, this)
     }
 
-    it('Bob opens a channel with Carol, sends 50000 satoshi in first payment, sends 2000 satoshi in second payment, closes channel', function () {
+    it('Bob opens a channel with Carol, sends 50000 satoshi in first payment, sends 2000 satoshi in second payment, both validate every commitment', function () {
       return asink(function * () {
         let { bob, carol } = yield openChannel()
         yield send(bob, carol, Bn(50000))
@@ -229,9 +234,29 @@ describe('Channel', function () {
       }, this)
     })
 
-    it.skip('Bob opens a channel with Carol, sends 50000 satoshi to Carol, Carol sends 2000 satoshi back to Bob, Bob closes channel', function () {
+    it('Bob opens a channel with Carol, sends 50000 satoshi to Carol, Carol sends 2000 satoshi back to Bob, both validate every commitment', function () {
       return asink(function * () {
-        // TODO
+        let { bob, carol } = yield openChannel()
+        yield send(bob, carol, Bn(50000))
+        yield send(carol, bob, Bn(2000))
+
+        /* ---- closing the channel ---- */
+
+        yield close(bob, bob.channel.myCommitments[0])
+
+        // when carol tries to build a spending transaction for the refund tx
+        // this should return the error 'no spendable outputs found'
+        try {
+          yield close(carol, carol.channel.myCommitments[0])
+          true.should.equal(false)
+        } catch (err) {
+          err.message.should.equal('no spendable outputs found')
+        }
+
+        yield close(bob, bob.channel.myCommitments[1])
+        yield close(carol, carol.channel.myCommitments[1])
+        yield close(bob, bob.channel.myCommitments[2])
+        yield close(carol, carol.channel.myCommitments[2])
       }, this)
     })
   })
