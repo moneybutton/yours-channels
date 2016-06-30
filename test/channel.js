@@ -48,7 +48,7 @@ describe('Channel', function () {
   })
 
   describe('API Example', function () {
-    it('Bob opens a channel with Carol, sends 50000 satoshi in first payment, sends 50000 in second payment, closes channel', function () {
+    it('Bob opens a channel with Carol, sends 50000 satoshi in first payment, sends 2000 satoshi in second payment, closes channel', function () {
       return asink(function * () {
         let bob = {}
         let carol = {}
@@ -142,7 +142,7 @@ describe('Channel', function () {
 
         // A this point, the channel is now open. Bob wishes pay Carol 1000 satoshis.
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
-        bob.msg = yield bob.channel.asyncPay(Bn(100000))
+        bob.msg = yield bob.channel.asyncPay(Bn(50000))
         bob.channel.state.should.equal(Channel.STATE_BUILT)
 
         // Bob sends the message to Carol.
@@ -167,10 +167,10 @@ describe('Channel', function () {
         // some sanity checks
         bob.channel.myCommitments.length.should.equal(2)
         bob.channel.myCommitments[1].txb.tx.txOuts.length.should.equal(2)
-        bob.channel.myCommitments[1].txb.tx.txOuts[0].valueBn.toString().should.equal('100000')
+        bob.channel.myCommitments[1].txb.tx.txOuts[0].valueBn.toString().should.equal('50000')
         carol.channel.myCommitments.length.should.equal(2)
         carol.channel.myCommitments[1].txb.tx.txOuts.length.should.equal(2)
-        carol.channel.myCommitments[1].txb.tx.txOuts[0].valueBn.toString().should.equal('100000')
+        carol.channel.myCommitments[1].txb.tx.txOuts[0].valueBn.toString().should.equal('50000')
 
         // Bob sends response to Carol containing secrets
         carol.msg = bob.msg
@@ -196,6 +196,15 @@ describe('Channel', function () {
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
         ;(bob.msg === null).should.equal(true)
 
+        // bob tests the validity of the new commitment transaction by building a spending
+        // tx but not broadcasting it
+        bob.spending = yield bob.channel.asyncBuildSpending(
+          new Address().fromPrivKey(new PrivKey().fromRandom()),
+          bob.channel.myCommitments[1],
+          Consts.CSV_DELAY
+        )
+        bob.txVerifier = new TxVerifier(bob.spending.txb.tx, bob.spending.txb.uTxOutMap)
+        bob.txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false)
         /*
         // bob tests the validity of the new commitment transaction by building a spending
         // tx but not broadcasting it
