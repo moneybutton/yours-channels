@@ -47,8 +47,8 @@ describe('Channel', function () {
     should.exist(new Channel())
   })
 
-  describe('API Example', function () {
-    it('Bob opens a channel with Carol, sends 50000 satoshi in first payment, sends 2000 satoshi in second payment, closes channel', function () {
+  describe('Integration tests', function () {
+    function openChannel () {
       return asink(function * () {
         let bob = {}
         let carol = {}
@@ -82,7 +82,6 @@ describe('Channel', function () {
         // Carol already has Bob's xPub. Carol confirms that the id is
         // equal to the multiSigAddr she gets when deriving the chanPath from
         // the xPub.
-        ;(carol.msg instanceof MsgUpdate).should.equal(true)
         let multiSigScript = Script.fromPubKeys(2, [carol.theirXPub.derive(carol.msg.chanPath).pubKey, carol.myXPrv.derive(carol.msg.chanPath).pubKey])
         carol.multiSigAddr = Address.fromRedeemScript(multiSigScript)
         carol.msg.chanId.should.equal(carol.multiSigAddr.toString())
@@ -101,7 +100,6 @@ describe('Channel', function () {
         bob.msg = carol.msg
 
         // Bob does basic validation on message. TODO: Add more validation.
-        ;(bob.msg instanceof MsgUpdate).should.equal(true)
         bob.msg.getFundingAmount().eq(fundingAmount).should.equal(true)
         bob.channel.state.should.equal(Channel.STATE_BUILT)
         bob.msg = yield bob.channel.asyncHandleMsgUpdate(bob.msg)
@@ -111,7 +109,6 @@ describe('Channel', function () {
         carol.msg = bob.msg
 
         // Carol does basic validation of message
-        ;(carol.msg instanceof MsgSecrets).should.equal(true)
         carol.msg.args.secrets.length.should.equal(0) // no earlier commitment tx for refund tx
         carol.channel.state.should.equal(Channel.STATE_BUILT_AND_STORED)
         carol.msg = yield carol.channel.asyncHandleMsgSecrets(carol.msg)
@@ -121,25 +118,105 @@ describe('Channel', function () {
         bob.msg = carol.msg
 
         // Bob does basic validation
-        ;(bob.msg instanceof MsgSecrets).should.equal(true)
         carol.msg.args.secrets.length.should.equal(0) // no earlier commitment tx for refund tx
         bob.channel.state.should.equal(Channel.STATE_STORED)
         bob.msg = bob.channel.asyncHandleMsgSecrets(bob.msg)
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
         ;(bob.msg === null).should.equal(true)
 
+        return { bob, carol }
+      }, this)
+    }
+
+    function send (from, to, amount) {
+      return asink(function * () {
+        // A this point, the channel is now open. Bob wishes pay to 1000 satoshis.
+        from.channel.state.should.equal(Channel.STATE_INITIAL)
+        from.msg = yield from.channel.asyncPay(amount)
+        from.channel.state.should.equal(Channel.STATE_BUILT)
+
+        // from sends the message to to.
+        to.msg = from.msg
+
+        // to does basic validation of the update message
+        ;(to.msg instanceof MsgUpdate).should.equal(true)
+        to.channel.state.should.equal(Channel.STATE_INITIAL)
+        to.msg = yield to.channel.asyncHandleMsgUpdate(to.msg)
+        to.channel.state.should.equal(Channel.STATE_BUILT_AND_STORED)
+
+        // to sends update to from
+        from.msg = to.msg
+
+        // from handles update message
+        ;(from.msg instanceof MsgUpdate).should.equal(true)
+        from.msg.getFundingAmount().eq(fundingAmount).should.equal(true)
+        from.channel.state.should.equal(Channel.STATE_BUILT)
+        from.msg = yield from.channel.asyncHandleMsgUpdate(from.msg)
+        from.channel.state.should.equal(Channel.STATE_STORED)
+
+        // some sanity checks
+        from.channel.myCommitments.length.should.equal(2)
+        from.channel.myCommitments[1].txb.tx.txOuts.length.should.equal(2)
+        from.channel.myCommitments[1].txb.tx.txOuts[0].valueBn.toString().should.equal('50000')
+        to.channel.myCommitments.length.should.equal(2)
+        to.channel.myCommitments[1].txb.tx.txOuts.length.should.equal(2)
+        to.channel.myCommitments[1].txb.tx.txOuts[0].valueBn.toString().should.equal('50000')
+
+        // from sends response to to containing secrets
+        to.msg = from.msg
+
+        // to does basic validation of the secret message
+        ;(to.msg instanceof MsgSecrets).should.equal(true)
+        to.msg.args.secrets.length.should.equal(1)
+        should.exist(to.msg.args.secrets[0].buf)
+        to.channel.state.should.equal(Channel.STATE_BUILT_AND_STORED)
+        to.msg = yield to.channel.asyncHandleMsgSecrets(to.msg)
+        to.channel.state.should.equal(Channel.STATE_INITIAL)
+
+        // Now to sends the message with her secrets to from
+        from.msg = to.msg
+
+        // from does basic validation of the secret message
+        ;(from.msg instanceof MsgSecrets).should.equal(true)
+        from.msg.args.secrets.length.should.equal(1)
+        // TODO: Should to be retransmitting from's secrets?
+        // should.not.exist(from.msg.args.secrets[0].buf)
+        from.channel.state.should.equal(Channel.STATE_STORED)
+        from.msg = from.channel.asyncHandleMsgSecrets(from.msg)
+        from.channel.state.should.equal(Channel.STATE_INITIAL)
+        ;(from.msg === null).should.equal(true)
+
+        return { bob, carol }
+      }, this)
+    }
+
+    function close (agent, commitment) {
+      return asink(function * () {
         // bob tests the validity of the refund transaction by building a spending
         // tx but not broadcasting it
-        bob.spending = yield bob.channel.asyncBuildSpending(
+        agent.spending = yield agent.channel.asyncBuildSpending(
           new Address().fromPrivKey(new PrivKey().fromRandom()),
-          bob.channel.myCommitments[0],
+          commitment,
           Consts.CSV_DELAY
         )
-        bob.txVerifier = new TxVerifier(bob.spending.txb.tx, bob.spending.txb.uTxOutMap)
-        bob.txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false)
+        agent.txVerifier = new TxVerifier(agent.spending.txb.tx, agent.spending.txb.uTxOutMap)
+        agent.txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false)
+      }, this)
+    }
 
-        // when carol tries to build a spending transaction this should return
-        // the error 'no spendable outputs found'
+    it.only('Bob opens a channel with Carol, sends 50000 satoshi in first payment, sends 2000 satoshi in second payment, closes channel', function () {
+      return asink(function * () {
+
+        let { bob1, carol1 } = yield openChannel()
+        let { bob2, carol2 } = yield send(bob1, carol1, 50000)
+        let { bob3, carol3 } = yield send(bob2, carol2, 2000)
+
+        /* ---- closing the channel ---- */
+
+        close (bob, bob.channel.myCommitments[0])
+
+        // when carol tries to build a spending transaction for the refund tx
+        // this should return the error 'no spendable outputs found'
         try {
           carol.spending = yield carol.channel.asyncBuildSpending(
             new Address().fromPrivKey(new PrivKey().fromRandom()),
@@ -151,143 +228,18 @@ describe('Channel', function () {
           err.message.should.equal('no spendable outputs found')
         }
 
-        /* ---- sending a payment ---- */
+        close(bob, bob.channel.myCommitments[1])
+        close(carol, carol.channel.myCommitments[1])
+        close(bob, bob.channel.myCommitments[2])
+        close(carol, carol.channel.myCommitments[2])
+      }, this)
+    })
 
-        // A this point, the channel is now open. Bob wishes pay Carol 1000 satoshis.
-        bob.channel.state.should.equal(Channel.STATE_INITIAL)
-        bob.msg = yield bob.channel.asyncPay(Bn(50000))
-        bob.channel.state.should.equal(Channel.STATE_BUILT)
+    it.only('Bob opens a channel with Carol, sends 50000 satoshi to Carol, Carol sends 2000 satoshi back to Bob, Bob closes channel', function () {
+      return asink(function * () {
+        /* ---- open the channel ---- */
 
-        // Bob sends the message to Carol.
-        carol.msg = bob.msg
-
-        // Carol does basic validation of the update message
-        ;(carol.msg instanceof MsgUpdate).should.equal(true)
-        carol.channel.state.should.equal(Channel.STATE_INITIAL)
-        carol.msg = yield carol.channel.asyncHandleMsgUpdate(carol.msg)
-        carol.channel.state.should.equal(Channel.STATE_BUILT_AND_STORED)
-
-        // Carol sends update to Bob
-        bob.msg = carol.msg
-
-        // Bob handles update message
-        ;(bob.msg instanceof MsgUpdate).should.equal(true)
-        bob.msg.getFundingAmount().eq(fundingAmount).should.equal(true)
-        bob.channel.state.should.equal(Channel.STATE_BUILT)
-        bob.msg = yield bob.channel.asyncHandleMsgUpdate(bob.msg)
-        bob.channel.state.should.equal(Channel.STATE_STORED)
-
-        // some sanity checks
-        bob.channel.myCommitments.length.should.equal(2)
-        bob.channel.myCommitments[1].txb.tx.txOuts.length.should.equal(2)
-        bob.channel.myCommitments[1].txb.tx.txOuts[0].valueBn.toString().should.equal('50000')
-        carol.channel.myCommitments.length.should.equal(2)
-        carol.channel.myCommitments[1].txb.tx.txOuts.length.should.equal(2)
-        carol.channel.myCommitments[1].txb.tx.txOuts[0].valueBn.toString().should.equal('50000')
-
-        // Bob sends response to Carol containing secrets
-        carol.msg = bob.msg
-
-        // Carol does basic validation of the secret message
-        ;(carol.msg instanceof MsgSecrets).should.equal(true)
-        carol.msg.args.secrets.length.should.equal(1)
-        should.exist(carol.msg.args.secrets[0].buf)
-        carol.channel.state.should.equal(Channel.STATE_BUILT_AND_STORED)
-        carol.msg = yield carol.channel.asyncHandleMsgSecrets(carol.msg)
-        carol.channel.state.should.equal(Channel.STATE_INITIAL)
-
-        // Now Carol sends the message with her secrets to Bob
-        bob.msg = carol.msg
-
-        // Bob does basic validation of the secret message
-        ;(bob.msg instanceof MsgSecrets).should.equal(true)
-        bob.msg.args.secrets.length.should.equal(1)
-        // TODO: Should carol be retransmitting Bob's secrets?
-        // should.not.exist(bob.msg.args.secrets[0].buf)
-        bob.channel.state.should.equal(Channel.STATE_STORED)
-        bob.msg = bob.channel.asyncHandleMsgSecrets(bob.msg)
-        bob.channel.state.should.equal(Channel.STATE_INITIAL)
-        ;(bob.msg === null).should.equal(true)
-
-        // bob tests the validity of the new commitment transaction by building a spending
-        // tx but not broadcasting it
-        bob.spending = yield bob.channel.asyncBuildSpending(
-          new Address().fromPrivKey(new PrivKey().fromRandom()),
-          bob.channel.myCommitments[1],
-          Consts.CSV_DELAY
-        )
-        bob.txVerifier = new TxVerifier(bob.spending.txb.tx, bob.spending.txb.uTxOutMap)
-        bob.txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false)
-
-        // carol tests the validity of the new commitment transaction by building a spending
-        // tx but not broadcasting it
-        carol.spending = yield carol.channel.asyncBuildSpending(
-          new Address().fromPrivKey(new PrivKey().fromRandom()),
-          carol.channel.myCommitments[1],
-          Consts.CSV_DELAY
-        )
-
-        carol.txVerifier = new TxVerifier(carol.spending.txb.tx, carol.spending.txb.uTxOutMap)
-        carol.verifyStr = carol.txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
-        carol.verifyStr.should.equal(false)
-
-        /* ---- sending a second payment ---- */
-
-        // Bob wishes pays Carol an additional 2000 satoshis.
-        bob.channel.state.should.equal(Channel.STATE_INITIAL)
-        bob.msg = yield bob.channel.asyncPay(Bn(2000))
-        bob.channel.state.should.equal(Channel.STATE_BUILT)
-
-        // Bob sends the message to Carol.
-        carol.msg = bob.msg
-
-        // Carol does basic validation of the update message
-        ;(carol.msg instanceof MsgUpdate).should.equal(true)
-        carol.channel.state.should.equal(Channel.STATE_INITIAL)
-        carol.msg = yield carol.channel.asyncHandleMsgUpdate(carol.msg)
-        carol.channel.state.should.equal(Channel.STATE_BUILT_AND_STORED)
-
-        // Carol sends update to Bob
-        bob.msg = carol.msg
-
-        // Bob handles update message
-        ;(bob.msg instanceof MsgUpdate).should.equal(true)
-        bob.msg.getFundingAmount().eq(fundingAmount).should.equal(true)
-        bob.channel.state.should.equal(Channel.STATE_BUILT)
-        bob.msg = yield bob.channel.asyncHandleMsgUpdate(bob.msg)
-        bob.channel.state.should.equal(Channel.STATE_STORED)
-
-        // some sanity checks
-        bob.channel.myCommitments.length.should.equal(3)
-        bob.channel.myCommitments[2].txb.tx.txOuts.length.should.equal(3)
-        bob.channel.myCommitments[2].txb.tx.txOuts[1].valueBn.toString().should.equal('2000')
-        carol.channel.myCommitments.length.should.equal(3)
-        carol.channel.myCommitments[2].txb.tx.txOuts.length.should.equal(3)
-        carol.channel.myCommitments[2].txb.tx.txOuts[1].valueBn.toString().should.equal('2000')
-
-        // Bob sends response to Carol containing secrets
-        carol.msg = bob.msg
-
-        // Carol does basic validation of the secret message
-        ;(carol.msg instanceof MsgSecrets).should.equal(true)
-        carol.msg.args.secrets.length.should.equal(2)
-        should.exist(carol.msg.args.secrets[0].buf)
-        carol.channel.state.should.equal(Channel.STATE_BUILT_AND_STORED)
-        carol.msg = yield carol.channel.asyncHandleMsgSecrets(carol.msg)
-        carol.channel.state.should.equal(Channel.STATE_INITIAL)
-
-        // Now Carol sends the message with her secrets to Bob
-        bob.msg = carol.msg
-
-        // Bob does basic validation of the secret message
-        ;(bob.msg instanceof MsgSecrets).should.equal(true)
-        bob.msg.args.secrets.length.should.equal(2)
-        // TODO: Should carol be retransmitting Bob's secrets?
-        // should.not.exist(bob.msg.args.secrets[0].buf)
-        bob.channel.state.should.equal(Channel.STATE_STORED)
-        bob.msg = bob.channel.asyncHandleMsgSecrets(bob.msg)
-        bob.channel.state.should.equal(Channel.STATE_INITIAL)
-        ;(bob.msg === null).should.equal(true)
+        let { bob, carol } = openChannel()
       }, this)
     })
   })
