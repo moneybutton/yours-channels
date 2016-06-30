@@ -236,7 +236,6 @@ describe('Channel', function () {
 
         /* ---- sending a second payment ---- */
 
-        /*
         // Bob wishes pays Carol an additional 2000 satoshis.
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
         bob.msg = yield bob.channel.asyncPay(Bn(2000))
@@ -251,14 +250,6 @@ describe('Channel', function () {
         carol.msg = yield carol.channel.asyncHandleMsgUpdate(carol.msg)
         carol.channel.state.should.equal(Channel.STATE_BUILT_AND_STORED)
 
-        // some sanity checks
-        bob.channel.myCommitments.length.should.equal(3)
-        bob.channel.myCommitments[2].txb.tx.txOuts.length.should.equal(3)
-        bob.channel.myCommitments[2].txb.tx.txOuts[1].valueBn.toString().should.equal('2000')
-        carol.channel.myCommitments.length.should.equal(3)
-        carol.channel.myCommitments[2].txb.tx.txOuts.length.should.equal(3)
-        carol.channel.myCommitments[2].txb.tx.txOuts[1].valueBn.toString().should.equal('2000')
-
         // Carol sends update to Bob
         bob.msg = carol.msg
 
@@ -268,6 +259,14 @@ describe('Channel', function () {
         bob.channel.state.should.equal(Channel.STATE_BUILT)
         bob.msg = yield bob.channel.asyncHandleMsgUpdate(bob.msg)
         bob.channel.state.should.equal(Channel.STATE_STORED)
+
+        // some sanity checks
+        bob.channel.myCommitments.length.should.equal(3)
+        bob.channel.myCommitments[2].txb.tx.txOuts.length.should.equal(3)
+        bob.channel.myCommitments[2].txb.tx.txOuts[1].valueBn.toString().should.equal('2000')
+        carol.channel.myCommitments.length.should.equal(3)
+        carol.channel.myCommitments[2].txb.tx.txOuts.length.should.equal(3)
+        carol.channel.myCommitments[2].txb.tx.txOuts[1].valueBn.toString().should.equal('2000')
 
         // Bob sends response to Carol containing secrets
         carol.msg = bob.msg
@@ -292,7 +291,6 @@ describe('Channel', function () {
         bob.msg = bob.channel.asyncHandleMsgSecrets(bob.msg)
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
         ;(bob.msg === null).should.equal(true)
-        */
       }, this)
     })
   })
