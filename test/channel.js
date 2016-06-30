@@ -7,6 +7,7 @@ let Channel = require('../lib/channel')
 let MsgUpdate = require('../lib/msgs/msg-update')
 let MsgSecrets = require('../lib/msgs/msg-secrets')
 let Consts = require('../lib/consts.js')
+let Secret = require('../lib/scrts/secret')
 let Tx = require('yours-bitcoin/lib/tx')
 let TxIn = require('yours-bitcoin/lib/tx-in')
 let Script = require('yours-bitcoin/lib/script')
@@ -132,11 +133,11 @@ describe('Channel', function () {
       }, this)
     }
 
-    function send (from, to, amount) {
+    function send (from, to, amount, htlcSecret) {
       return asink(function * () {
         // A this point, the channel is now open. Bob wishes pay to 1000 satoshis.
         from.channel.state.should.equal(Channel.STATE_INITIAL)
-        from.msg = yield from.channel.asyncPay(amount)
+        from.msg = yield from.channel.asyncPay(amount, htlcSecret)
         from.channel.state.should.equal(Channel.STATE_BUILT)
 
         // from sends the message to to.
@@ -259,6 +260,15 @@ describe('Channel', function () {
         yield close(carol, carol.channel.myCommitments[2])
       }, this)
     })
+
+    it('Bob opens a channel with Carol, sends 50000 satoshi to Carol via an htlc, Carol sends 2000 satoshi back to Bob, both validate every commitment', function () {
+      return asink(function * () {
+        let htlcSecret = yield new Secret().asyncInitialize()
+        let { bob, carol } = yield openChannel()
+        yield send(bob, carol, Bn(50000), htlcSecret)
+        yield send(carol, bob, Bn(2000))
+      }, this)
+    })
   })
 
   describe('#constructor', function () {
@@ -377,18 +387,18 @@ describe('Channel', function () {
         let revSecret = yield channel.asyncNewRevSecret()
         should.exist(revSecret.buf)
         should.exist(revSecret.hash)
-        channel.secrets[0].should.equal(revSecret)
+        channel.secretMap.get(revSecret.hash.toString('hex')).should.equal(revSecret.buf)
       }, this)
     })
   })
 
-  describe('#asyncGetSecret', function () {
+  describe('#getSecret', function () {
     it('should get a secret', function () {
       return asink(function * () {
         let channel = yield new Channel(fundingAmount, myXPrv, theirXPub).asyncInitialize()
         let revSecret = yield channel.asyncNewRevSecret()
-        let revSecret2 = yield channel.asyncGetSecret(revSecret.hash)
-        revSecret2.should.equal(revSecret)
+        let revSecret2 = channel.getSecret(revSecret.hash)
+        revSecret2.should.equal(revSecret.buf)
       }, this)
     })
   })
