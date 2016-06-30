@@ -138,8 +138,21 @@ describe('Channel', function () {
         bob.txVerifier = new TxVerifier(bob.spending.txb.tx, bob.spending.txb.uTxOutMap)
         bob.txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false)
 
-        /* ---- sending a payment ---- */
+        // when carol tries to build a spending transaction this should return
+        // the error 'no spendable outputs found'
+        try {
+          carol.spending = yield carol.channel.asyncBuildSpending(
+            new Address().fromPrivKey(new PrivKey().fromRandom()),
+            carol.channel.myCommitments[0],
+            Consts.CSV_DELAY
+          )
+          true.should.equal(false)
+        } catch (err) {
+          err.message.should.equal('no spendable outputs found')
+        }
 
+        /* ---- sending a payment ---- */
+/*
         // A this point, the channel is now open. Bob wishes pay Carol 1000 satoshis.
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
         bob.msg = yield bob.channel.asyncPay(Bn(50000))
@@ -195,7 +208,8 @@ describe('Channel', function () {
         bob.msg = bob.channel.asyncHandleMsgSecrets(bob.msg)
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
         ;(bob.msg === null).should.equal(true)
-
+*/
+/*
         // bob tests the validity of the new commitment transaction by building a spending
         // tx but not broadcasting it
         bob.spending = yield bob.channel.asyncBuildSpending(
@@ -205,25 +219,26 @@ describe('Channel', function () {
         )
         bob.txVerifier = new TxVerifier(bob.spending.txb.tx, bob.spending.txb.uTxOutMap)
         bob.txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false)
-
-        /*
+*/
         // carol tests the validity of the new commitment transaction by building a spending
         // tx but not broadcasting it
+
+/*
+        // console.log(carol.channel.myCommitments[1].outputs);
+        // console.log();
         carol.spending = yield carol.channel.asyncBuildSpending(
           new Address().fromPrivKey(new PrivKey().fromRandom()),
           carol.channel.myCommitments[1],
-          carol.channel.myChanXPrv,
-          carol.channel.myId,
           Consts.CSV_DELAY
         )
+        // console.log(carol.spending.txb.tx.toJSON());
         carol.txVerifier = new TxVerifier(carol.spending.txb.tx, carol.spending.txb.uTxOutMap)
         carol.verifyStr = carol.txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         console.log(carol.txVerifier.getDebugString())
         carol.verifyStr.should.equal(false)
-        */
-
+*/
         /* ---- sending a second payment ---- */
-
+/*
         // Bob wishes pays Carol an additional 2000 satoshis.
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
         bob.msg = yield bob.channel.asyncPay(Bn(2000))
@@ -279,6 +294,7 @@ describe('Channel', function () {
         bob.msg = bob.channel.asyncHandleMsgSecrets(bob.msg)
         bob.channel.state.should.equal(Channel.STATE_INITIAL)
         ;(bob.msg === null).should.equal(true)
+        */
       }, this)
     })
   })
