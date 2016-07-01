@@ -4,15 +4,16 @@ let Address = require('yours-bitcoin/lib/address')
 let Bip32 = require('yours-bitcoin/lib/bip-32')
 let Bn = require('yours-bitcoin/lib/bn')
 let Channel = require('../lib/channel')
-let MsgUpdate = require('../lib/msgs/msg-update')
-let MsgSecrets = require('../lib/msgs/msg-secrets')
 let Consts = require('../lib/consts.js')
+let Interp = require('yours-bitcoin/lib/interp')
+let MsgSecrets = require('../lib/msgs/msg-secrets')
+let MsgUpdate = require('../lib/msgs/msg-update')
+let Output = require('../lib/output')
+let PrivKey = require('yours-bitcoin/lib/priv-key')
+let Script = require('yours-bitcoin/lib/script')
 let Tx = require('yours-bitcoin/lib/tx')
 let TxIn = require('yours-bitcoin/lib/tx-in')
-let Script = require('yours-bitcoin/lib/script')
-let PrivKey = require('yours-bitcoin/lib/priv-key')
 let TxVerifier = require('yours-bitcoin/lib/tx-verifier')
-let Interp = require('yours-bitcoin/lib/interp')
 let asink = require('asink')
 let should = require('should')
 
@@ -405,14 +406,53 @@ describe('Channel', function () {
   describe('#asyncOpen', function () {
     it('should create a msgUpdate with output descriptions of length 1', function () {
       return asink(function * () {
-        let channel = new Channel(fundingAmount, myXPrv, theirXPub)
-        yield channel.asyncInitialize()
+        let channel = yield new Channel(fundingAmount, myXPrv, theirXPub).asyncInitialize()
         let fundingTx = mockFundingTx(channel.multiSigAddr, fundingAmount)
         let msg = yield channel.asyncOpen(fundingTx)
         should.exist(msg.args.commitment)
         should.exist(channel.fundingTx)
         should.exist(channel.fundingTxHash)
         channel.fundingTxHash.toString('hex').should.equal(channel.fundingTx.hash().toString('hex'))
+      }, this)
+    })
+  })
+
+  describe('#asyncConfirmFundingTx', function () {
+    it('should set the funding tx', function () {
+      return asink(function * () {
+        let channel = yield new Channel(fundingAmount, myXPrv, theirXPub).asyncInitialize()
+        let fundingTx = mockFundingTx(channel.multiSigAddr, fundingAmount)
+        yield channel.asyncConfirmFundingTx(fundingTx)
+        should.exist(channel.fundingTx)
+        should.exist(channel.fundingTxHash)
+        channel.fundingTxHash.toString('hex').should.equal(fundingTx.hash().toString('hex'))
+        channel.funded.should.equal(true)
+      }, this)
+    })
+  })
+
+  describe('#asyncBuildCommitent', function () {
+    it('should build a commitment', function () {
+      return asink(function * () {
+        let channel = yield new Channel(fundingAmount, myXPrv, theirXPub).asyncInitialize()
+        let fundingTx = mockFundingTx(channel.multiSigAddr, fundingAmount)
+        let fundingTxHash = fundingTx.hash()
+        let fundingTxOut = fundingTx.txOuts[0]
+        let revSecret = yield channel.asyncNewRevSecret()
+        let pathIndex = 1
+        let output = new Output().fromObject({
+          kind: 'pubKey',
+          networkSourceId: channel.myId,
+          channelSourceId: channel.myId,
+          channelDestId: channel.theirId,
+          networkDestId: channel.theirId,
+          channelSourcePath: `m/0/${pathIndex}`,
+          channelDestPath: `m/0/${pathIndex}`,
+          // htlcSecret: htlcSecret ? htlcSecret.toPublic() : undefined,
+          revSecret: revSecret.toPublic(),
+          // amount: amount // change
+        })
+        let commitment = yield channel.asyncBuildCommitment([output], fundingTxHash, fundingTxOut)
       }, this)
     })
   })

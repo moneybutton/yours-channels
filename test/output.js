@@ -3,21 +3,21 @@
 let should = require('should')
 let asink = require('asink')
 let Bn = require('yours-bitcoin/lib/bn')
-let OutputDesc = require('../lib/output')
+let Output = require('../lib/output')
 let HltcSecret = require('../lib/scrts/htlc-secret')
 let RevSecret = require('../lib/scrts/rev-secret')
 
 let outputDesc
 
-describe('OutputDesc', function () {
+describe('Output', function () {
   it('should exist', function () {
-    should.exist(OutputDesc)
-    should.exist(new OutputDesc())
+    should.exist(Output)
+    should.exist(new Output())
   })
 
   beforeEach(function () {
     return asink(function * () {
-      outputDesc = new OutputDesc('Alice')
+      outputDesc = new Output('Alice')
       outputDesc.channelSourcePath = 'm/1/5'
       outputDesc.channelDestPath = 'm/3/7'
       outputDesc.networkSourceId = 'AliceId'
@@ -55,22 +55,22 @@ describe('OutputDesc', function () {
   })
 
   describe('#toPublic', function () {
-    it('should create a public OutputDesc object', function () {
+    it('should create a public Output object', function () {
       return asink(function * () {
-        let publicOutputDesc = outputDesc.toPublic()
-        should.exist(publicOutputDesc)
-        should.exist(publicOutputDesc.channelSourcePath)
-        should.exist(publicOutputDesc.channelDestPath)
-        should.exist(publicOutputDesc.networkSourceId)
-        should.exist(publicOutputDesc.channelSourceId)
-        should.exist(publicOutputDesc.channelDestId)
-        should.exist(publicOutputDesc.networkDestId)
-        should.exist(publicOutputDesc.kind)
-        should.exist(publicOutputDesc.htlcSecret.hash)
-        should.not.exist(publicOutputDesc.htlcSecret.buf)
-        should.exist(publicOutputDesc.revSecret.hash)
-        should.not.exist(publicOutputDesc.revSecret.buf)
-        should.exist(publicOutputDesc.amount)
+        let publicOutput = outputDesc.toPublic()
+        should.exist(publicOutput)
+        should.exist(publicOutput.channelSourcePath)
+        should.exist(publicOutput.channelDestPath)
+        should.exist(publicOutput.networkSourceId)
+        should.exist(publicOutput.channelSourceId)
+        should.exist(publicOutput.channelDestId)
+        should.exist(publicOutput.networkDestId)
+        should.exist(publicOutput.kind)
+        should.exist(publicOutput.htlcSecret.hash)
+        should.not.exist(publicOutput.htlcSecret.buf)
+        should.exist(publicOutput.revSecret.hash)
+        should.not.exist(publicOutput.revSecret.buf)
+        should.exist(publicOutput.amount)
       }, this)
     })
   })
