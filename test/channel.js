@@ -261,7 +261,7 @@ describe('Channel', function () {
       }, this)
     })
 
-    it.only('Bob opens a channel with Carol, asyncSends 50000 satoshi to Carol via an htlc, Carol asyncSends 2000 satoshi back to Bob, both validate every commitment', function () {
+    it('Bob opens a channel with Carol, asyncSends 50000 satoshi to Carol via an htlc, Carol asyncSends 2000 satoshi back to Bob, both validate every commitment', function () {
       return asink(function * () {
         let { bob, carol } = yield asyncOpenChannel()
         let htlcSecret = yield bob.channel.asyncNewRevSecret()
