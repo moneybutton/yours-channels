@@ -498,4 +498,59 @@ describe('Channel', function () {
       }, this)
     })
   })
+
+  describe('#asyncAddOutput', function () {
+    it('should add a pubkey output to this output', function () {
+      return asink(function * () {
+        let channel = yield new Channel(fundingAmount, myXPrv, theirXPub).asyncInitialize()
+        let revSecret = yield channel.asyncNewRevSecret()
+        let pathIndex = 1
+        let output = new Output().fromObject({
+          kind: 'pubKey',
+          networkSourceId: channel.myId,
+          channelSourceId: channel.myId,
+          channelDestId: channel.myId,
+          networkDestId: channel.myId,
+          channelSourcePath: `m/0/${pathIndex}`,
+          channelDestPath: `m/0/${pathIndex}`,
+          // htlcSecret: htlcSecret ? htlcSecret.toPublic() : undefined,
+          revSecret: revSecret.toPublic()
+          // amount: amount // change
+        })
+        let outputs = yield channel.asyncAddOutput(output, [])
+        outputs.length.should.equal(2)
+        outputs[0].kind.should.equal('pubKey')
+      }, this)
+    })
+  })
+
+  describe('#asyncUpdate', function () {
+    it('should get an update message', function () {
+      return asink(function * () {
+        let channel = yield new Channel(fundingAmount, myXPrv, theirXPub).asyncInitialize()
+        let fundingTx = mockFundingTx(channel.multiSigAddr, fundingAmount)
+        channel.fundingTx = fundingTx
+        let revSecret = yield channel.asyncNewRevSecret()
+        let pathIndex = 1
+        let output = new Output().fromObject({
+          kind: 'pubKey',
+          networkSourceId: channel.myId,
+          channelSourceId: channel.myId,
+          channelDestId: channel.myId,
+          networkDestId: channel.myId,
+          channelSourcePath: `m/0/${pathIndex}`,
+          channelDestPath: `m/0/${pathIndex}`,
+          // htlcSecret: htlcSecret ? htlcSecret.toPublic() : undefined,
+          revSecret: revSecret.toPublic()
+          // amount: amount // change
+        })
+        channel.state.should.equal(Channel.STATE_INITIAL)
+        let msg = yield channel.asyncUpdate([output])
+        channel.state.should.equal(Channel.STATE_BUILT)
+        ;(msg instanceof MsgUpdate).should.equal(true)
+        msg.args.commitment.outputs.length.should.equal(1)
+        msg.args.commitment.outputs[0].kind.should.equal('pubKey')
+      }, this)
+    })
+  })
 })
