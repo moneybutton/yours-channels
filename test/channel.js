@@ -261,12 +261,24 @@ describe('Channel', function () {
       }, this)
     })
 
-    it('Bob opens a channel with Carol, asyncSends 50000 satoshi to Carol via an htlc, Carol asyncSends 2000 satoshi back to Bob, both validate every commitment', function () {
+    it.only('Bob opens a channel with Carol, asyncSends 50000 satoshi to Carol via an htlc, Carol asyncSends 2000 satoshi back to Bob, both validate every commitment', function () {
       return asink(function * () {
         let { bob, carol } = yield asyncOpenChannel()
         let htlcSecret = yield bob.channel.asyncNewRevSecret()
         yield asyncSend(bob, carol, Bn(50000), htlcSecret)
         yield asyncSend(carol, bob, Bn(2000))
+
+        yield asyncClose(bob, bob.channel.myCommitments[0])
+        try {
+          yield asyncClose(carol, carol.channel.myCommitments[0])
+          true.should.equal(false)
+        } catch (err) {
+          err.message.should.equal('no spendable outputs found')
+        }
+        yield asyncClose(bob, bob.channel.myCommitments[1])
+//        yield asyncClose(carol, carol.channel.myCommitments[1])
+        yield asyncClose(bob, bob.channel.myCommitments[2])
+//        yield asyncClose(carol, carol.channel.myCommitments[2])
       }, this)
     })
   })
