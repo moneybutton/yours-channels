@@ -281,7 +281,8 @@ describe('Spending', function () {
     it('build a spending transaction. Case branch one of htlc', function () {
       return asink(function * () {
         let htlcCommitment = yield buildHtlcCommitment()
-        yield spending.asyncBuild(address, htlcCommitment, carolBip32, carol.id)
+        let secretMap = new Map().set(htlcSecret.hash.toString('hex'), htlcSecret.buf)
+        yield spending.asyncBuild(address, htlcCommitment, carolBip32, carol.id, Bn(100), secretMap)
         txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
@@ -294,7 +295,8 @@ describe('Spending', function () {
     it('build a spending transaction. Case branch two of htlc', function () {
       return asink(function * () {
         let htlcCommitment = yield buildHtlcCommitment()
-        yield spending.asyncBuild(address, htlcCommitment, carolBip32, carol.id, Bn(100))
+        let secretMap = new Map().set(htlcSecret.hash.toString('hex'), htlcSecret.buf)
+        yield spending.asyncBuild(address, htlcCommitment, carolBip32, carol.id, Bn(100), secretMap)
         txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
@@ -307,7 +309,8 @@ describe('Spending', function () {
     it('build a spending transaction. Case branch one of revocable htlc', function () {
       return asink(function * () {
         let revHtlcCommitment = yield buildRevHtlcCommitment()
-        yield spending.asyncBuild(address, revHtlcCommitment, carolBip32, carol.id, Bn(100))
+        let secretMap = new Map().set(htlcSecret.hash.toString('hex'), htlcSecret.buf)
+        yield spending.asyncBuild(address, revHtlcCommitment, carolBip32, carol.id, Bn(100), secretMap)
         txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
@@ -320,7 +323,8 @@ describe('Spending', function () {
     it('build a spending transaction. Case branch two of revocable htlc', function () {
       return asink(function * () {
         let revHtlcCommitment = yield buildRevHtlcCommitment()
-        yield spending.asyncBuild(address, revHtlcCommitment, carolBip32, carol.id, Bn(100)) // TODO: does this need to be carol' bib and id or bob's?
+        let secretMap = new Map().set(htlcSecret.hash.toString('hex'), htlcSecret.buf)
+        yield spending.asyncBuild(address, revHtlcCommitment, carolBip32, carol.id, Bn(100), secretMap)
         txVerifier = new TxVerifier(spending.txb.tx, spending.txb.uTxOutMap)
         error = txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)
         if (error) {
@@ -453,8 +457,7 @@ describe('Spending', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { revSecret: revSecret })
-        let secretMap = new Map()
-        secretMap.set(revSecret.hash.toString('hex'), revSecret.buf)
+        let secretMap = new Map().set(revSecret.hash.toString('hex'), revSecret.buf)
         let spendingScriptObj = spending.revPubKeyInputScript(
           { channelDestId: 'carolId', revSecret: revSecret },
           'bobId',
@@ -481,8 +484,7 @@ describe('Spending', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { revSecret: revSecret })
-        let secretMap = new Map()
-        secretMap.set(revSecret.hash.toString('hex'), revSecret.buf)
+        let secretMap = new Map().set(revSecret.hash.toString('hex'), revSecret.buf)
         let spendingScriptObj = spending.revPubKeyInputScript(
           { channelDestId: 'aliceId', revSecret: revSecret },
           'bobId',
@@ -507,8 +509,7 @@ describe('Spending', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { revSecret: revSecret })
-        let secretMap = new Map()
-        secretMap.set(revSecret.hash.toString('hex'), new Buffer('hi'))
+        let secretMap = new Map().set(revSecret.hash.toString('hex'), new Buffer('hi'))
         let spendingScriptObj = spending.revPubKeyInputScript(
           { channelDestId: 'aliceId', revSecret: revSecret },
           'bobId',
@@ -535,12 +536,15 @@ describe('Spending', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret })
+        let secretMap = new Map().set(htlcSecret.hash.toString('hex'), htlcSecret.buf)
         let spendingScriptObj = spending.htlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret
           },
-          'aliceId')
+          'aliceId',
+          Bn(100),
+          secretMap)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -562,12 +566,15 @@ describe('Spending', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret })
+        let secretMap = new Map().set(htlcSecret.hash.toString('hex'), htlcSecret.buf)
         let spendingScriptObj = spending.htlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret
           },
-          'aliceId')
+          'aliceId',
+          Bn(100),
+          secretMap)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -587,14 +594,16 @@ describe('Spending', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret })
-        let htlcSecret2 = new HtlcSecret()
-        yield htlcSecret2.asyncInitialize()
+        let htlcSecret2 = yield new HtlcSecret().asyncInitialize()
+        let secretMap = new Map().set(htlcSecret2.hash.toString('hex'), htlcSecret.buf)
         let spendingScriptObj = spending.htlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret2
           },
-          'aliceId')
+          'aliceId',
+          Bn(100),
+          secretMap)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -614,13 +623,15 @@ describe('Spending', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret })
+        let secretMap = new Map().set(htlcSecret.hash.toString('hex'), htlcSecret.buf)
         let spendingScriptObj = spending.htlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret
           },
           'bobId',
-          Consts.CSV_DELAY)
+          Consts.CSV_DELAY,
+          secretMap)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -642,13 +653,15 @@ describe('Spending', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret })
+        let secretMap = new Map().set(htlcSecret.hash.toString('hex'), htlcSecret.buf)
         let spendingScriptObj = spending.htlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret
           },
           'bobId',
-          Consts.CSV_DELAY)
+          Consts.CSV_DELAY,
+          secretMap)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -668,13 +681,15 @@ describe('Spending', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret })
+        let secretMap = new Map().set(htlcSecret.hash.toString('hex'), htlcSecret.buf)
         let spendingScriptObj = spending.htlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret
           },
           'bobId',
-          Consts.CSV_DELAY)
+          Consts.CSV_DELAY,
+          secretMap)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
