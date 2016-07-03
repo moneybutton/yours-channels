@@ -224,18 +224,6 @@ describe('Spending', function () {
       }, this)
     })
 
-    it.skip('build a spending transaction. Case pubKey, should fail with the wrong pub key', function () {
-      return asink(function * () {
-        try {
-          let pubKeyCommitment = yield buildPubKeyCommitment()
-          yield spending.asyncBuild(address, pubKeyCommitment, bobBip32, carol.id)
-          true.should.equal(false)
-        } catch (err) {
-          err.message.should.equal('no spendable outputs found')
-        }
-      }, this)
-    })
-
     // Case: revocable pubKey
 
     it('build a spending transaction. Case revocable pubKey branch 1', function () {
@@ -248,20 +236,6 @@ describe('Spending', function () {
           console.log(txVerifier.getDebugString())
         }
         error.should.equal(false)
-      }, this)
-    })
-
-    // TODO think about how to add pubkey validation
-    it.skip('build a spending transaction. Case revocable pubKey branch 1, should fail with wrong pubKey', function () {
-      return asink(function * () {
-        try {
-          let revPubKeyCommitment = yield buildRevPubKeyCommitment() // built by bob
-          let randomBip32 = Bip32.fromRandom()
-          yield spending.asyncBuild(address, revPubKeyCommitment, randomBip32, carol.id)
-          true.should.equal(false)
-        } catch (err) {
-          err.message.should.equal('no spendable outputs found')
-        }
       }, this)
     })
 
@@ -594,12 +568,12 @@ describe('Spending', function () {
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret })
-        let htlcSecret2 = yield new HtlcSecret().asyncInitialize()
-        let secretMap = new Map().set(htlcSecret2.hash.toString('hex'), htlcSecret.buf)
+
+        let secretMap = new Map().set(htlcSecret.hash.toString('hex'), new Buffer(''))
         let spendingScriptObj = spending.htlcInputScript(
           {
             channelDestId: 'aliceId',
-            htlcSecret: htlcSecret2
+            htlcSecret: htlcSecret
           },
           'aliceId',
           Bn(100),
@@ -769,22 +743,21 @@ describe('Spending', function () {
       }, this)
     })
 
-    it.skip('branch 1 of revHtlcRedeemScript and revHtlcInputScript should evaluate to false if wrong htlc secret is used', function () {
+    it('branch 1 of revHtlcRedeemScript and revHtlcInputScript should evaluate to false if wrong htlc secret is used', function () {
       return asink(function * () {
         let scriptPubKey = commitment.revHtlcRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret, revSecret: revSecret })
-        let htlcSecret2 = new HtlcSecret()
-        yield htlcSecret2.asyncInitialize()
+
         let secretMap = new Map()
-          .set(htlcSecret2.hash.toString('hex'), htlcSecret.buf)
+          .set(htlcSecret.hash.toString('hex'), new Buffer(''))
           .set(revSecret.hash.toString('hex'), revSecret.buf)
 
         let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
-            htlcSecret: htlcSecret2,
+            htlcSecret: htlcSecret,
             revSecret: revSecret
           },
           'aliceId',
@@ -836,12 +809,16 @@ describe('Spending', function () {
       }, this)
     })
 
-    it.skip('branch 2 of revHtlcRedeemScript and revHtlcInputScript should evaluate to true', function () {
+    it('branch 2 of revHtlcRedeemScript and revHtlcInputScript should evaluate to true', function () {
       return asink(function * () {
         let scriptPubKey = commitment.revHtlcRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret, revSecret: revSecret })
+        let secretMap = new Map()
+          .set(htlcSecret.hash.toString('hex'), htlcSecret.buf)
+          .set(revSecret.hash.toString('hex'), new Buffer('hi'))
+
         let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
@@ -849,7 +826,8 @@ describe('Spending', function () {
             revSecret: revSecret
           },
           'bobId',
-          Consts.CSV_DELAY)
+          Consts.CSV_DELAY,
+          secretMap)
 
         let {verified, debugString} = TxHelper.interpCheckSig(
           spendingScriptObj.partialScriptSig,
@@ -896,7 +874,7 @@ describe('Spending', function () {
       }, this)
     })
 
-    it.skip('branch 2 of revHtlcRedeemScript and revHtlcInputScript should evaluate to false if CSV does', function () {
+    it('branch 2 of revHtlcRedeemScript and revHtlcInputScript should evaluate to false if CSV does', function () {
       return asink(function * () {
         let scriptPubKey = commitment.revHtlcRedeemScript(
           destKeyPair.pubKey,
@@ -992,24 +970,22 @@ describe('Spending', function () {
       }, this)
     })
 
-    it.skip('branch 3 of revHtlcRedeemScript and revHtlcInputScript should evaluate to false if the wrong revSecret is used', function () {
+    it('branch 3 of revHtlcRedeemScript and revHtlcInputScript should evaluate to false if the wrong revSecret is used', function () {
       return asink(function * () {
         let scriptPubKey = commitment.revHtlcRedeemScript(
           destKeyPair.pubKey,
           sourceKeyPair.pubKey,
           { htlcSecret: htlcSecret, revSecret: revSecret })
 
-        let revSecret2 = new RevSecret()
-        yield revSecret2.asyncInitialize()
         let secretMap = new Map()
           .set(htlcSecret.hash.toString('hex'), htlcSecret.buf)
-          .set(revSecret2.hash.toString('hex'), revSecret.buf)
+          .set(revSecret.hash.toString('hex'), new Buffer('hi'))
 
         let spendingScriptObj = spending.revHtlcInputScript(
           {
             channelDestId: 'aliceId',
             htlcSecret: htlcSecret,
-            revSecret: revSecret2
+            revSecret: revSecret
           },
           'bobId',
           Consts.CSV_DELAY.sub(Bn(1)),
