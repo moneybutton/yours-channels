@@ -181,14 +181,15 @@ describe('Channel', function () {
     }, this)
   }
 
-  function asyncClose (agent, commitment) {
+  function asyncClose (agent, commitment, secretMap) {
     return asink(function * () {
       // bob tests the validity of the refund transaction by building a spending
       // tx but not broadcasting it
       agent.spending = yield agent.channel.asyncBuildSpending(
         new Address().fromPrivKey(new PrivKey().fromRandom()),
         commitment,
-        Consts.CSV_DELAY
+        Consts.CSV_DELAY,
+        secretMap
       )
       agent.txVerifier = new TxVerifier(agent.spending.txb.tx, agent.spending.txb.uTxOutMap)
       agent.txVerifier.verifyStr(Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY | Interp.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY).should.equal(false)
@@ -218,6 +219,7 @@ describe('Channel', function () {
         /* ---- closing the channel ---- */
 
         yield asyncClose(bob, bob.channel.myCommitments[0])
+        yield asyncClose(bob, bob.channel.theirCommitments[0])
 
         // when carol tries to build a spending transaction for the refund tx
         // this should return the error 'no spendable outputs found'
@@ -227,11 +229,21 @@ describe('Channel', function () {
         } catch (err) {
           err.message.should.equal('no spendable outputs found')
         }
+        try {
+          yield asyncClose(carol, carol.channel.theirCommitments[0])
+          true.should.equal(false)
+        } catch (err) {
+          err.message.should.equal('no spendable outputs found')
+        }
 
         yield asyncClose(bob, bob.channel.myCommitments[1])
+        yield asyncClose(bob, bob.channel.theirCommitments[1])
         yield asyncClose(carol, carol.channel.myCommitments[1])
+        yield asyncClose(carol, carol.channel.theirCommitments[1])
         yield asyncClose(bob, bob.channel.myCommitments[2])
+        yield asyncClose(bob, bob.channel.theirCommitments[2])
         yield asyncClose(carol, carol.channel.myCommitments[2])
+        yield asyncClose(carol, carol.channel.theirCommitments[2])
       }, this)
     })
 
@@ -244,6 +256,7 @@ describe('Channel', function () {
         /* ---- closing the channel ---- */
 
         yield asyncClose(bob, bob.channel.myCommitments[0])
+        yield asyncClose(bob, bob.channel.theirCommitments[0])
 
         // when carol tries to build a spending transaction for the refund tx
         // this should return the error 'no spendable outputs found'
@@ -253,11 +266,21 @@ describe('Channel', function () {
         } catch (err) {
           err.message.should.equal('no spendable outputs found')
         }
+        try {
+          yield asyncClose(carol, carol.channel.theirCommitments[0])
+          true.should.equal(false)
+        } catch (err) {
+          err.message.should.equal('no spendable outputs found')
+        }
 
         yield asyncClose(bob, bob.channel.myCommitments[1])
+        yield asyncClose(bob, bob.channel.theirCommitments[1])
         yield asyncClose(carol, carol.channel.myCommitments[1])
+        yield asyncClose(carol, carol.channel.theirCommitments[1])
         yield asyncClose(bob, bob.channel.myCommitments[2])
+        yield asyncClose(bob, bob.channel.theirCommitments[2])
         yield asyncClose(carol, carol.channel.myCommitments[2])
+        yield asyncClose(carol, carol.channel.theirCommitments[2])
       }, this)
     })
 
@@ -269,12 +292,21 @@ describe('Channel', function () {
         yield asyncSend(carol, bob, Bn(2000))
 
         yield asyncClose(bob, bob.channel.myCommitments[0])
+        yield asyncClose(bob, bob.channel.theirCommitments[0])
+
         try {
           yield asyncClose(carol, carol.channel.myCommitments[0])
           true.should.equal(false)
         } catch (err) {
           err.message.should.equal('no spendable outputs found')
         }
+        try {
+          yield asyncClose(carol, carol.channel.theirCommitments[0])
+          true.should.equal(false)
+        } catch (err) {
+          err.message.should.equal('no spendable outputs found')
+        }
+
         yield asyncClose(bob, bob.channel.myCommitments[1])
 //        yield asyncClose(carol, carol.channel.myCommitments[1])
         yield asyncClose(bob, bob.channel.myCommitments[2])
