@@ -287,7 +287,7 @@ describe('Channel', function () {
     it('Bob opens a channel with Carol, asyncSends 50000 satoshi to Carol via an htlc, Carol asyncSends 2000 satoshi back to Bob, both validate every commitment', function () {
       return asink(function * () {
         let { bob, carol } = yield asyncOpenChannel()
-        let htlcSecret = yield carol.channel.asyncNewRevSecret()
+        let htlcSecret = yield carol.channel.asyncNewSecret()
         yield asyncSend(bob, carol, Bn(50000), htlcSecret)
         yield asyncSend(carol, bob, Bn(2000))
 
@@ -428,11 +428,11 @@ describe('Channel', function () {
     })
   })
 
-  describe('#asyncNewRevSecret', function () {
+  describe('#asyncNewSecret', function () {
     it('should add and return a new revSecret', function () {
       return asink(function * () {
         let channel = yield new Channel(fundingAmount, myXPrv, theirXPub).asyncInitialize()
-        let revSecret = yield channel.asyncNewRevSecret()
+        let revSecret = yield channel.asyncNewSecret()
         should.exist(revSecret.buf)
         should.exist(revSecret.hash)
         channel.secretMap.get(revSecret.hash.toString('hex')).should.equal(revSecret.buf)
@@ -444,7 +444,7 @@ describe('Channel', function () {
     it('should get a secret', function () {
       return asink(function * () {
         let channel = yield new Channel(fundingAmount, myXPrv, theirXPub).asyncInitialize()
-        let revSecret = yield channel.asyncNewRevSecret()
+        let revSecret = yield channel.asyncNewSecret()
         let revSecret2 = channel.getSecret(revSecret.hash)
         revSecret2.should.equal(revSecret.buf)
       }, this)
@@ -486,7 +486,7 @@ describe('Channel', function () {
         let fundingTx = mockFundingTx(channel.multiSigAddr, fundingAmount)
         let fundingTxHash = fundingTx.hash()
         let fundingTxOut = fundingTx.txOuts[0]
-        let revSecret = yield channel.asyncNewRevSecret()
+        let revSecret = yield channel.asyncNewSecret()
         let pathIndex = 1
         let output = new Output().fromObject({
           kind: 'pubKey',
@@ -513,7 +513,7 @@ describe('Channel', function () {
         let fundingTx = mockFundingTx(channel.multiSigAddr, fundingAmount)
         let fundingTxHash = fundingTx.hash()
         let fundingTxOut = fundingTx.txOuts[0]
-        let revSecret = yield channel.asyncNewRevSecret()
+        let revSecret = yield channel.asyncNewSecret()
         let pathIndex = 1
         let output = new Output().fromObject({
           kind: 'pubKey',
@@ -551,7 +551,7 @@ describe('Channel', function () {
     it('should add a pubkey output to this output', function () {
       return asink(function * () {
         let channel = yield new Channel(fundingAmount, myXPrv, theirXPub).asyncInitialize()
-        let revSecret = yield channel.asyncNewRevSecret()
+        let revSecret = yield channel.asyncNewSecret()
         let pathIndex = 1
         let output = new Output().fromObject({
           kind: 'pubKey',
@@ -578,7 +578,7 @@ describe('Channel', function () {
         let channel = yield new Channel(fundingAmount, myXPrv, theirXPub).asyncInitialize()
         let fundingTx = mockFundingTx(channel.multiSigAddr, fundingAmount)
         channel.fundingTx = fundingTx
-        let revSecret = yield channel.asyncNewRevSecret()
+        let revSecret = yield channel.asyncNewSecret()
         let pathIndex = 1
         let output = new Output().fromObject({
           kind: 'pubKey',
