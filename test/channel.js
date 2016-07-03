@@ -7,6 +7,7 @@ let Channel = require('../lib/channel')
 let Consts = require('../lib/consts.js')
 let Interp = require('yours-bitcoin/lib/interp')
 let MsgSecrets = require('../lib/msgs/msg-secrets')
+let Secret = require('../lib/scrts/secret')
 let MsgUpdate = require('../lib/msgs/msg-update')
 let Output = require('../lib/output')
 let PrivKey = require('yours-bitcoin/lib/priv-key')
@@ -286,8 +287,9 @@ describe('Channel', function () {
 
     it('Bob opens a channel with Carol, asyncSends 50000 satoshi to Carol via an htlc, Carol asyncSends 2000 satoshi back to Bob, both validate every commitment', function () {
       return asink(function * () {
+
         let { bob, carol } = yield asyncOpenChannel()
-        let htlcSecret = yield bob.channel.asyncNewRevSecret()
+        let htlcSecret = yield carol.channel.asyncNewRevSecret()
         yield asyncSend(bob, carol, Bn(50000), htlcSecret)
         yield asyncSend(carol, bob, Bn(2000))
 
@@ -308,9 +310,13 @@ describe('Channel', function () {
         }
 
         yield asyncClose(bob, bob.channel.myCommitments[1])
-//        yield asyncClose(carol, carol.channel.myCommitments[1])
+        yield asyncClose(bob, bob.channel.theirCommitments[1])
+        yield asyncClose(carol, carol.channel.myCommitments[1], carol.channel.secretMap)
+        yield asyncClose(carol, carol.channel.theirCommitments[1], carol.channel.secretMap)
         yield asyncClose(bob, bob.channel.myCommitments[2])
-//        yield asyncClose(carol, carol.channel.myCommitments[2])
+        yield asyncClose(bob, bob.channel.theirCommitments[2])
+        yield asyncClose(carol, carol.channel.myCommitments[2])
+        yield asyncClose(carol, carol.channel.theirCommitments[2])
       }, this)
     })
   })
