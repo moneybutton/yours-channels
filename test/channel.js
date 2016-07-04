@@ -621,6 +621,59 @@ describe('Channel', function () {
     })
   })
 
+  describe('#reducePubKeyOutputs', function () {
+    it('should add a pubkey output to this output', function () {
+      return asink(function * () {
+        let channel = yield new Channel(fundingAmount, myXPrv, theirXPub).asyncInitialize()
+        let revSecret = yield channel.asyncNewSecret()
+        let htlcSecret = yield channel.asyncNewSecret()
+        let htlcSecret2 = yield channel.asyncNewSecret()
+        let pathIndex = 1
+        let output1 = new Output().fromObject({
+          kind: 'htlc',
+          networkSourceId: 'networkSourceId',
+          channelSourceId: 'channelSourceId',
+          channelDestId: 'channelDestId',
+          networkDestId: 'networkDestId',
+          channelSourcePath: `m/0/${pathIndex}`,
+          channelDestPath: `m/0/${pathIndex}`,
+          revSecret: revSecret.toPublic(),
+          htlcSecret: htlcSecret2.toPublic(),
+          amount: Bn(1)
+        })
+        let output2 = new Output().fromObject({
+          kind: 'htlc',
+          networkSourceId: 'networkSourceId',
+          channelSourceId: 'channelSourceId',
+          channelDestId: 'another_channelDestId',
+          networkDestId: 'networkDestId',
+          channelSourcePath: `m/0/${pathIndex}`,
+          channelDestPath: `m/0/${pathIndex}`,
+          revSecret: revSecret.toPublic(),
+          htlcSecret: htlcSecret.toPublic(),
+          amount: Bn(3)
+
+        })
+        let output3 = new Output().fromObject({
+          kind: 'pubKey',
+          networkSourceId: 'networkSourceId',
+          channelSourceId: 'channelSourceId',
+          channelDestId: 'channelDestId',
+          networkDestId: 'networkDestId',
+          channelSourcePath: `m/0/${pathIndex}`,
+          channelDestPath: `m/0/${pathIndex}`,
+          revSecret: revSecret.toPublic()
+        })
+        let outputs = [output1, output2, output3]
+        let reduced = yield channel.asyncReduceHtlcOutput(outputs, htlcSecret)
+
+        reduced.length.should.equal(3)
+        reduced[1].kind.should.equal('htlc')
+        reduced[2].kind.should.equal('pubKey')
+      }, this)
+    })
+  })
+
   describe('#asyncUpdate', function () {
     it('should get an update message', function () {
       return asink(function * () {
